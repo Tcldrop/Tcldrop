@@ -1,0 +1,68 @@
+%{help=die}%{+n}
+%b/MSG%b %B %bDIE%b <password> [message]
+This makes me die (quit irc and terminate).
+%{help=go}%{+o|o}
+%b/MSG%b %B %bGO%b <channel>
+This makes the bot leave a channel if not currently opped.
+%{help=help}
+%b/MSG%b commands for %b%B%b:
+All users: ADDHOST HELP IDENT INFO PASS VOICE WHO WHOIS
+%{+o|o}
+Channel/global ops: OP INVITE GO KEY
+%{+m}
+Global masters: DIE JUMP MEMORY SAVE REHASH RESET
+%{+m|m}
+Channel masters: STATUS
+%{end}
+For help on a command, %b/MSG%b %B %bHELP%b <command>.%{+m} You are a master. Many many more commands are available via dcc chat.%{-} There may also be additional commands provided by other modules.
+Admin: %A
+%{help=addhost}
+%b/MSG%b %B %bADDHOST%b <password> <hostmask>
+This lets the bot recognize you from a new hostmask. The hostmask specified must not match the hostmask of another user.
+%{help=ident}
+%b/MSG%b %B %bIDENT%b <password> [handle]
+This lets the bot recognize you from a new address. You don't need to specify a handle if your handle is the same as your nickname on IRC.
+%{help=info}
+%b/MSG%b %B %bINFO%b <password> [channel] [info line]
+Whatever you set as your info line will be usually be displayed when you join a channel, as long as you haven't been there in the past three minutes. It's also shown when a %bWHO%b or %bWHOIS%b. You may set an info line specific to a channel. If no channel-specific info line exists for a channel, your global info line will be displayed.
+%b/MSG%b %B %bINFO%b <password> [channel] %bNONE%b
+This erases your info line.
+%{help=invite}%{+o|o}
+%b/MSG%b %B %bINVITE%b <password> <channel>
+This will invite you to a channel (if the bot is on the specified channel).
+%{help=jump}%{+m}
+%b/MSG%b %B %bJUMP%b <password> [server [port [server password]]]
+This will make the bot jump to a new server. You can optionally specify a server to jump to, in the form of 'new.server.com' or 'new.server.com 6667', etc.
+%{help=memory}%{+m}
+%b/MSG%b %B %bMEMORY%b <password>
+This displays the bot's memory usage information.
+%{help=op}%{+o|o}
+%b/MSG%b %B %bOP%b <password> [channel]
+Ops you on any channel where I have ops and you don't. If a channel name is specified, you will only be opped on that channel.
+%{help=voice}%{+o|o}
+%b/MSG%b %B %bVOICE%b <password> [channel]
+Voices you on any channel where I have ops and you don't have voice. If a channel name is specified, you will only be voiced on that channel.
+%{help=key}%{+o|o}
+%b/MSG%b %B %bKEY%b <password> <channel>
+This will send you the key for a channel that is +k and possibly also invite you to that channel if it is +i (if the bot is on the specified channel).
+%{help=pass}
+%b/MSG%b %B %bPASS%b <password> - This sets a password for your handle. You need a password to use most commands and/or chat the bot.
+%b/MSG%b %B %bPASS%b <oldpass> <newpass> - Allows you to change your password.
+%{help=save}%{+m}
+%b/MSG%b %B %bSAVE%b <password>
+This makes the bot save its userfile.
+%{help=rehash}%{+m}
+%b/MSG%b %B %bREHASH%b <password>
+This makes the bot reload its config file.
+%{help=reset}%{+m}
+%b/MSG%b %B %bRESET%b <password> [channel]
+ This makes the bot reset its channel information, in case it becomes out of sync with reality. It isn't used much anymore.
+%{help=status}%{+m|m}
+%b/MSG%b %B %bSTATUS%b <password>
+This gives you a short display of my current status. The status command in on the partyline is more informative.
+%{help=who}
+%b/MSG%b %B %bWHO%b <channel>
+This will show you a list of who is on the specified channel right now, and each person's info line (if they have one).
+%{help=whois}
+%b/MSG%b %B %bWHOIS%b <handle>
+Shows information about the specified handle.

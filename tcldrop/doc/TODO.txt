@@ -1,0 +1,23 @@
+Right now I'm just keeping notes on where to find the packages I'll need later.
+
+Provide SSL support, using TLS:
+http://SF.Net/projects/tls
+A SSL IRC server: irc.link-net.org:7000
+UPDATE: ssl support has been added, mostly, but hasn't been tested.
+
+Provide Socks support, using the Socks stuff from IRK:
+http://SF.Net/projects/irk
+
+Provide Readline support, using TclReadline:
+http://TclReadline.SF.Net/
+
+Provide ICQ support using Alicq's icq/icq.tcl package:
+http://Alicq.SF.Net/
+
+Provide Yahoo! support using TclYahoo's yahoo.tcl:
+http://9MM.Com/~ogl/tclyahoo/
+
+http://www.xdobry.de/mysqltcl/
+
+
+http://www.schnoggo.com/figlet.html

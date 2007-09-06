@@ -1,0 +1,59 @@
+# filesys.turkish.lang
+#   filesys modülü icin türkce dil paketi
+# Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
+#
+# $Id: filesys.turkish.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+
+0x300,Converting filesystem image in %s ...
+0x301,filedb-update: dizin acilamiyor!
+0x302,(!) Broken convert to filedb in %s
+0x303,Dosya adi                      Boyutu  Goderen kisi/tarih  # alanlar\n
+0x304,------------------------------  ----  -------------------  ----------\n
+0x305,Bu dizinde hic dosya yok.\n
+0x306,Uyusan dosya yok.\n
+0x307,Böyle bir dizin yok
+0x308,Böyle bir dosya yok
+0x309,Dosya paylasima acik degil
+0x30a,(remote)
+0x30b,Dosya göndermede hata
+0x30c,(gönderiliyor)
+0x30d,/%s%s%s icin istek var.(gönderiliyor)
+0x30e,\nDosya sisteminda hata olustu.\n
+0x30f,(Dosya yolu icin hatali dizin secildi.)\n
+0x310,Gecerli dizin
+0x311,Yeni gecerli dizin
+0x312,Böyle bir dizin yok.\n
+0x313,Gecersiz dizin.\n
+0x314,Uygun olmali.\n
+0x315,%s su an icin kullanilabilir degil.\n
+0x316,%s icin %s tarafindan istek geldi...\n
+0x317,%s zaten normal bir dosya.\n
+0x318,Link %s ile degistirildi\n
+0x319,%s upload edilmedi\n
+0x31a,Yaratýlan dizin
+0x31b,Erisim hakki icin +%s gerekli \n
+0x31c,%s/ icin erisim hakki +%s olarak degistirildi\n
+0x31d,%s/ icin erisim hakki herkese acildi\n
+0x31e,Dizin silindi
+0x31f,Hatali kaynak dizini.\n
+0x320,Hatali hedef dizini.\n
+0x321,You can't %s files on top of themselves.\n
+0x322,dizin olarak var -- geciliyor
+0x323,üzerine mi? huh.
+0x324,Hedef
+0x325,kopyala
+0x326,kopyalandi
+0x327,tasi
+0x328,Tasindi
+0x329,yazilamiyor
+0x32a,gerekenler
+0x32b,hid
+0x32c,Unhid
+0x32d,Paylasimda
+0x32e,Paylasimda degil
+0x32f,Eklenen link
+0x330,Degistirildi
+0x331,Bos birakildi
+0x332,Silindi
+0x33a,%B dosya sunucusuna Hos Geldiniz\n
+0x33b,Bütün dosya transferlerini '%N' alacaktir.\n('get' komutuyla farkli bir nick belirleyebilirsiniz.)\nYardim icin 'help' yazin.\n

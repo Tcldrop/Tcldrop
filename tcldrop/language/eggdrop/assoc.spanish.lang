@@ -1,0 +1,21 @@
+# assoc.spanish.lang
+#   Mensajes para el modulo assoc
+#
+# $Id: assoc.spanish.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+
+0xb000,No hay nombres de Canal
+0xb001,Canal
+0xb002,Nombre
+0xb003,Canal # fuera de rango: debe estar *0-*99999
+0xb004,Canal # fuera de rango: debe estar 1-99999
+0xb005,No puedes renombrar el party line principal; solo es un party line.
+0xb006,Canal %s%d no tiene nombre.\n
+0xb007,Ok, nombre quitado para el canal %s%d.\n
+0xb008,--- %s removido de nombres de Canal.\n
+0xb009,Ok, canal %s%d es '%s' ahora.\n
+0xb00a,--- %s nombro este canal '%s'\n
+0xb00b,--- (%s) nombro este canal '%s'.\n
+0xb00c,--- (%s) %s nombro este canal '%s'.\n
+0xb00d,--- (%s) %s removido de nombres de canal.\n
+0xb00e,Nombre del canal no puede tener esa longitud (20 carct. max).
+0xb00f,El primer carácter del nombre del canal no puede ser un dígito.

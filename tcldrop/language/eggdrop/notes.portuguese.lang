@@ -1,0 +1,55 @@
+######################################################################
+# ø name: notes.portuguese.lang                                      #
+# ø info: idioma para mensagens do módulo 'notes'                    #
+# ø author: Plínio Monteiro Brandão                                  #
+# ø nickname: absolute [absolute@brasirc.net]                        #
+# ø credits:                                                         #
+#           - SuperBot - Eggdrop Internet Services                   #
+#           - HomePage - http://www.superbot.com.br                  #
+#           - BrasIRC.NET - http://www.brasirc.net                   #
+######################################################################
+
+# $Id: notes.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+
+0xc000,  Encaminhando notes para: %.70s\n
+0xc001,Comutando %d note%s de %s para %s.
+0xc002,Expiradas %d note%s
+0xc003,Desconectado; encaminhando para %s.\n
+0xc004,Notes não são suportadas por este bot.
+0xc005,Desculpe, mas este usuário excedeu o limite de notes.
+0xc006,Não posso criar um arquivo de notes. Desculpe-me.
+0xc007,Arquivo de notes indisponível!
+0xc008,Mensagem armazenada
+0xc009,Você não possui mensagens
+0xc00a, -- EXPIRA HOJE
+0xc00b, -- EXPIRA EM %d DIA%s
+0xc00c,Você tem as seguintes notes esperando
+0xc00d,Você não possui tantas mensagens
+0xc00e,Use '.notes read' para lê-las.
+0xc00f,Não é possível modificar este arquivo de note
+0xc010,Todas as notes forão apagadas
+0xc011,Apagado
+0xc012,Saiu
+0xc013,# deve ser números e/ou intervalos separados por ;
+0xc014,Isto é um bot. Você não pode deixar notes para um bot.
+0xc015,Note externa
+0xc016,Note entregue.
+0xc017,Pra listar:
+0xc018,NOTICE %s :Você tem %d note%s em espera no bot %s.\n
+0xc019,### Você tem %d note%s em espera.\n
+0xc01a,### Use '.notes read' para lê-las.\n
+0xc01b,As notes serão gravadas.
+0xc01c,Você não tem permissão para alterar a note ignorada por %s\n
+0xc01d,O usuário %s não existe.\n
+0xc01e,Agora, ignorando notes vindas de %s\n
+0xc01f,Já está ignorada %s\n
+0xc020,Não mais ignorando notes vindas de %s\n
+0xc021,Note ignorada por %s não foi encontrada na lista.\n
+0xc022,Sem notas ignoradas no momento.\n
+0xc023,Note ignorada por %s:\n
+0xc024,Usuário não encontrado.
+0xc025,Você não pode alterar as notes enviadas por um owner do bot.\n
+0xc026,Limpando notes enviadas por %s\n
+0xc027,Você deve designar um nick para enviar.
+0xc028,Mudando as notes enviadas de %s para: %s\n
+0xc029,Use apenas as seguintes funções: INDEX, READ, or ERASE.

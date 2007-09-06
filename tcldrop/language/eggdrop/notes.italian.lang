@@ -1,0 +1,48 @@
+# notes.italian.lang
+#   messaggi del notes module
+#   by |olio|
+#
+# $Id: notes.italian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+
+0xc000,  Rigirate le note a: %.70s\n
+0xc001,Commutate %d note%s da %s a %s.
+0xc002,Scadute %d note%s
+0xc003,Non online; rigirate a %s.\n
+0xc004,Le note non sono supportate da questo bot.
+0xc005,Spiacente, questo utente ha gia' troppe note.
+0xc006,Non posso creare il file note, spiacente.
+0xc007,Il file note non raggiungibile!
+0xc008,Messaggio memorizzato
+0xc009,Non hai messaggi
+0xc00a, -- Scadute oggi
+0xc00b, -- Scadranno entro %d giorni%s
+0xc00c,Hai le seguenti note in attesa
+0xc00d,Non hai altri messaggi
+0xc00e,Usa '.notes read' per leggerle.
+0xc00f,Non puoi modificare il note file
+0xc010,Cancella tutte le note
+0xc011,Cancellate
+0xc012,Sinistra 
+0xc013,# puo' essere un numero e/o un intervallo separato da ;
+0xc014,E' un bot. Non puoi lasciare note ad un bot.
+0xc015,Fuori dalle note
+0xc016,Nota mandaa.
+0xc017,Per una lista:
+0xc018,NOTICE %s :Tu hai %d note%s in attesa su %s.\n
+0xc019,### Tu hai %d note%s in attesa.\n
+0xc01a,### Usa '.notes read' per leggerle.\n
+0xc01b,La nota sara' salvata.
+0xc01c,Tu non hai il permesso per cambiare note ignorate per %s\n
+0xc01d,Utente %s inesistente.\n
+0xc01e,Ignorero' le note per %s\n
+0xc01f,Sto' gia' ignorando %s\n
+0xc020,Non ignoro piu' le note per %s\n
+0xc021,Note ignorate %s non trovate in lista.\n
+0xc022,Nessuna nota ignorata presente.\n
+0xc023,Note ignorate per %s:\n
+0xc024,Non esiste l'utente.
+0xc025,Non puoi cambiare le note inviate dall'owner.\n
+0xc026,Ripulite le note girate a %s\n
+0xc027,Devi fornire un nome bot su cui girarle.
+0xc028,Cambiato il forwarding per %s a: %s\n
+0xc029,La funzione deve essere: INDEX, READ, or ERASE.

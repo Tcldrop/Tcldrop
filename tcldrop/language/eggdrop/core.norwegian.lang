@@ -1,0 +1,443 @@
+# core.norwegian.lang
+#   core language messages for eggdrop
+#
+# $Id: core.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:44 fireegl Exp $
+
+# General stuff
+0x001,Bruk
+0x002,Feilet.\n
+
+# MODES_
+0x130,Opprettet
+0x131,sist brukt
+0x132,inaktiv
+0x133,plasert av
+0x135,ikke aktiv på
+0x137,ikke aktiv
+0x138,ikke plasert av bot
+
+# BANS_
+0x104,Globale bans
+0x106,Kanal bans på
+0x109,Bruk '.bans all' for å se hele ban listen
+0x10a,Banner ikke længre
+
+# EXEMPTS_
+0x114,Globale exempts
+0x116,Kanal exempts på
+0x119,Bruk '.exempts all' for å se hele listen
+0x11a,Bruker ikke ban exempts mere
+
+# INVITES_
+0x124,Globale invites
+0x126,Kanal invitasjoner for
+0x129,Bruk '.invites all' for å se hele listen
+0x12a,Inviter ikke lenger
+
+# MOD_
+0x200,Allerede lastet.
+0x201,Kan ikke bestemme nåværende kartotek.
+0x202,Ingen startfunksjoener angitt.
+0x204,Kreves av en anden modul
+0x205,Ingen lukkefunksjon
+0x206,Modul fjernet:
+0x207,Modul finnes ikke
+0x209,Feil under innlesning av modul:
+0x20a,Feil under fjerning av modul:
+0x20b,Kan ikke laste modul
+0x20c,Stillestående modul; det vil bli minne lekkasje!
+0x20d,Du har installeret moduler, men ikke valgt noe krypterings\n\
+modul, venligst les standard config fil for info.\n
+0x20e,Filesys modul ikke lastet.
+0x20f,Modul loadet: %-16s (med språk support)
+0x210,Modul loadet: %-16s
+
+# USERF_
+0x400,Brukerfil overført; skiftet til ny brukerfil
+0x402,KAN IKKE LESE NY BRUKERFIL
+0x403,Kan ikke sende brukerliste til deg (intern feil)
+0x404,Kan ikke finne noen som ligner det du spurte etter
+0x405,Gammel brukerfil, bruk 'tclsh scripts/weed <brugerfil> c' for å konvertere
+0x406,Brukerfilen har feil format.
+0x407,Feil i brukerfortegnelse
+0x408,Feil bruker oppsett
+0x409,Feil password reset på
+0x40a,Ignorer masker for kanal(ene):
+0x40b,Skriver brukerfil...
+0x40c,FEIL under skrivning af brugerfil.
+0x40d,FEIL under skriving av brukerfil til overførsel.
+0x40e,Brukerfil opprettelse ikke nødvendig--Dropper opprettelse
+0x40f,Rehasher...
+0x410,Jeg kjenner ingen ved det navnet.\n
+0x411,Ingen bruker ved navnet
+0x412,Lager backup av brukerfil...
+0x413,Forbindelse brutt; avbryter brukerfil overførselen.
+0x414,Gammel type delingsforespørsel av
+0x415,Foreldet delingsforespørgsel
+0x416,Brukerfil avvist av
+
+# MISC_
+0x500,tid oppbrukt
+0x501,total
+0x502,Slettet
+0x504,på
+0x505,Ligner
+0x506,Dropper første
+0x507,(mere enn %d som matcher; listen er avkortet)\n
+0x508,--- Fant %d som lignet%s.\n
+0x509,Ukjent kommando.\n
+0x50a,Hva? Trenger du hjelp? bruk '.help'\n
+0x50b,Kommando bindings:\n
+0x50c,Restarter...
+0x50d,es
+0x50e,Skifter loggfiler...
+0x50f,eier
+0x510,master
+0x511,op
+0x512,idle
+0x513,BORTE
+0x516,Avbrutt
+0x517,ugyldig bot
+0x518,Loop oppdaget: to boter exist navngitt
+0x51a,fra
+0x51b,foreldet
+0x51c,avvist
+0x51d,falsk/bedrager
+0x51e,prøver
+0x51f,MOTD fil:
+0x520,Ingen MOTD fil.
+0x521,Bruk:
+0x522,<adresse>:<port#>[/<relay-port#>]
+0x526,avventende
+0x527,ønsker op!
+0x528,lurker
+0x529,bakgrunnen
+0x52a,terminal mode
+0x52b,status mode
+0x52c,log dump mode
+0x52d,Oppetid for
+0x52e,cache hit
+0x52f,Tcl Kilde:
+0x530,Standar flagg for ny brukere
+0x531,underrette
+0x532,Permanente eier(e)
+0x534,CONFIG FIL IKKE LOADET (IKKE FUNNET ELLER FEIL)
+0x535,BRUKERFIL IKKE FUNNET!  (prøv './eggdrop -m %s' for at lage en)\n
+0x536,STARTER BOTEN I BRUKERFILOPPRETTELSES MODE.\n\
+Telnet boten og skriv 'NEW' som ditt nick.
+0x537,ELLER gå på IRC og skriv:  /msg %s hello\n
+0x538,Dette vil få boten til at gjennkjenne deg som master.
+0x539,BRUKERFIL FINNES ALLEREDE (bruk ikke '-m')
+0x53a,KAN IKKE SKRIVE TIL TEMP FIL
+0x53b,Kan ikke laste inn brukerfil!
+0x53c,Brukerfil mangler!
+0x53e,%B  (%E)\n\nSkriv ditt nick.\n
+0x53f,Skifter loggfil %s, over max-logsize (%d)
+0x540,\nNick.\n
+0x541,Siste beskjed gjenntatt %d ganger\n
+0x542,juped
+0x543,Ingen ledige sockets tilgængelig.
+0x544,Tcl versjon:
+0x545,header versjon
+
+# IRC_
+0x600,Bannet
+0x601,Du er bannet
+0x602,Vil du banne meg selv--Sviker.
+0x603,dette var morro, la oss gjøre det igjen!
+0x604,Hei
+0x605,Ha det!
+0x606,Du er bannet.
+0x607,NOTICE %s :Ditt nick var for langt og derfor ble det avkortet til '%s'.\n
+0x608,Presantert til
+0x609,allminnelig side
+0x60a,NOTICE %s :Hei %s!  Jeg er %s, en Eggdrop bot.\n
+0x60b,NOTICE %s :Jeg gjenkjenner deg på hostmasken '%s' fra nå av.\n
+0x60c,Da du kommer fra et almindeligt/felles irc side, dette betyr at du bør
+0x60d,alltid bruke dette nicket når du snakker til meg.
+0x60e,DU ER NÅ EIER AV DENNE BOTEN
+0x60f,Bot installation fullført, første master er%s
+0x610,Velkommen til Eggdrop! =]
+0x611,Presantert til %s fra %s
+0x612,Du har satt passord.
+0x613,Du har ikke satt passord.
+0x615,Du har allerede satt passord.
+0x616,Venligst bruk minst 6 tegn.
+0x617,Passord sat til:
+0x618,Feil passord.
+0x619,Passord skiftet til:
+0x61a,Du er på en felles side; Du kan ikke IDENT.
+0x61b,NOTICE %s :Du er ikke %s, du er %s.\n
+0x61c,Adgang Forbudt.
+0x61d,Jeg gjenkjenner deg her.
+0x61e,Hostmask Lagt til
+0x620,For øyeblikket:
+0x621,Nå:
+0x622,For å fjerne den:
+0x624,Din info linje er låst
+0x625,Fjernet din info linje på
+0x626,Fjernet din info linje.
+0x627,Du har ingen info satt på
+0x628,Du har ingen info satt.
+0x629,Jeg overvåker ikke den kanalen.
+0x62a,Resetter kanal info.
+0x62b,Skifter server...
+0x62c,Kanalen er for øyeblikket skjult.
+0x62d,Nå på kanalen
+0x62e,Har aldri joinet en av mine kanaler.
+0x62f,Sist sett på
+0x630,Jeg kjenner deg ikke; Venligst presenter deg selv først.
+0x631,Ingen hjelp.
+0x632,Ingen hjelp tilgjengelig for det.
+# 0x633 - unused
+0x634,Er ikke på den kanalen akkurat nå.
+0x635,Skifter tilbake til nicket %s
+0x636,Serveren sier, at mitt nick er ugyldig.
+0x637,NICK OPPTATT: Prøver '%s'
+0x638,Kan ikke skifte til nick på %s.  Er mitt nick banned?
+0x639,Nick er blitt juped
+0x63a,Kanal %s er juped. :(
+0x63b,%s sier, at jeg ikke er registrert, prøver den neste.
+0x63c,Serveren sier, at vi ikke er registrert enda..
+0x63d,Flood fra @%s!  Skrur på ignore!
+0x63f,JOIN flood fra @%s!  Banner.
+0x640,Kanal flood fra %s -- kicker
+0x641,Prøver server...
+0x642,DNS lookup feilet (sjekk i conf filen din om du har satt riktig ip)
+0x643,Feil tilkobling til
+0x644,Server stoned; skifter...
+0x645,Frakoblet fra
+0x646,For server for øyeblikket.
+0x647,Mode kø er på
+0x648,Server kø er på
+0x649,Hjelpe kø er på
+0x64b,Ikke aktiv på kanalen
+0x64c,Behandler kanal
+0x64d,Kanal
+0x64e,Ønsker kanal
+0x64f,Kanal Topic
+0x650,avventende +o -- Jeg lagger
+0x651,avventende -o -- Jeg lagger
+0x652,avventende kick
+0x653,FALSK CHANOP GITT AV SERVER
+0x654,Slutt på kanal info.
+0x655,mass kick, go sit in a corner
+0x656,Fjernet ban
+0x657,Hmm, mode info fra en kanal jeg ikke er på
+0x658,...and thank you for playing.
+0x659,Skifter server (krever %d servere, har kun %d)
+0x65a,skifter server
+0x65b,Jeg er på for mange kanaler--kan ikke joine: %s
+0x65c,Kanalen er full--kan ikke joine: %s
+0x65d,Kanalen er invite only--kan ikke joine: %s
+0x65e,Banned fra kanalen--kan ikke joine: %s
+0x65f,Serveren sier jeg ikke er på kanalen: %s
+0x660,Feil key--Kan ikke joine: %s
+0x661,NOTICE %s :Alle kommandoer bruges via /MSG. For en komplet liste, /MSG %s help   Snakkes!\n
+0x662,NOTICE %s :Jeg gjennkjenner deg ikke fra den hosten.\n
+0x663,NOTICE %s :Enten bruker du en annens nick, ellers skal du skrive: /MSG %s IDENT (passord)\n
+0x664,NOTICE %s :Som en master bør du virkelig ha satt et passord med: /MSG %s pass <ditt-ønskede-passord>.\n
+0x665,NOTICE %s :Alle viktige kommandoer brukes fra DCC chat. Fra nå av, behøver du ikke lengre å starte boten med -m.  Kos deg !!!\n
+0x666,Dette er telnet tilkobling på %s, en eggdrop bot.\nMisbruk det ikke, og det vil være åpent for alle dine venner.\n
+0x667,nå må du velge et nick til boten,\nog et passord, så ingen andre kan gi seg ut for å være deg.\nVenligst husk begge deler!
+0x668,Fra nå av, behøver du ikke at starte boten med -m.\nKos deg !!
+0x669,Telnet forbindelse flood fra %s!  Skrur på ignore!
+0x66a,bannet: 
+0x66b,join flood
+0x66c,kick ikke mine venner
+0x66d,...og kom ikke tilbage.
+0x66e,Skifter tilbage til altnick %s
+0x66f,deop ikke mine venner
+0x670,Fjernet exempt/fritagelse
+0x671,Fjernet invite
+0x672,NICK flood fra @%s!  Banner.
+0x673,nick flood
+
+# EGG_
+0x700,Kommando linje argumenter:\n\
+  -h   hjelp\n\
+  -v   skriv version og avslutt\n\
+  -n   start ikke i bakrunnen\n\
+  -c   (med -n) vis kanal stats hvert 10. sekund\n\
+  -t   (med -n) bruk terminal til å simulere dcc-chat\n\
+  -m   brukerfil opprettelse\n\
+  valgfri config filnavn (standard 'eggdrop.conf')\n
+
+0x701,Jeg observerer, at %s allerede kjører fra dette Kartoteket.\n
+0x702,Hvis dette er feil, slett %s\n
+0x703,* Advarsel!  Kunne ikke skrive filen %s!\n
+
+# USER_
+0x800,  (er en global op)
+0x801,  (er en bot)
+0x802,  (er en master)
+
+# CHAN_
+0x900,Ingen sådan kanal definert
+0x902,* Mode skifte på %s for ikke-eksisterende %s!
+0x903,Masse deop på %s af %s
+0x904,Mass deop.  Go sit in a corner.
+0x907,Oops. Noen fikk meg til å joine %s... dropper...
+0x908,Mode skifte av falsk op på %s!  Godtar ikke...
+0x909,Misbruker ulovligt server ops
+0x90a,Mode skifte av ikke-chanop på %s!  Godtar ikke...
+0x90b,Misbruker desync
+0x90c,flood
+
+0xa00,Ingen ignoreringer
+0xa01,Ignorerer nå
+0xa02,Ignorerer ikke lengre
+
+0xb00,Den boten er her ikke.\n
+0xb01,Det er en bot. Du kan ikke sende notitser til en bot.\n
+0xb02,er borte
+0xb07,Du har en Notis 
+0xb08,Besked lagret
+0xb18,Boten skrur seg av
+0xb19,Ingen bruker funnet
+0xb1a,Ingen kanaler
+0xb1b,Party line medlemmer:
+0xb1c,Bots linket
+0xb1d,Andre mennesker på boten
+0xb1f,prøver å linke linke
+0xb20,Ikke online; notis lagret.
+0xb21,Notitsboksen er full, desverre.
+0xb22,er borte, notis lagret.
+0xb23,Notis sendt til
+0xb24,Avbrutt fra:
+0xb25,Mennesker på kanalen
+0xb26,Kan ikke linke der
+0xb27,Kan ikke avbryte link
+0xb28,Loop funnet
+0xb29,Falsk link notis fra
+0xb2b,Disconnected left
+0xb2c,Linket til
+0xb2d,Ugyldig link av leaf bot
+0xb2e,Du skal være en leaf bot!
+0xb2f,Avviser bot
+0xb30,Eldre bot funnet (ingen support)
+0xb31,Sporingsresultat
+0xb32,eksisterer ikke
+0xb33,Remote boots er ikke tilatt.
+0xb34,Kan ikke sparke bot eieren av.
+0xb35,FILOVERFØRSEL AVVIST
+0xb37,Brukere på tvers af botnettet
+0xb38,Partyline
+0xb39,Lokal kanal
+0xb3a,Bruker på kanalen
+0xb3b,Ingen boter linket.
+0xb3c,Ingen sporingsinfo på:
+0xb3d,Tre for komplekst!
+0xb3e,Avbryter linking til alle boter...
+0xb3f,Link forsøk avbrutt til
+0xb40,forsøker ikke lenger å linke: 
+0xb41,Avbryter link med
+0xb42,Avbrutt link fra:
+0xb43,Er ikke linket til den boten.
+0xb44,Smooshing bot tables and assocs...
+0xb45,er ikke en kjent bot.
+0xb46,Linke til meg selv?  Nå rører du fælt?!
+0xb47,Den boten er allerede linket.
+0xb48,Ugyldig telnet adresse:port lagret for
+0xb49,Linker til
+0xb4a,Kan ikke finne bruker til relay!
+0xb4b,Kunne ikke linke til
+0xb4c,Relay til mig selv? Nå rører du fælt ja?!
+0xb4d,Linker til
+0xb4e,(Skriv *BYE* på en linje for seg selv for å avbryte.)
+0xb4f,Avbryter relay forsøk til
+0xb50,Du er nå tilbake på
+0xb51,Relay avbrutt:
+0xb53,Mistet dcc forbindelse til
+0xb54,Dropper relay forsøk til
+0xb55,Succes!\n\nNÅ ER DU TILKOBLET RELAY BOT
+0xb56,(Du kan skrive *BYE* for å stenge tilkoblingen raskere.)
+0xb57,Relay link:
+0xb58,har forlatt partyline.
+0xb59,Stoppet relay link
+0xb5a,RELAY TILKOBLING STOPPET.\nDu er nå tilbake på
+0xb5b,rejoinet partyline.
+0xb5c,Lukker relay link til
+0xb5d,Avbryter forbindelsen til
+0xb5e,Relay brutt
+0xb5f,Ping timeout
+0xb60,ikke-leaf-lignende oppførsel
+0xb61,Mistet bot
+0xb62,Jeg er linket allerede til den boten.
+
+0xc00,Jeg akksepterer ikke DCC chat fra fremmede.
+0xc01,Avvist DCC chat (ingen adgang)
+0xc02,Ingen adgang
+0xc03,Du må ha satt passord for å gjøre dette.
+0xc04,Avviste DCC chat (ingen passord)
+0xc05,Avviste DCC chat (+x filområde finnes ikke)
+0xc07,For mange mennesker er i filområdet nå.
+0xc0c,Desverre, for mange DCC forbindelser
+0xc0d,For mange DCC forbindelser: %s %s (%s!%s)
+0xc19,Kunne ikke koble til
+0xc1a,DCC tilkobling feilet
+0xc1c,Skriv ditt passord.
+0xc1d,%s er fjernet for flooding.\n
+0xc1e,-=- poof -=-\n
+0xc1f,Du er blitt sparket fra %s av %s%s%s\n
+0xc20,%s sparket %s av partyline%s%s
+0xc21,Avvist DCC chat (ugyldig port)
+0xc22,DCC ugyldig port
+
+0xd00,Floating in limbo (ingen IRC interaction)
+
+# BOTNET
+0xe00,Falsk beskjed avvist
+0xe01,Linket til
+0xe02,Feil bot--ønsker %s, har %s
+0xe03,har forlatt
+0xe04,har joinet 
+0xe05,er nå borte
+0xe06,er ikke lengre borte
+0xe07,Nick Skifte:
+
+# dcc.c Messages
+0xe08,Avvist tilkobling fra %s
+0xe09,Linket til %s.
+0xe0a,Feilet link til %s.
+0xe0b,Feil passord ved tilkobling til %s.
+0xe0c,Passord påkrevd for tilkobling til %s.
+0xe0d,FEIL ved linkning %s: %s
+0xe0e,Mistet Bot: %s
+0xe0f,Timeout: bot link til %s ved %s:%d
+0xe10,Logget inn: %s (%s/%d)
+0xe11,Ugyldig Passord: [%s]%s/%d
+0xe12,Negative on that, Houston.\n
+0xe13,*** %s har joinet partyline.\n
+0xe14,Mistet dcc tilkobling til %s (%s/%d)
+0xe15,Passord timeout ved dcc chat: [%s]%s
+0xe16,DCC tilkobling lukket (%s!%s)
+0xe17,Feil TELNET inngående (%s)
+0xe18,Avvist %s/%d (ugyldig kilde port)
+# 0xe19 - unused
+0xe1a,Avvist %s (ugyldig hostname)
+0xe1b,Telnet tilkobling: %s/%d
+0xe1c,Ident feilet for %s: %s
+0xe1d,(!) Listening port %d plutselig stille.
+0xe1e,Avvist %s (ugyldig nick)
+0xe1f,Avvist %s (ikke-bot)
+0xe20,Avvist %s (ikke-bruker)
+0xe21,Avvist %s (ugyldig handle: %s)
+0xe22,Avvist telnet forbindelse fra %s (duplikat)
+0xe23,Avvist [%s]%s (ingen passord)
+0xe24,Mistet telnet tilkobling til %s/%d
+0xe25,Ident timeout ved telnet: %s
+0xe26,Bot installasjon fullført, Første master er %s
+0xe27,Ny bruker via telnet: [%s]%s/%d
+0xe28,Mistet ny telnet bruker (%s/%d)
+0xe29,Mistet ny telnet bruker %s (%s/%d)
+0xe2a,Timeout ved ny telnet bruker: %s/%d
+0xe2b,Timeout ved ny telnet bruker [%s]%s/%d
+0xe2c,Tcl feil [%s]: %s
+0xe2d,*** ATTENTION: DØD SOCKET (%d) OF TYPE %s UNTRAPPED
+0xe2e,Mistet forbindelsen under identing [%s/%d]
+0xe2f,Timeout/EOF ident tilkobling
+0xe30,Mistet ident wait telnet socket!!
+0xe31,Avvist telnet: %s, Ingen Adgang
+0xe32,Avvist telnet tilkobling fra %s (forsøk på å bruke mitt botnetnick)
+0xe33,Mistet telnet tilkobling fra %s mens det ble sjekket for duplikater

@@ -1,0 +1,47 @@
+# notes.romanian.lang
+#   language messages for the notes module
+#
+# $Id: notes.romanian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+
+0xc000,  Nota mutata catre: %.70s\n
+0xc001,Trecem %d nota%e de la %s catre %s.
+0xc002,Nota expirata %d
+0xc003,Nu este online; mutata catre %s.\n
+0xc004,Notele nu sunt acceptate de catre bot.
+0xc005,Sorry, acest user are prea multe note deja.
+0xc006,Nu pot cred lista de note.  Sorry.
+0xc007,Fisierul de note nu poate fi accesat!
+0xc008,Mesaj salvat
+0xc009,Nu ai nici un mesaj
+0xc00a, -- EXPIRA AZI
+0xc00b, -- EXPIRA IN %d ZI%s
+0xc00c,Ai urmatoarele note in asteptare
+0xc00d,Nu ai atat de multe mesaje
+0xc00e,Foloseste '.notes read' pentru a le citi.
+0xc00f,Nu pot modifica fisierul de note
+0xc010,Notele au fost sterse
+0xc011,Stersa
+0xc012,ramasa
+0xc013,# pot fi numere si/sau intervale separate prin ;
+0xc014,Ala e bot.  Nu potzi lasa note la un bot.
+0xc015,Nota in exterior
+0xc016,Nota trimisa.
+0xc017,Pentru a lista:
+0xc018,NOTICE %s :Ai %d nota%e asteptand in %s.\n
+0xc019,### Ai %d nota%e asteptand.\n
+0xc01a,### Foloseste '.notes read' pentru a le citi.\n
+0xc01b,Notele vor fi stocate.
+0xc01c,Nu itzi este permis sa schimbi ignorurile notelor pentru %s\n
+0xc01d,Userul %s nu exista.\n
+0xc01e,Ignoram notele de la %s\n
+0xc01f,Deja sunt ignorate %s\n
+0xc020,Numai ignoram notele de la %s\n
+0xc021,Nota ignorata %s nu a fost gasita in lista.\n
+0xc022,Nici o nota ignorata prezenta.\n
+0xc023,Nota ignorata pentru %s:\n
+0xc024,Userul nu exista.
+0xc025,Nu potzi schimba mutarea notelor pentru ownerul botului .\n
+0xc026,Nota Wiped mutata pentru %s\n
+0xc027,Trebuie sa dai un botname pentru a muta catre.
+0xc028,Modificarea mutari notelor pentru %s catre: %s\n
+0xc029,Functiile trebuie sa fie una din INDEX, READ, sau ERASE.

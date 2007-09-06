@@ -1,0 +1,469 @@
+%{help=fixcodes}%{-}
+###  %bfixcodes%b
+   This is for use in situations where the bot gets mixed up about the type
+   of connection you have with it. For example, you /CTCP CHAT the bot and
+   it thinks you are connecting via telnet, and you see text displayed as
+   "Local time is now [1m17:17[0m" for example instead of "Local time is
+   now 17:17". Use this to turn telnet codes on or off/change the display
+   mode.
+%{help=ignores}%{+m}
+###  %bignores%b [wildcard]
+   Shows a list of hostmasks from which the bot is currently ignoring msgs,
+   notices, etc. There are two types of ignores: permanent and temporary.
+   Permanent ignores never automatically expire. You must use %b'.-ignore'%b
+   to remove them.
+
+   Here is a sample permanent ignore:
+      [  1] *!*@217.156.44.184 (perm)
+            Wcc: go away
+            Started 523 days ago
+
+   The number (1) can be used to reference the ignore if you wish to remove it
+   (see %b'.help -ignore'%b). Next is the actual hostmask being ignored. The
+   "(perm)" means that the ignore is "permanent": that is, it doesn't
+   automatically expire. The second line of the ignore entry is the comment
+   ("go away"), and who set the ban (Wcc). The last line shows when the ignore
+   was added.
+
+   Here is a sample temporary ignore:
+      [ 10] blah!blah@blah.cc (expires in 1 day)
+            Wcc: requested
+            Started 18:02
+
+   Here, you see the "perm" in the parentheses next to the hostmask is instead
+   an expire time. This means that the ignore will expire automatically in one
+   day.
+
+   If you use %b'.ignores <wildcard>'%b, it will list all the ignores
+   that match against your wildcard.
+
+See also: +ignore, -ignore
+%{help=link}%{+t}
+###  %blink%b [via-bot] <bot-to-link>
+   Attempts to link a bot to the botnet. The local bot must have a bot record
+   for the remote bot in order for it to be linked (see %b'.help +bot'%b). If
+   you do not set a password on both bots, one will be automatically negotiated
+   the first time they link. If you specify a "via-bot", a request will be sent
+   to that bot to link to "bot-to-link".
+
+See also: unlink, +bot, -bot
+%{help=loadmod}%{+n}
+###  %bloadmod%b <module>
+   Loads the specified module.
+
+See also: modules, module, unloadmod
+%{help=match}%{+o|o}
+###  %bmatch%b <attr> [channel] [[start] limit]
+   This displays all user records with the attributes requested.
+
+   "attr" is of the form:  <+/-><global>[&/|<channel>[&/|<bot>]]
+
+   Specifying "&" as the separator will cause AND style matching.
+
+   For example:
+      .match p&o
+
+   This will match all users with both the "p" global flag and the "o" channel
+   flag on your current console channel.
+
+   Specifying "|" as the separator will cause OR style matching.
+
+   For example:
+     .match p|o
+
+   This will match all users with either the "p" global flag or the "o" channel
+   flag on your current console channel. If you specify a channel, it will be
+   used instead of the current console channel.
+
+   For example:
+     .match p|o #eggdrop
+
+   This will match all users with either the "p" global flag or the "o" channel
+   flag on the channel #eggdrop. You can also match bot flags.
+
+   For example:
+     .match o|o|h
+
+   This will match all bots with either the "o" global flag, the "o" channel
+   flag on the current console channel, or the "h" botflag. You can also limit
+   the number of total results returned by specifying a limit at the end of the
+   command. A starting point can also be specified.
+
+   For example:
+     .match p&o #eggdrop 16 25
+
+   This would show results 16 through 25 matching any users with the "p" global
+   flag or the "o" channel flag on #eggdrop.
+
+###  %bmatch%b <wildcard-string> [[start] limit]
+   This displays all user records where the user's handle or any of the user's
+   hostmasks match the specified wildcard string. You can also limit the number
+   of total results returned by specifying a limit at the end of the command. A
+   starting point can also be specified.
+
+   For example:
+     .match *.edu 16 25
+
+   This would show results 16 through 25 matching any users with a hostmask
+   that ends with ".edu".
+%{help=me}%{-}
+###  %bme%b <text>
+   Performs an action on the party line. This appears as "* Wcc is leaving",
+   etc.
+%{help=module}%{+n}
+###  %bmodule%b [modulename]
+   Reports the names of currently loaded modules, including dependencies and a
+   status report. If you specify a module name, only information on that module
+   will be displayed.
+
+See also: modules, loadmod, unloadmod
+%{help=modules}%{+n}
+###  %bmodules%b [botname]
+   Displays a list of currently loaded modules. If a botname is specified, the
+   modules currently loaded on that bot will be displayed instead.
+
+See also: module, loadmod, unloadmod
+%{help=motd}%{-}
+###  %bmotd%b [botname]
+   This redisplays the partyline Message Of The Day, which was shown when you
+   first joined the partyline. If the name of a remote bot is specified, that
+   bot's motd will be displayed instead.
+%{help=newpass}%{-}
+###  %bnewpass%b <password>
+   Changes your password on the bot. This is similar to the '/msg <bot> pass'
+   command, except you don't need to specify your old password.
+%{+t}
+
+See also: chpass
+%{help=handle}%{-}
+###  %bhandle%b <new-handle>
+   Changes your handle on the bot. This is the handle (nickname) that the
+   bot will know you as from this point forward. It is used to log into the
+   bot, and for the /msg IDENT command, etc.
+
+See also: newpass%{+t}, chhand, chpass
+%{help=note}%{-}
+###  %bnote%b <nickname[@bot]> <message>
+   Sends a private note to a user on the partyline. If that user is currently
+   logged in and not marked as away, the message will be received immediately.
+   Otherwise, it will be stored and displayed the next time that user joins the
+   partyline. To send a note to someone on a different bot, add "nick@bot" to
+   the nickname.
+
+See also: whom, notes
+%{help=page}%{-}
+###  %bpage%b <number/off>
+   This allows you to slow down the number of lines the bot sends you at once
+   via the partyline. When enabled, any commands that send greater than the
+   specified number of lines will stop when that number is reached and wait for
+   you to type another command (or press enter) to continue. If you have too
+   many pending lines, you may be booted off the bot.
+%{help=quit}%{-}
+###  %bquit%b [comment]
+   This disconnects you from the partyline. If you specify a comment, it will
+   be displayed to other partyline users as you leave.
+%{help=rehash}%{+m}
+###  %brehash%b
+   Reloads the bot's config file, which resets all changes made via the
+   %b'.set'%b command and reloads any Tcl scripts your config loads. It also
+   saves and reloads the user file from disk, just to give it some exercise.
+
+See also: save, reload, restart%{+n}, rehelp, relang
+%{help=rehelp}%{+n}
+###  %brehelp%b
+   This command forces the bot to recheck all of its help files for changes.
+
+See also: save, reload, restart, relang
+%{help=relay}%{+o}
+###  %brelay%b <botname>
+   Relays you via telnet to another bot, whether or not it is currently linked.
+   The local bot must, however, have a bot record for the bot you wish to
+   relay to. Typing .quit or "*bye*" on a line by itself will end the relay.
+
+See also: bots%{+t}, +bot, -bot
+%{help=reload}%{+m|m}
+###  %breload%b
+   Reloads the bot's user file, discarding any changes made since the last
+   %b'.save'%b command or hourly user file save. Sharebots should probably
+   never do this.
+
+See also: save%{+m}, rehash
+%{help=traffic}%{+m|m}
+###  %btraffic%b
+   Shows total and daily net traffic stats since the last %b'.restart'%b.
+   Stats groups are IRC, Botnet, Partyline, Transfer.mod and Misc.
+%{+m}
+
+See also: restart
+%{help=whoami}%{-}
+###  %bwhoami%b
+   Shows your current handle and to what bot you are connected.
+
+See also: whom
+%{help=restart}%{+m}
+###  %brestart%b
+   Restarts the Tcl interpreter, wipes all timers, reloads all modules, and
+   reloads the config file for the bot (which resets any changes made via the
+   %b'.set'%b command and reloads any Tcl scripts your config loads). As with
+   the %b'.rehash'%b command, it also saves and reloads the user file from disk.
+
+See also: rehash, reload, save
+%{help=save}%{+m|m}
+###  %bsave%b
+   This makes the bot write its entire userfile to disk. This is useful if you
+   think the bot is about to crash or something, since the user file is only
+   written to disk about once an hour.
+
+See also: reload, rehash, backup
+%{help=simul}%{+n}
+###  %bsimul%b <handle> <text>
+   This allows you to simulate the specified handle typing the given text.
+
+   For example:
+      .simul dweeb .quit
+
+   This would appear just as if "dweeb" typed ".quit". This command will not
+   work unless eggdrop has simul enabled in the config file. Please use this
+   command ethically.
+%{help=strip}%{-}
+###  %bstrip%b [modes]
+   Allows you to remove embedded 'attribute' codes your partyline output. Valid
+   options are:
+      %bb%b - remove all boldface codes
+      %bc%b - remove all color codes
+      %br%b - remove all reverse video codes
+      %bu%b - remove all underline codes
+      %ba%b - remove all ANSI codes
+      %bg%b - remove all ctrl-g (bell) codes
+
+   The mode can also be a modifier like '+c' or '-bu' or '+ru-c'. If
+   you omit modes, it will show your current setting.
+
+See also: fixcodes
+%{+m}
+
+###  %bstrip%b <user> [modes]
+   Set the strip level of another user. A master can't set their own strip
+   flags without prefixing the modes with a '+' or '-'.
+
+
+%{help=su}%{-}
+###  %bsu%b <user>
+   Lets you assume the identity of another user. If you are a global owner,
+   this does not require a password. Otherwise, you will be asked for the
+   user's password. %b.quit%b returns you to your original handle.
+%{help=trace}%{+t}
+###  %btrace%b <bot>
+   Sends out a trace signal to another bot. If/when the trace signal returns,
+   (and it should!) you will get an output that looks something like this:
+      Trace result -> Valis:Stonewall:NoBoty:SomeBoty
+
+   This is a list of the bots connected between you and the destination bot.
+   It should also return the time in seconds taken for the trace to occur.
+
+See also: bots, bottree, vbottree
+%{help=unlink}%{+t}
+###  %bunlink%b <bot/*>
+   This disconnects the specified bot from the botnet (assuming it was linked
+   in the first place). Some bots (sharebots in particular) might not allow you
+   to unlink them. If "*" is specified as the parameter, all bots will be
+   unlinked.
+
+See also: link, +bot, -bot, bots, bottree
+%{help=unloadmod}%{+n}
+###  %bunloadmod%b <module>
+   Unloads the specified module.
+
+See also: modules, module, loadmod
+%{help=whom}%{-}
+###  %bwhom%b [channel/*]
+   Displays a list of users on the current partyline channel.
+
+   For example:
+      [23:12] #Wcc# whom
+       Nick        Bot        Host
+      ----------   ---------  --------------------
+      *Wcc         Anakha     telnet@xxx.atlaga.adelphia.net [idle 8m]
+      *Blah        Anakha     telnet@xxx.atlaga.adelphia.net
+      Total users: 2
+
+   Each user's nickname will be listed in the first column, preceded by a "*"
+   if they are a bot owner, "+" if they are a master, "%%" if they are a botnet
+   master, or "@" if they are an op. In the next column, the bot the user is
+   connected to will be displayed. In the third column, the host is shown. If
+   the user is away, the away message will be shown. Likewise, if they are
+   idle, their idle time will be displayed.
+
+   To see what users are on a different channel, you may specify a channel
+   number/name. If you specify "*" as the channel, all users on all botnet
+   channels will be shown.
+
+See also: who, bots, chat
+%{help=who}%{-}
+###  %bwho%b [bot]
+   Displays a list of users on the local bot.
+
+   For example:
+      [23:21] #Wcc# who
+      Party line members:  (* = owner, + = master, @ = op)
+      *Wcc       telnet@xxx.atlaga.adelphia.net (idle 17m)
+      *Wcc       telnet@xxx.atlaga.adelphia.net
+      Bots connected:
+      -> wortel (05 Dec 16:32) eggdrop v1.6.15 <efnet>
+
+   The first section is people on your current channel (the party line, if you
+   haven't changed channels) who are on the bot. A '*' will precede the handle
+   if they are a bot owner, "+" if they are a master, "%%" if they are a botnet
+   master, or "@" if they are an op. The user's nickname, hostname, and
+   possibly an idle time and/or away message will be displayed.%{+n} Owners
+   will also see the user's dcc idx.%{-}
+
+   The next section is bots directly linked to the current bot. The arrow
+   indicates which bot initiated the connection. The right arrow means this bot
+   connected to wortel. A left arrow means the remote bot linked to this bot. A
+   '+' next to the arrow indicates that the bot is sharing userfiles with us.
+   The connection time (05 Dec 16:32) and bot version are also shown, as well
+   as what is specified under "network" in the config file.%{+n} Owners will
+   also see the bot's dcc idx.%{-}
+
+   The final section (not shown in example above) is a list of users on the
+   local bot who are not on your channel. This will be omitted if there are no
+   users on other channels. If you specify the name of a remote bot, for
+   example %b'.who valis'%b, the who request will be sent to that bot instead.
+   The remote bot must be linked to the botnet.
+%{+m}
+
+   Masters may also see "(con <flags>)" after a user's entry, which shows the
+   user's console flags/modes (see %b'.help console'%b).
+
+   In the final section (users that aren't on the current channel), masters
+   will see the actual channels other users are on. Also, people in the
+   filesystem will be listed (as being in channel "files") if the filesys
+   module is loaded. A '+' next to the nickname here means the user has
+   access to return to the party line.
+%{-}
+
+See also: whom
+%{help=whois}%{+o|o}
+###  whois <nickname>
+   Shows you stored information about a user record. Five headings are
+   displayed:
+      %bHANDLE%b - the handle (nickname) of the user
+      %bPASS%b   - "yes" if she has a password set; "no" otherwise
+      %bNOTES%b  - number of stored notes waiting for the user
+      %bFLAGS%b  - the list of flags for this user (see below)
+      %bLAST%b   - the time or date that the user was last on the channel
+
+   Valid global flags:
+      %ba%b - autoop (user is opped automatically upon joining any channel)
+      %bb%b - bot (user is a bot)
+      %bc%b - common (see %b'.help common'%b)
+      %bd%b - deop (user cannot gain ops in any channel)
+      %be%b - nethack-exempt (user is exempted from stopnethack protection)
+      %bf%b - friend (user is not punished for flooding, etc on any channel)
+      %bg%b - autovoice (user is voiced automatically upon joining any channel)
+      %bh%b - highlight (use bold text in help/text files)
+      %bj%b - janitor (user is a file-area master)
+      %bk%b - autokick (user is kicked and banned automatically)
+      %bl%b - halfop (user has halfop access to all of the bot's channels)
+      %bm%b - master (user has access to almost every feature of the bot)
+      %bn%b - owner (user has absolute control over the bot)
+      %bo%b - op (user has op access to all of the bot's channels)
+      %bp%b - party-line (user has access to the partyline)
+      %bq%b - quiet (user cannot gain voice on any channel)
+      %br%b - dehalfop (user cannot gain halfops on any channel)
+      %bt%b - botnet master (user has access to features related to the botnet)
+      %bu%b - unshared (user's user record is not sent to other bots)
+      %bv%b - voice (user gets +v automatically on +autovoice channels)
+      %bw%b - wasop-test (needs wasop test for +stopnethack procedure)
+      %bx%b - xfer (user has filesystem access)
+      %by%b - autohalfop (user is auto-halfopped upon joining any channel)
+      %bz%b - washalfop-test (needs washalfop test for +stopnethack procedure)
+
+      There are also 26 user-defined global flags (A-Z).
+
+   Users can also have flags specific to a channel:
+
+      %ba%b - autoop (user is opped automatically upon joining the channel)
+      %bd%b - deop (user cannot gain ops on the channel)
+      %be%b - nethack-exempt (user is exempted from stopnethack protection)
+      %bf%b - friend (user is not punished for flooding, etc)
+      %bg%b - autovoice (user is voiced automatically upon joining the channel)
+      %bk%b - autokick (user is kicked and banned automatically)
+      %bl%b - halfop (user has halfop access to the channel)
+      %bm%b - master (user is a channel master)
+      %bn%b - owner (user is a channel owner)
+      %bo%b - op (user has op access to the channel)
+      %bq%b - quiet (user cannot gain voice on the channel)
+      %br%b - dehalfop (user cannot gain halfops on the channel)
+      %bv%b - voice (user gets +v automatically if the channel is +autovoice)
+      %bw%b - wasop-test (needs wasop test for +stopnethack procedure)
+      %by%b - autohalfop (user is auto-halfopped upon joining the channel)
+      %bz%b - washalfop-test (needs washalfop test for +stopnethack procedure)
+
+      There are also 26 user-defined channel flags (A-Z).
+
+   Hostmasks for the user are displayed on the following lines. If the user is
+   a bot, there will be a line below which says "ADDRESS:" and gives the bot's
+   telnet address. Some user entries may have "EMAIL:" and "INFO:" entries too.
+   There may be additional information displayed depending on the modules
+   loaded, such as filesys and console.
+
+   For bots, there are additional flags seen under the "BOTATTR:" section.
+   Valid botflags include:
+      %bs%b - share aggressively (SEND userfile to a passive bot)
+      %bp%b - share passively (ACCEPT userfile from an aggressive bot)
+      %bg%b - global share (bot is sharing all channels)
+      %bh%b - hub (bot is autolinked at highest priority)
+      %ba%b - alternate (bot is autolinked if no hub bots can be linked)
+      %bl%b - leaf (bot is not allowed to link other bots onto the botnet)
+      %br%b - reject (bot will not be allowed to link to the botnet)
+      %bi%b - isolate (isolate the party line across a botlink)
+
+      There are also 10 user-defined bot flags (0-9). Bots may also have +s
+      (share) settings for individual channels.
+%{+m}
+
+   Masters: if the user has a comment, you will see it under "COMMENT:".%{-}
+
+See also: match, who, whom%{+m|m}, chattr%{+t}, botattr
+%{help=status}%{+m|m}
+###  %bstatus%b
+###  %bstatus all%b
+   Displays a condensed block of status information about the bot.
+   is running. For example:
+      [01:15] #Wcc# status
+      I am Anakha, running eggdrop v1.6.16+stripping:  171 users (mem: 315k)
+      Online for 14 days, 02:50  (background)  CPU 71:29  cache hit 40.3%
+      Admin: Wcc
+      Config file: eggdrop.conf
+      OS: FreeBSD 4.8-RELEASE-p1
+      Tcl library: /usr/local/lib/tcl8.4
+      Tcl version: 8.4.2 (header version 8.4.2)
+      Loaded module information:
+          Channels: #|DAWG|Net, #|DAWG|Tcl
+          Online as: D|Anakha!wcc@cia.nu (|DAWG|Anakha - |DAWG|Net)
+          Server irc.inet.tele.dk:6667 (connected for 11 days)
+          #|DAWG|Net:  6 members, enforcing "+istn" (lurking)
+          #|DAWG|Tcl: 42 members, enforcing "+tn" (lurking)
+
+
+   The first line tells you the bot's name, what version of Eggdrop it's
+   running, the number of users the bot has records of, and the amount of
+   memory being used by the userfile. The second line tells you the uptime of
+   the bot, CPU time, and cache hit. The third shows the bot's admin, and the
+   forth shows its current config file. The fifth line shows what operating
+   system the bot is running on. The next two lines show Tcl information. If
+   debug mode is enabled, additional info may be shown. Sharing information
+   will also be shown if it's being used.
+
+   Select information from modules will be displayed after the core
+   information. If you use %b'.status all'%b instead, you will see all status
+   information available from loaded modules.
+
+See also: channel%{+n}, set%{+m}, debug
+%{help=uptime}%{+m|m}
+###  %buptime%b
+   Displays the bot's current uptime.
+
+See also: status

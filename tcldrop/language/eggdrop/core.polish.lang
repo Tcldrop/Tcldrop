@@ -1,0 +1,442 @@
+#   core language messages for eggdrop
+# Polish version by Czysty <gcz1@wp.pl> 2005/01/07 15:50:24
+# This is the first version, so if are any bugs let me know :-)
+
+
+# General stuff
+0x001,Uøycie
+0x002,Blπd.\n
+
+# MODES_
+0x130,Utworzony
+0x131,ostanio uøyty
+0x132,nieaktywny
+0x133,za≥oøony przez
+0x135,nieaktywny na
+0x137,nieaktywny
+0x138,nie za≥oøony na bocie
+
+# BANS_
+0x104,Bany Globalne
+0x106,Bany dla kana≥u
+0x109,Uøyj '.bans all' aby zobaczyÊ wszystkie bany
+0x10a,Koniec bana
+
+# EXEMPTS_
+0x114,Wyjπtki Globalne
+0x116,Wyjπtki dla kana≥u
+0x119,Uøyj '.exempts all' aby zobaczyÊ wszystkie wyjπtki
+0x11a,Koniec wyjπtku na ban
+
+# INVITES_
+0x124,Zaproszenia Globalne
+0x126,Zaproszenia dla kana≥u
+0x129,Uøyj '.invites all' aby zobaczyÊ wszystkie zaproszenia
+0x12a,Koniec zaproszenia
+
+# MOD_
+0x200,Juø za≥adowane.
+0x201,Nie moøna ustaliÊ obecnego katalogu.
+0x202,Nie zdefiniowano funkcji startowej.
+0x204,Wymagany przez inny modu≥
+0x205,Funkcja niezamkniÍta
+0x206,Modu≥ wy≥aczony:
+0x207,Nie ma takiego modu≥u
+0x209,B≥πd podczas ≥adowania modu≥u:
+0x20a,B≥πd wy≥πczania modu≥u:
+0x20b,Nie moøna za≥adowac modu≥Ûw
+0x20c,Modu≥ w zastoju; bÍdzie marnowa≥ pamiÍÊ!
+0x20d,Za≥adowa≥eú modu≥y, ale nie masz wybranego zakodowania\n\
+modu≥u, przeanalizuj konfig bota.\n
+0x20e,Pliki systemowe modu≥u nieza≥adowane.
+0x20f,Modu≥ za≥adowany: %-16s (z obs≥ugπ jÍzyka)
+0x210,Modu≥ za≥adowany: %-16s
+
+# USERF_
+0x400,Transfer listy uøytkownikÛw zakoÒczony; prze≥πczony
+0x402,Nie moøna odczytaø nowej listy uøytkownikÛw!!!
+0x403,Nie moøna przes≥aÊ ci listy uøytkownikÛw (b≥ad wewnÍtrzny)
+0x404,Nie znaleziono nikogo takiego!
+0x405,Stary plik listy uøytkownikÛw, uøyj 'tclsh scripts/weed <plik-listy-uøytkownikÛw> c' øeby przemieniÊ
+0x406,Z≥y format pliku uøytkownikÛw.
+0x407,Zepsute dane uzytkownika
+0x408,Zduplikowany rekord uøytkownika
+0x409,Zepsute has≥o przestawienie dla
+0x40a,Ignoracja banÛw na kanale(ach):
+0x40b,Zapisywanie listy uøytkownikÛw...
+0x40c,B≥ad przy zapisie listy uøytkownikÛw.
+0x40d,B≥πd przy zapisywaniu pliku listy uøytkownikÛw do transferu.
+0x40e,Tworzenie listy uøytkownikÛw zbÍdne--pomijam
+0x40f,Odúwieøanie...
+0x410,Nie znam nikogo z tπ nazwπ.\n
+0x411,Nie ma zapisu uøytkownika.
+0x412,Zachowywanie listy uøytkownikÛw.
+0x413,Wadliwe po≥πczenie; przerwano transport pliku listy uøtykownikÛw.
+0x414,Stary typ udzia≥u øyczenie 
+0x415,Antiquated sharing request
+0x416,Lista uøytkownikÛw prze≥adowana przez
+
+# MISC_
+0x500,wygas≥
+0x501,pe≥na
+0x502,UsuniÍty
+0x504,on
+0x505,Kojarzenie
+0x506,na poczπtku przekakujÍ
+0x507,(wiÍcej niø %d skojarzeÒ; lista obciÍta)\n
+0x508,--- Znaleziono %d skojarzenie%s.\n
+0x509,Niejasna komenda.\n
+0x50a,Co? Potrzebujesz pomocy '.help'\n
+0x50b,Komenda bindowania:\n
+0x50c,Restartowanie...
+0x50d,PrÛbowano za≥adowaÊ modu≥ na nie modu≥owym eggdrop'ie.
+0x50e,Prze≥aczanie plikow z logami...
+0x512,bezczynnoúÊ
+0x513,nie ma w pobliøu
+0x516,niepo≥πczone
+0x517,niezdolny bot
+0x518,Wykryta pÍtla : roz≥πczanie
+0x51a,od
+0x51b,przestarza≥y
+0x51c,prze≥adowany
+0x51d,imposter (ciÍøarny)
+0x51e,probuje
+0x51f,plik MOTD:
+0x520,Nie ma pliku MOTD.
+0x521,Uzyj:
+0x522,<adres>:<port#>[/<port-przekaünikowy#>]
+0x526,podczas
+0x527,chcÍ opa!
+0x528,przyzwyczajanie
+0x529,t≥o
+0x52a,tryb termina≥u
+0x52b,tryb statusu
+0x52c,tryb wyrzucania logÛw
+0x52d,Polπczony przez
+0x52e,cache hit
+0x52f,Uøywa biblioteki TCL:
+0x530,Nowi uøytkownicy dostajπ flagi
+0x531,zawiadomienie 
+0x532,Sta≥y wlaúciciel(e)
+0x534,PLIK KONFIGURACYJNY NIE ZA£ADOWANY (NIE ZNALEZIONY, LUB B£•D)
+0x535,PLIK LISTY UØYTKOWNIK”W NIE ZNALEZIONY!  (sprÛbuj './eggdrop -m' to aby utwoøyc)
+0x536,URUCHAMIANIE BOTA Z W TRYBIE TWORZENIA LISTY.\n\
+Telnetuj siÍ do bota i wpisz 'NEW' jako nickname.
+0x537,Albo idü na IRC i:  /msg %s hello\n
+0x538,To sprawi, øe bot rozpozna CiÍ jako master'a.
+0x539,Pliki listy uzytkownikÛw juø ISNIEJE (uruchom bez parametru '-m')
+0x53a,NIE MOØNA ZAPISA∆ DO TYMCZASOWEGO KATALOGU
+0x53b,Nie moøna prze≥adowaÊ pliku
+0x53c,Brak pliku listy uøytkowniÛw!
+0x53e,%B  (%E)\n\nProszÍ padaj swÛj nickname.\n
+0x53f,Prze≥adowanie pliku z logami %s, osiπgnπ≥ on maksymalny rozmiar (%d)
+0x540,\nNickname.\n
+0x541,Ostatnia wiadomoúÊ powtÛrzona %d raz(y).\n
+0x542,przeskoczy≥
+0x543,nie ma wolnych gniazd.
+0x544,wersja Tcl:
+0x545,g≥Ûwna wersja
+
+# IRC_
+0x600,Zbanowany
+0x601,Jesteú zbanowany
+0x602,Chciano mnie zbanowaÊ !--odwracanie.
+0x603,To by≥o smieszne, zrÛbmy to jeszcze raz!
+0x604,CzeúÊ
+0x605,Do widzenia
+0x606,Jesteú zbanowany, leszczu.
+0x607,Twoj nick jest za d≥ugi aby go teraz dodaÊ.
+0x608,Przedstawiony jako
+0x609,powszechna strona
+0x60a,NOTICE %s :CzeúÊ %s!  Jestem %s, botem, eggdropem.\n
+0x60b,NOTICE %s :BÍdÍ ciÍ od teraz rozpoznawa≥ po twojej masce '%s' .\n
+0x60c,Kiedy jesteú od strony IRC,to
+0x60d,zawsze, gdy ze mnπ rozmawiasz powninienneú uøywaÊ tego nicka.
+0x60e,Teraz JESTEå W£AåCICIELEM TEGO BOTA!!!
+0x60f,Instalacja bota zakoÒczona pierwszym master'em jest %s
+0x610,Witaj w eggdropie! =]
+0x611,wprowadzony to %s from %s
+0x612,Ustawi≥eú has≥o.
+0x613,Jeszcze nie ustawi≥eú has≥a.
+0x615,Juø ustawi≥eú has≥o.
+0x616,ProszÍ uøyj minimum 6 znakÛw.
+0x617,Has≥o ustawione na:
+0x618,B≥Ídne has≥o.
+0x619,Has≥o zmienione na:
+0x61a,Jesteú z powszechnej storony; nie moøesz IDENT.
+0x61b,NOTICE %s :Nie jesteú %s, jesteú %s.\n
+0x61c,Brak dostÍpu do bota.
+0x61d,Rozpozna≥em CiÍ.
+0x61e,Dodana maska
+0x620,Obecnie:
+0x621,Juø:
+0x622,Aby przenieúÊ:
+0x624,Twoje info jest zamkniÍte
+0x625,UsuniÍto twoje info z
+0x626,UsuniÍto twoje info.
+0x627,Nie masz infa na 
+0x628,Nie masz infa.
+0x629,Nie ma mnie na tym kanale.
+0x62a,Kasujowanie infa kana≥u.
+0x62b,PrzeskakujÍ servery...
+0x62c,Kana≥ jest obecnie ukryty.
+0x62d,Teraz na kanale
+0x62e,Nigdy nie by≥ na moich kana≥ach.
+0x62f,Ostatni widziany na
+0x630,Nie znam CiÍ; proszÍ przedstaw siÍ.
+0x631,Brak pomocy.
+0x632,Brak pomocy na ten temat.
+0x633,nie jest normalnym plikiem!
+0x634,Obecnie nie jestem na tym kanale.
+0x635,Prze≥aczam na nicka %s
+0x636,Server twierdzi,øe mÛj nick jest z≥y.
+0x637,Nick W UØYCIU: PrÛbujÍ '%s'
+0x638,Nie moøna zmieniÊ nick %s.  Czy nick jest zbanowany?
+0x639,Nickname has been juped
+0x63a,Channel %s is juped. :(
+0x63b,%s mÛwi Jestem nie zarejestrowany, prÛbujÍ nastÍpnego.
+0x63c,Masz rozpieprzony server.
+0x63d,Flood from @%s!  ignorujÍ!
+0x63f,JOIN flood od @%s!  BannujÍ.
+0x640,Kana≥ flood od %s -- kopiÍ
+0x641,prÛbuje server'a
+0x642,DNS lookup failed
+0x643,Nie powiod≥o siÍ po≥πczenie z 
+0x644,Server jest zalagowany; przeskakuje...
+0x645,Roz≥aczenie z
+0x646,Obecnie brak servera.
+0x647,Mode queue is at
+0x648,Server queue is at
+0x649,Help queue is at
+0x64a,Ten bota dzia≥a ale nie jest na Irc'u.
+0x64b,Nie aktywny na kanale
+0x64c,Processing channel
+0x64d,Kana≥
+0x64e,Øycze sobie kana≥
+0x64f,Temat kana≥u
+0x650,nierozstrzygniÍte +o -- Mam laga
+0x651,nierozstrzygniÍte -o -- Mam laga
+0x652,nierozstrzygniÍty kop
+0x653,PODROBIONY OP KANA£U SPOWODOWANY PRZEZ SERVER
+0x654,Koniec infa kana≥u.
+0x655,mass kick, do kπta!
+0x656,Ban usuniÍty
+0x657,Hmm, info na kanale na ktÛrym nie jestem
+0x658,...dziÍkujÍ za grÍ.
+0x659,Przeskakiwanie serverÛw (potrzebujÍ %d servery, mam tylko %d)
+0x65a,zmiana serverÛw!
+0x65b,Jestem na za duøej iloúci kana≥Ûw--nie mogÍ wejúÊ: %s
+0x65c,Kana≥ jest pe≥en--nie mogÍ wejúÊ: %s
+0x65d,Kanal wymaga zaproszenia--nie mogÍ wejúÊ: %s
+0x65e,Zbanowanny na kanale--nie mogÍ wejúÊ: %s
+0x65f,Server mÛwi nie jestem na kanale: %s
+0x660,Kana≥ na has≥o--nie mogÍ wejúÊ: %s
+0x661,NOTICE %s :Wszystkie komendy dostÍpne sπ via /MSG. Dla listy komand, /MSG %s help   Narazie!\n
+0x662,NOTICE %s :Nie rozpoznaje cie z tym hostem.\n
+0x663,NOTICE %s :gdy uøywasz innej ksywy: /MSG %s IDENT (has≥o)\n
+0x664,NOTICE %s :Jako master musisz ustawiÊ has≥o: with /MSG %s pass <twoje-wybrane-has≥o>.\n
+0x665,NOTICE %s :Wszystkie g≥Ûwne komendy sπ dostÍpne przez DCC chat. Od teraz, nie potrzebujesz uøywac opcji -m przy uruchamianiu bota.  Baw siÍ dobrze :) !!!\n
+0x666,To jest telnetowy interfejs do %s, eggdrop bota.\nNie naduøywaj tego, i bÍdzie to takøÍ otwarte dla twoich przyjaciÛ≥.\n
+0x667,You now get to pick a nick to use on the bot,\nand a password so nobody else can pretend to be you.\nPlease remember both!
+0x668,Od teraz, nie potrzebujesz parametru -m przy uruchamianiu bota.\nBaw siÍ dobrze !!
+0x669,Telnetowy flood po≥πczeÒ od %s!  IgnorujÍ!
+0x66a,zbanowany!: 
+0x66b,join flood
+0x66c,nie kop moich kumpli, leszczu
+0x66d,...i nie wracaj.
+0x66e,Prze≥πczanie na stary nick %s
+0x66f,Nie deopuj moich kumpli, do kπta!
+0x670,UsuniÍty wyjπtek
+0x671,UsuniÍte zaproszenie
+0x672,NICK flood od @%s!  BanujÍ.
+0x673,nick flood
+
+# EGG_
+0x700,Usage: eggdrop [options] [config-file]\n\n\
+Options:\n\
+  -h   pomoc\n\
+  -n   brak przejúcia w pracÍ w tle.\n\
+  -nc  brak przejúcia w pracÍ w tle; pokaø statystyki kana≥u co 10 sekund.\n\
+  -nt  brak przejúcia w pracÍ w tle; uøyj terminala do symulowania rozmÛw DCC.\n\
+  -m   tryp tworzenia pliku listy uøytkownikÛw.\n\
+  -h   pokaøtπ pomoc.\n\
+  -v   pokaz informacje o wersji, wyjdø.\n\
+  
+0x701,Wykry≥em øe, %s  juø jest uruchomiony z tego katalogu .\n
+0x702,Jak to nie parawda, usuÒ '%s'\n
+0x703,* UWAGA!  Nie moøna zapisaÊ %s pliku!\n
+
+# USER_
+0x800,  (jest globalnym op)
+0x801,  (jest botem)
+0x802,  (jest master'em)
+
+# CHAN_
+0x900,Brak zdefiniowania takiego kana≥u
+0x902,* Mode change on %s for nonexistant %s!
+0x903,Mass deop na %s przez %s
+0x904,Mass deop.  Do kπta!.
+0x907,Oops.   Ktos zmusi≥ mnie, øebym wszed≥ na %s... opuszczam...
+0x908,Zmieniono mode przez udawanego opa na %s!  Przywracanie...
+0x909,Naduøywanie niegodziwego-zdobywania opa
+0x90a,Zmieniony mode przez nie opa %s!  Przywracanie...
+0x90b,Naduøywanie desynchronizacji
+0x90c,flood
+
+0xa00,Brak ignorowania
+0xa01,Obecnie ignorujÍ
+0xa02,Koniec ignorowania
+
+0xb00,Tego bota tu nie ma.\n
+0xb01,To jest bote.  Nie moøesz zostawiaÊ notek dla bota!.\n
+0xb02,jest niedstÍpny
+0xb07,Notka dotar≥π do ciebie
+0xb08,WiadomoúÊ przygotowana
+0xb18,Zaczynanie procesu wy≥πczania bota....
+0xb19,brak takiego uøytkownika
+0xb1a,brak kana≥Ûw
+0xb1b,Cz≥onkowie party line:
+0xb1c,Boty po≥aczone
+0xb1d,Inne osoby na bocie
+0xb1f,PrÛba po≥aczenia z
+0xb20,Nie jest online; notka przechowywana.
+0xb21,Skrzynka z notkami jest pe≥na, sorry
+0xb22,jest nieobecny; notka przechowywana.
+0xb23,Notka wys≥ana do
+0xb24,Roz≥aczenie z:
+0xb25,Osoby na kanale
+0xb26,Nie moøna tam po≥πczyÊ
+0xb27,Nie moøna roz≥πczyÊ
+0xb28,Wyryto pÍtlÍ
+0xb29,Bogus link notice from
+0xb2b,Disconnected left
+0xb2c,Po≥πczenie z
+0xb2d,Nie legalne po≥πczenie przez leaf
+0xb2e,Masz byc leaf'em!
+0xb2f,Odrzucanie bota
+0xb30,Wykryto starszego bota (nieobs≥ugiwany)
+0xb31,åledzenie rezultatÛw
+0xb32,nie istnieje
+0xb33,Odleg≥e boots'y niedozwolone.
+0xb34,Nie moøesz wykopac w≥aúciciela bota!.
+0xb35,TRANSFER PLIKU ODRZUCONY
+0xb37,Uøytkownicy botnetu
+0xb38,Party line
+0xb39,Lokalny kana≥
+0xb3a,Uøytkownicy na kanale
+0xb3b,Brak po≥aczonych botÛw.
+0xb3c,No trace info for:
+0xb3d,Drzewo za skomplikowane!
+0xb3e,Roz≥πczanie wszystkich botÛw...
+0xb3f,Pozbycie proby po≥πczenia z
+0xb40,Koniec prÛb po≥πczenia z:
+0xb41,Zrywanie po≥πczenia z
+0xb42,Roz≥πczony od:
+0xb43,Brak po≥πczenia z tym botem.
+0xb44,Smooshing bot tables and assocs...
+0xb45,jest znany jako bot.
+0xb46,£πczyÊ siÍ ze sobπ?  Po co?!.
+0xb47,Ten bot jets juø po≥πczony :-).
+0xb48,Z≥y adres telnetu:port za≥oøony dla
+0xb49,£πczenie z
+0xb4a,Nie moøna znaleüÊ uøytkownika do przekazania!
+0xb4b,Nie moøna po≥πczyc z
+0xb4c,Przekazywanie do siebie samego?  Po co do cholery?!
+0xb4d,Po≥πczenie z 
+0xb4e,(Napisz *BYE* aby przerwaÊ)
+0xb4f,Przerywanie prÛby przekazu od
+0xb50,Jesteú znowu na
+0xb51,Przekaz przerwany:
+0xb53,Stracone po≥aczenie DCC z
+0xb54,ZakoÒczono prÛbe przekaønikowego po≥πczenia z
+0xb55,Sukces!\n\nPO£•CZNIE DO BOTA PRZEKAèNIKOWEGO (RELAY BOT)
+0xb56,(Moøesz napisaÊ *BYE* aby przedwczeúnie zakoÒczyÊ po≥πczenie) 
+0xb57,Po≥πczenie przekaünikowe:
+0xb58,opuúci≥ party line.
+0xb59,ZakoÒczono po≥πczenie przekaønikowe
+0xb5a,ZERWANO PO£•CZENIE PRZEKAèNIKOWE.\nJesteú znowu na 
+0xb5b,ponowne wejúcie na partyline.
+0xb5c,zerwano po≥πczenie przekaünikowe z
+0xb5d,Zrywanie po≥aczenia z 
+0xb5e,Relay broken
+0xb5f,Ping timeout
+0xb60,zachowanie jak nie leaf (unleaflike behaviour)
+0xb61,Pozbyto siÍ bota
+0xb62,Juø po≥πczony z tym botem.
+
+0xc00,Nie akceptujÍ DCC od nieznajomych.
+0xc01,Odrzucony DCC chat (bark dostÍpu)
+0xc02,Bark dostÍpu
+0xc03,Musisz ustawiÊ has≥o.
+0xc04,Odrzuconie DDC chat (brak has≥a)
+0xc05,Odrzuconie DDC chat (+x ale nie w strefie plikowej)
+0xc07,Za duøo osÛb jest obecnie w strefie plikÛw.
+0xc0c,Przepraszam, za duøo po≥πczeÒ DCC.
+0xc0d,Po≥πczenie DCC jest pe≥ne: %s %s (%s!%s)
+0xc19,Nie moøliwe po≥πczenie
+0xc1a,Po≥πczenie DCC zawiod≥o
+0xc1c,Wpisz has≥o.
+0xc1d,%s zosta≥ usuniÍty za flooda.\n
+0xc1e,-=- poof -=-\n
+0xc1f,Zosta≥eú wykopany z %s przez %s%s%s\n
+0xc20,%s wykopany %s z party line%s%s\n
+0xc21,Odrzucono DCC chat(z≥y port)
+0xc22,DCC nieprawid≥owy port
+
+0xd00,Latajπcy w otch≥ani (bez reakcji IRC)
+
+# BOTNET
+0xe00,Podrabiana wiadomoúÊ odrzucona
+0xe01,Po≥πczenie z
+0xe02,Z≥y bot--chaciano %s, jest %s
+0xe03,wyszed≥
+0xe04,wszed≥
+0xe05,jest obecny ale nie dostÍpny(away)
+0xe06,jest juø obecny
+0xe07,Nick zmeniony na:
+
+# dcc.c Messages
+0xe08,Odrzucanie linku od %s
+0xe09,Po≥πczenie z %s.
+0xe0a,Zabrak≥o po≥πczenia z %s.
+0xe0b,B≥Ídne has≥o przy prÛbie po≥πczenia z %s.
+0xe0c,Wymagane has≥o do po≥πczenia z %s.
+0xe0d,B≥πd ≥πczenia %s: %s
+0xe0e,Stracony bot: %s
+0xe0f,Koniec czasu: bot po≥πczony z %s at %s:%d
+0xe10,Zaloggowany: %s (%s/%d)
+0xe11,Z≥e has≥o: [%s]%s/%d
+0xe12,Z≥e has≥o, Houston.\n
+0xe13,*** %s wszed≥ na partyline.\n
+0xe14,Utaracone po≥πczenie DCC od %s (%s/%d)
+0xe15,Koniec czaus na podanie has≥a: [%s]%s
+0xe16,Po≥πczenie DCC zamkniÍte (%s!%s)
+0xe17,Zawiod≥o TELNET incoming (%s)
+0xe18,Odrzucenie %s/%d (z≥y port src)
+0xe19,Orzucenie %s/%d (z≥e ip)
+0xe1a,Odzrucenie %s (z≥a nazwa hosta)
+0xe1b,Po≥πczenie przez telnet: %s/%d
+0xe1c,B≥Ídny Ident od %s: %s
+0xe1d,(!) Odbiernie portu %d nagle siÍ zerwa≥o.
+0xe1e,Odrzucenie %s (z≥a ksywa)
+0xe1f,Odrzucenie %s (nie bot)
+0xe20,Odrzucenie %s (nie uøtykownik)
+0xe21,Odrzucenie %s (z≥a ksywa: %s)
+0xe22,Odrzucenie po≥πczenia telnetu od %s (zduplikowane)
+0xe23,Odrzucenie [%s]%s (brak has≥a)
+0xe24,Utarcone po≥πczenie z telnetu od %s/%d
+0xe25,Koniec czasu na Ident na telnecie : %s
+0xe26,Instalacja bota zakoÒczona, pierwszym masterem jest %s
+0xe27,Nowy uøytkownik przez telnet: [%s]%s/%d
+0xe28,Utarcone po≥πczenie z nowym uøtykownikiem telnet'u (%s/%d)
+0xe29,Utarcone po≥πczenie z nowym uøtykownikiem telnet'u %s (%s/%d)
+0xe2a,Koniec czasu dla nowego uøytkownika Telnet'u: %s/%d
+0xe2b,Koniec czasu dla nowego uøytkownika Telnet'u: [%s]%s/%d
+0xe2c,B≥πd Tcl [%s]: %s
+0xe2d,*** UWAGA: DEAD SOCKET (%d) ALBO NAPISZ  %s UNTRAPPED
+0xe2e,Utracono po≥πczenie gdy identyfikowano [%s/%d]
+0xe2f,koniec czasu/EOF po≥πcznie ident
+0xe30,Lost ident wait telnet socket!!
+0xe31,Odrzucono po≥πczenie telnetowe: %s, Nie ma dostÍpu
+0xe32,Odrzucenie po≥πczenia przez telnet z %s (prÛbowa≥em uøyc mÛj botnick)
+0xe33,Utracono po≥πczenie przez telnet %s gdy sprawdzano duplikacje

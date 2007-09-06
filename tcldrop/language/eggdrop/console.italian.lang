@@ -1,0 +1,16 @@
+# console.italian.lang
+#   messaggi del console module
+#   by |olio|
+#
+# $Id: console.italian.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+
+0xb040,Settaggi della console salvati:
+0xb041,Salvati i tuoi settaggi della console:
+0xb042,Canale:
+0xb043,Flags della Console:
+0xb044,Striscia delle flags:
+0xb045,Echo:
+0xb046,Settaggio della pagina:
+0xb047,Console canale:
+0xb048,si
+0xb049,no

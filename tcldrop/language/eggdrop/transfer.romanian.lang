@@ -1,0 +1,66 @@
+# transfer.romanian.lang
+#   langauge messages for transfer module
+#
+# $Id transfer.english.lang,v 1.8 2003/12/13 21:36:44 blowfish  $
+
+0xf00,Dcc get refuzat %s: copiere catre %s ESUATA!
+0xf01,NOTICE %s :Fisier corupt; renuntam la fisierele din lista.\n
+0xf02,NOTICE %s :Uite un fisier din %s ...\n
+0xf03,Conexiune DCC Ocupata: GET %s [%s]
+0xf04,NOTICE %s :Conexiune DCC Ocupata; renuntam la fisierele din lista.\n
+0xf05,DCC socket eronat: GET %s [%s]
+0xf06,NOTICE %s :DCC socket eronat; renuntam la fisierele din lista.\n
+0xf07,Dcc get renuntat%s: Fisierul e gol!
+0xf08,NOTICE %s :Fisierul %s e gol, transfer renuntzat.\n
+0xf09,  Trimis catre  %s  Numele fisierului\n
+0xf0a,  ---------%s  --------------------\n
+0xf0b,  %s%s  %s  [ASTEPTAM]\n
+0xf0c,  %s%s  %s  (%.1f%% gata)\n
+0xf0d,Nici un fisier in lista.\n
+0xf0e,Total: %d\n
+0xf0f,Revocat: %s to %s\n
+0xf10,Revocat: %s  (dcc send renuntat)\n
+0xf11,NOTICE %s :Transferul %s inchis de %s\n
+0xf12,DCC revocat: GET %s (%s) la %lu/%lu
+0xf13,Nu exista.\n
+0xf14,Revocat %d fisierul%e.\n
+0xf15,Dcc send complet %s de la %s!%s
+0xf16,Fisier %d lungime. Mult Prea LUNG.
+0xf17,NOTICE %s :Fisier %d lungimne Mult Prea LUNG!\n
+0xf18,Ceva de rau!
+0xf19,NOTICE %s :IAra ceva de rau!\n
+0xf1a,Mutare esuata `%s' de la `%s'! Fisier pierdut!
+0xf1b,Merci pentru fisier!\n
+0xf1c,NOTICE %s : Merci pentru fisier!\n
+0xf1d,Transfer al fisierului de useri pierdut de la %s; renuntat.
+# 0xf1e, < this one is now empty
+0xf1f,Deconectat %s (transferul fisierului de useri renuntzat)
+0xf20,Dcc send pierdut %s de la %s!%s (%lu/%lu)
+0xf21,(!) reget packet de la %s pentru %s e invalid!	
+0xf22,!! Continuam transferul fisierului pentru  %s catre %s
+0xf23,!!! Incercam sa sarim pentr fisierul de useri
+0xf24,Continuam transferul fisierului la %dk pentru %s catre %s
+0xf25,Tranferul userului complet catre %s.
+0xf26,Dcc send terminat %s catre %s
+0xf27,Transferul userlistului pierdut; renuntam.
+0xf28,Dcc get pierdut %s de la %s!%s
+0xf29,NOTICE %s :Lungimea fisierului ciudata.\n
+0xf2a,fisier prea lung: dcc send lasat %s de la %s!%s
+0xf2b,Transferul userlistului timeout.
+0xf2c,Deconectat %s (Transferul userlistului timed-out)
+0xf2e,NOTICE %s :Timeout in decursul transferului , ranuntam %s.\n
+0xf2f,DCC timeout: GET %s (%s) la %lu/%lu
+0xf30,DCC timeout: SEND %s (%s) la %lu/%lu
+0xf31,send  (%lu)/%lu\n    Fisier: %s\n
+0xf32,send  asteptat %lus\n    Fisier: %s\n
+0xf33,conn  send
+0xf34,Conexiune DCC : SEND %s (%s)
+0xf35,NOTICE %s :conexiune proasta (%s)\n
+0xf36,Conexiune DCC proasta: GET %s (%s!%s)
+0xf37,Incepem DCC %ssend %s catre %s
+0xf38,re
+0xf39,NOTICE %s :Ingoram continuarea lui `%s': nici o data ceruta.\n
+0xf40,Descarcam modulul de transfer , omoram toata conexiunile de transfer...
+0xf41,    Bucata DCC  este %d%s, conexiunea maxima  d/ls e %d\n
+0xf42,    Folosim %d bitzi de memorie\n
+

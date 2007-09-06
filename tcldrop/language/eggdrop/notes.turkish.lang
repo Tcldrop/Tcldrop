@@ -1,0 +1,48 @@
+# notes.turkish.lang
+#   notes modülü icin türkce dil paketi
+# Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
+#
+# $Id: notes.turkish.lang,v 1.1.1.1 2005/04/25 07:44:53 fireegl Exp $
+
+0xc000,  Notlari yönlendir: %.70s\n
+0xc001,Switched %d note%s from %s to %s.
+0xc002,Expired %d note%s
+0xc003,Online degil; %s e yönlendiriliyor.\n
+0xc004,Notlar bu bot tarafindan desteklenmiyor.
+0xc005,Kullanici icin zaten cok not var.
+0xc006,Not dosyasi yaratilamiyor.
+0xc007,Not dosyasina erisilemiyor!
+0xc008,Saklanan mesaj
+0xc009,Mesajiniz yok
+0xc00a, -- Bügün süresi doluyor
+0xc00b, -- %d gün icinde süresi doluyor %s
+0xc00c,Asagidaki notlar sizin icin bekletiliyor
+0xc00d,Daha baska bekleyen mesajiniz yok
+0xc00e,Notlarinizi okumak icin '.notes read' yazin.\n
+0xc00f,Not dosyasi degistirilemiyor
+0xc010,Bütün notlar silindi
+0xc011,silindi
+0xc012,geriye kalan
+0xc013,'#' belki rakamlar ve/veyabosluklar ; isareti ile ayrilmistir.
+0xc014,O bir bot. Ona not birakamazsiniz.
+0xc015,Disaridan gelen not
+0xc016,Not teslim edildi.
+0xc017,For a list:
+0xc019,### %d tane notunuz %s tarafindan bekletiliyor.\n
+0xc01b,Notunuz saklanacak.
+0xc01c,Not ayarlarini %s icin degistirmenize izin verilmiyor.\n
+0xc01d,%s olarak tanimlanmis kullanici yok.\n
+0xc01e,%s den gelecek notlar reddediliyor.\n
+0xc01f,%s zaten reddedilmis.\n
+0xc020,%s icin reddetme islemi iptal ediliyor\n
+0xc021,Not reddetme %s listede yok.\n
+0xc022,Hic bir not reddetme islemi yok.\n
+0xc023,Notlar %s icin reddedildi.\n
+0xc024,Böyle bir kullanici yok.
+0xc025,Botun sahibi icin not yonlendirmesi degistirilemiyor.\n
+0xc026,Temzilenen notlar %s gonderiliyor.\n
+0xc027,Yönlendirilecek botu mutlaka girmelisiniz.
+0xc028,Not yonlendrmesi %s den %s e degistirildi.\n
+0xc029,INDEX, READ, veya ERASE komutlarindan birini kullanmalisiniz.
+0xc02a,Notlarinizi okumak icin '.notes read' yazin.
+0xc02b,NOTICE %s :%d tane notunuz var%s beklemede.\n
