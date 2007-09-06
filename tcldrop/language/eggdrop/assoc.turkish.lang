@@ -1,0 +1,22 @@
+# assoc.turkish.lang
+#   assoc modülü icin türkce dil dosyasý 
+# Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
+#
+# $Id: assoc.turkish.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+
+0xb000,Kanal adi yok
+0xb001,Kanal
+0xb002,Ad
+0xb003,Kanal # siralama disi: *0-*99999 arasinda olmali
+0xb004,Kanal # siralama disi: 1-99999 arasinda olmali
+0xb005,Party line bölgesini adlandiramazsiniz.
+0xb006,%s%d kanalinin adi yok.\n
+0xb007,%s%d kanalinin adi siliniyor.\n
+0xb008,--- %s bu ad kanaldan silindi.\n
+0xb009,%s%d kanalinin adi '%s' olarak degistirildi.\n
+0xb00a,--- %s adi kanala verildi '%s'\n
+0xb00b,--- (%s) adi kanala verildi '%s'.\n
+0xb00c,--- (%s) %s adi kanala verildi '%s'.\n
+0xb00d,--- (%s) %s kanalin adi kaldirildi.\n
+0xb00e,Kanal adi bu uzunlukta olamaz (20 max).
+0xb00f,Kanal adindaki ilk karakter rakam olamaz.

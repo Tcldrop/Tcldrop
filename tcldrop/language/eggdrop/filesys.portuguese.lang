@@ -1,0 +1,66 @@
+######################################################################
+# ø name: filesys.portuguese.lang                                    #
+# ø info: idioma para mensagens do módulo 'filesys'                  #
+# ø author: Plínio Monteiro Brandão                                  #
+# ø nickname: absolute [absolute@brasirc.net]                        #
+# ø credits:                                                         #
+#           - SuperBot - Eggdrop Internet Services                   #
+#           - HomePage - http://www.superbot.com.br                  #
+#           - BrasIRC.NET - http://www.brasirc.net                   #
+######################################################################
+
+# $Id: filesys.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+
+0x300,Convertento a imagem do sitema de arquivos em %s ...
+0x301,filedb-update: o diretório não pode ser aberto!
+0x302,(!) Quebrada a conversão do filedb em %s
+0x303,10Nome do Arquivo                 Tam.  Enviado por/Data        # Obt.\n
+0x304,------------------------------  ----  ---------------------      ----\n
+0x305,Sem arquivos neste diretório.\n
+0x306,Arquivos não encontrados.\n
+0x307,O diretório não existe
+0x308,O arquivo não existe
+0x309,O arquivo não está compartilhado
+0x30a,(remoto)
+0x30b,Erro ao tentar enviar o arquivo
+0x30c,(enviando)
+0x30d,Solicitação de Comunicação para /%s%s%s (enviando)
+0x30e,\nO Sistema de Arquivos parece estar quebrado agora.\n
+0x30f,(O files-path está setado para um diretório inválido.)\n
+0x310,Diretório atual
+0x311,Novo diretório atual
+0x312,Diretório não encontrado.\n
+0x313,Diretório ilegal.\n
+0x314,Seja razoável.\n
+0x315,%s não está disponível agora.\n
+0x316,Solicitação %s de %s ...\n
+0x317,%s já é um arquivo normal.\n
+0x318,Link mudado para %s\n
+0x319,Você não pode fazer o upload %s\n
+0x31a,Diretório criado
+0x31b,Requere-se a flag +%s para acessar\n
+0x31c,Setado %s/ para exigir a flag +%s para acessar\n
+0x31d,Setado %s/ para não exigir a flag de acesso\n
+0x31e,Diretório removido
+0x31f,Fonte ilegal de diretório.\n
+0x320,Destino ilegal de diretório.\n
+0x321,Você não pode gravar os arquivos %s sobre eles mesmos.\n
+0x322,existe como um diretório -- pulando
+0x323,Sobre si mesmo? Arghh, não mesmo.
+0x324,Destino
+0x325,Copiar
+0x326,Copiado
+0x327,Mover
+0x328,Movido
+0x329,Não pode escrever
+0x32a,Requer
+0x32b,Escondido
+0x32c,Não escondido
+0x32d,Compartilhado
+0x32e,Não compartilhado
+0x32f,Link adicionado
+0x330,Mudado
+0x331,Vazio
+0x332,Apagado
+0x33a,Comandos do Fserver:\n
+0x33b,12dir1: Mostra a lista da pasta atual.\n12get1: Pega um ou vários arquivos. Ex.:4 get foto.jpg\n12cd1: Entra em uma pasta. Ex.:4 cd sexo\n12who1: Ver quem também está no Fserver.\n4Atenção: Respeite maiúsculas e minúsculas!\n

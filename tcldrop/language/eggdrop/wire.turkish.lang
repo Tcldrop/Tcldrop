@@ -1,0 +1,16 @@
+# wire.turkish.lang
+#   wire modülü icin turkce dil paketi
+# Bu dosya http://www.eggdropturk.com adresinden cekilmistir
+#
+# $Id: wire.turkish.lang,v 1.1.1.1 2005/04/25 07:44:55 fireegl Exp $
+
+0xa000,Su an wire bölgesinde degilsiniz.
+0xa001,Su an wire bölgesinde
+0xa002,Uzun süredir wire bölgesinde degilsiniz.
+0xa003,wire sifreleme arahtari degistiriliyor
+0xa004, ; isareti ile baslayan tum yazilar artik wire bolgesinde goruntulenecek.
+0xa005,wire bölgesinde kimin oldugunu görmek icin, '.onwire' yazin.
+0xa006,Ayrilmak icin, '.wire off' yazin.
+0xa007,wire bölgesinde girdi
+0xa008,wire bölgesinden ayrildi.
+0xa009,WIRE modülü kaldirildi.

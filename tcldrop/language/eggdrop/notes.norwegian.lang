@@ -1,0 +1,47 @@
+# notes.norwegian.lang
+#   language messages for the notes module
+#
+# $Id: notes.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+
+0xc000,  Videresend notitser til: %.70s\n
+0xc001,Skiftet %d notis%s fra %s til %s.
+0xc002,Utgåtte %d notis%s
+0xc003,Ikke online; videresendt til %s.\n
+0xc004,Notiser er ikke støttet av denne bot.
+0xc005,Desverre, brukeren har allerede for mange notiser.
+0xc006,Kan ikke opprette notisfil. Desverre.
+0xc007,Notisfil utilgengelig!
+0xc008,Lagret Beskjed
+0xc009,Du har ingen Beskjeder
+0xc00a, -- UTLØPER I DAG
+0xc00b, -- UTLØPER OM %d DAG(E)%s
+0xc00c,Du har følgende notiser ventende
+0xc00d,Du har ikke så mange beskjeder
+0xc00e,Bruk '.notes read' for å lese dem.
+0xc00f,Kan ikke rette notisfilen
+0xc010,Slettet alle notiser
+0xc011,Slettet
+0xc012,tilbake
+0xc013,# kan være nummer og/eller intervaller adskilt med ;
+0xc014,Det er en bot. Du kan ikke sende notiser til en bot.
+0xc015,Outside notis
+0xc016,Notis sendt.
+0xc017,For en liste:
+0xc018,NOTICE %s :Du har %d notis(er)%s ventende på %s.\n
+0xc019,### Du har %d notis(er)%s ventende.\n
+0xc01a,### Bruk '.notes read' for å lese dem.\n
+0xc01b,Notiser vil bli lagret.
+0xc01c,Du har ikke tillatelse til å endre notis ignoreringer for %s\n
+0xc01d,Brukeren %s finnes ikke.\n
+0xc01e,Ignorerer nå notiser fra %s\n
+0xc01f,Ignorerer allerede %s\n
+0xc020,Ignorerer ikke lengere notiser fra %s\n
+0xc021,Notis ignorering %s ble ikke funnet i listen.\n
+0xc022,Det finnes ingen notis ignoreringer.\n
+0xc023,Notis ignoreringer for %s:\n
+0xc024,Bruker finnes ikke.
+0xc025,Kan ikke endre notisvideresendelse av botens eier.\n
+0xc026,Slettet notisvideresendelse for %s\n
+0xc027,Du skal angi et botnavn for videresende til.
+0xc028,Endrede notisvideresendelse for %s til: %s\n
+0xc029,Kommandoen skal være en av følgende: INDEX, READ eller ERASE.

@@ -1,0 +1,29 @@
+######################################################################
+# ø name: assoc.portuguese.lang                                      #
+# ø info: idioma para mensagens do módulo 'assoc'                    #
+# ø author: Plínio Monteiro Brandão                                  #
+# ø nickname: absolute [absolute@brasirc.net]                        #
+# ø credits:                                                         #
+#           - SuperBot - Eggdrop Internet Services                   #
+#           - HomePage - http://www.superbot.com.br                  #
+#           - BrasIRC.NET - http://www.brasirc.net                   #
+######################################################################
+
+# $Id: assoc.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $ #
+
+0xb000,Sem nomes de canal
+0xb001,Canal
+0xb002,Nome
+0xb003,Canal # fora do limite: deve-se usar *0-*99999
+0xb004,Canal # fora do limite: deve-se usar 1-99999
+0xb005,Você não pode especificar uma party line principal; todas fazem parte de uma única party line.
+0xb006,Canal %s%d não foi registrado.\n
+0xb007,Ok, o %s%d foi removido do registro.\n
+0xb008,--- %s removeu o canal do registro.\n
+0xb009,Ok, o canal %s%d agora é '%s'.\n
+0xb00a,--- %s nomeou esse canal como '%s'\n
+0xb00b,--- (%s) nomeou esse canal como '%s'.\n
+0xb00c,--- (%s) %s nomeou esse canal como '%s'.\n
+0xb00d,--- (%s) %s removeu esse canal do registro.\n
+0xb00e,Canais registrados não podem ser tão grandes (máx. 20 dígitos).
+0xb00f,O primeiro caractere do nome do canal não pode ser um dígito.

@@ -1,0 +1,15 @@
+# console.romanian.lang
+#   language messages for the console module
+#
+# $Id: console.romanian.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+
+0xb040,Salvam setarile consolei:
+0xb041,Salvam setarile consolei tale:
+0xb042,Canal:
+0xb043,Flagurile consolei:
+0xb044,Flagurile Strip'ului:
+0xb045,Echo:
+0xb046,Setarile Pagini:
+0xb047,Consola canalului:
+0xb048,da
+0xb049,nu

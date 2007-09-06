@@ -1,0 +1,58 @@
+%{help=share howto}%{+n}
+###  %bshare howto%b
+   First you need to decide two things:
+     %b1.%b Which bot will be 'active' and which 'passive'.
+        The active bot will SEND a userfile to the passive bot. %bThe passive%b
+	%bbot's userfile will be overwritten.%b We shall call the %bACTIVE%b bot
+	"A", and the %bPASSIVE%b bot B.
+
+     %b2.%b Which channels you want to share between the 2 bots. ALL global
+        info will be shared, but only the channels you mark as shared will be
+        shared.
+
+   Steps:
+     %b1.%b For each channel you want to share, do:
+
+           .chanset #channel +shared
+
+     %b2.%b On bot A, type:
+     
+           '.botattr B +s' (+s means actively share)
+
+     %b3.%b On bot B, type:
+
+           '.botattr A +p' (+s means passively share)
+
+     %b4.%b For each channel you want shared between the two, do the following:
+
+           On bot A, type: '.botattr B |+s #channel'
+           On bot B, type: '.botattr A |+s #channel'
+
+     %b5.%b Link them together; they should start sharing immediately.
+%{help=flush}%{+n}
+###  %bflush%b <bot>
+   This clears the resync buffer for a share-bot. This is useful if you want
+   to start over with a userfile transfer. You can unlink the sharebots, flush
+   the resync buffer, and relink.
+
+See also: link, unlink, chattr, botattr
+%{help=share module}%{+n}
+###  %bshare module%b
+   This module provides userfile sharing support between two directly linked
+   bots.
+
+   See %b'.help share howto'%b for more information.
+
+   The following commands are provided by the share module:
+
+   For global owners:
+      %bflush%b
+
+   Config file variables for configuring the share module:
+      %ballow-resync    resync-time         private-global%b
+      %bprivate-user    override-bots       private-globals%b
+   (Use %b'.help set <variable>'%b for more info)
+%{help=all}%{+n}
+###  %bshare module%b commands
+   For global owners:
+      %bflush%b

@@ -1,0 +1,66 @@
+# transfer.norwegian.lang
+#   language messages for transfer module
+#
+# $Id: transfer.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+
+0xf00,Avviste dcc get %s: kopi til %s FEIL UNDER SENDING!
+0xf01,NOTICE %s :Filsystem feil; fjerner filer fra køen.\n
+0xf02,NOTICE %s :Her er en fil fra %s ...\n
+0xf03,DCC tilkoblinger fulle: GET %s [%s]
+0xf04,NOTICE %s :DCC tilkoblinger fulle; fjerner filer fra køen.\n
+0xf05,DCC socket feil: GET %s [%s]
+0xf06,NOTICE %s :DCC socket feil; fjerner filer fra køen.\n
+0xf07,Stoppet dcc get %s: Filen er tom!
+0xf08,NOTICE %s :Filen %s er tom, stopper overførsel.\n
+0xf09,  Send til  %s  Filnavn\n
+0xf0a,  ---------%s  --------------------\n
+0xf0b,  %s%s  %s  [VENTER]\n
+0xf0c,  %s%s  %s  (%.1f%% ferdig)\n
+0xf0d,Ingen filer i kø.\n
+0xf0e,Total: %d\n
+0xf0f,Annullert: %s til %s\n
+0xf10,Annullert: %s  (annullert dcc send)\n
+0xf11,NOTICE %s :Overføring av %s annullert av %s\n
+0xf12,DCC annullert: GET %s (%s) på %lu/%lu
+0xf13,Ingen matcher.\n
+0xf14,Annullert %d fil%s.\n
+0xf15,Ferdigsendt dcc send %s fra %s!%s
+0xf16,Filnavn %d lengde. Alt for LANG.
+0xf17,NOTICE %s :Filnavn %d lengde alt for LANG!\n
+0xf18,To Bad So Sad Your Dad!
+0xf19,NOTICE %s :To Bad So Sad Your Dad!\n
+0xf1a,Feil i flytt `%s' fra `%s'! Fil mistet!
+0xf1b,Takk for filen!\n
+0xf1c,NOTICE %s :Takk for filen!\n
+0xf1d,Mistet brukerfil overførsel fra %s; annullerer.
+# 0xf1e, < this one is now empty / denne er nu tom
+0xf1f,Avbrutt %s (annullerte brukerfil overføring)
+0xf20,Mistet dcc send %s fra %s!%s (%lu/%lu)
+0xf21,(!) reget pakke fra %s til %s er ugyldig!
+0xf22,!! Gjenopptar filoverføring filsending fra %s til %s
+0xf23,!!! Prøver å løpe foran med brukerfil overførsel
+0xf24,Gjennopptar filoverføring av %dk for %s til %s
+0xf25,Gjennemførte brukerfil overføring til %s.
+0xf26,Gjennemførte dcc send %s til %s
+0xf27,Mistet brukerfil overføring; annullerer.
+0xf28,Mistet dcc get %s fra %s!%s
+0xf29,NOTICE %s :Falsk fillengde.\n
+0xf2a,Fil for lang: stopper dcc send %s fra %s!%s
+0xf2b,Timeout ved brukerfil overføring.
+0xf2c,Avbrutt %s (timed-out brukerfil overføring)
+0xf2e,NOTICE %s :Timeout under overføring, annullerer %s.\n
+0xf2f,DCC timeout: GET %s (%s) ved %lu/%lu
+0xf30,DCC timeout: SEND %s (%s) ved %lu/%lu
+0xf31,send  (%lu)/%lu\n    Filnavn: %s\n
+0xf32,send  venter %lus\n    Filnavn: %s\n
+0xf33,conn  send
+0xf34,DCC tilkobling: SEND %s (%s)
+0xf35,NOTICE %s :Dårlig tilkobling (%s)\n
+0xf36,DCC dårlig tilkobling: GET %s (%s!%s)
+0xf37,Begynn DCC %ssend %s til %s
+0xf38,re
+0xf39,NOTICE %s :Ignorerer gjennopptakelse av `%s': ingen data anmodet.\n
+0xf40,Fjerner overførsel (transfer) modul, stopper alle overføringer (transfer) tilkoblinger...
+0xf41,    DCC blok størrelse: %d%s\n
+0xf42,    Max samtidige downloads pr bruker: %d\n
+0xf43,    Bruker %d bytes av hukommelsen\n

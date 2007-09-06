@@ -1,0 +1,15 @@
+# console.norwegian.lang
+#   language messages for the console module
+#
+# $Id console.norwegian.lang,v 1.0 2003/02/24 21:400:00 Moonsh|ne Exp $
+
+0xb040,Lagrede konsoll innstillinger:
+0xb041,Dine konsoll innstillinger er lagret:
+0xb042,Kanal:
+0xb043,Konsoll flagg:
+0xb044,Fjern flagg:
+0xb045,Ekko:
+0xb046,Sideinnstilling:
+0xb047,Konsollkanal:
+0xb048,ja
+0xb049,nei

@@ -1,0 +1,58 @@
+# filesys.norwegian.lang
+#   language messages for filesys module
+#
+# $Id: filesys.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+
+0x300,Konverterer filsystemets bilde i %s ...
+0x301,filedb-update: katalogen kan ikke åpnes!
+0x302,(!) Beskadiget konvertering til filedb i %s
+0x303,Filnavn                         Str   Sendt av/Dato        # Hits\n
+0x304,------------------------------  ----  -------------------  ------\n
+0x305,Ingen filer i denne katalog.\n
+0x306,Ingen filer matcher.\n
+0x307,katalogen eksisterer ikke
+0x308,Filen eksisterer ikke
+0x309,Filen er ikke delt
+0x30a,(fjern)
+0x30b,Feil under sending av fil
+0x30c,(sender)
+0x30d,Fjern-forespørsel på /%s%s%s (sender)
+0x30e,\nFilesystemet ser ut til å være beskadiget her.\n
+0x30f,(files-path er satt til feil adresse.)\n
+0x310,Aktuell katalog
+0x311,Ny aktuell katalog
+0x312,Ingen sånne kataloger finnes.\n
+0x313,Ugyldig katalog.\n
+0x314,Vær fornuftig.\n
+0x315,%s er ikke tilgjengelig akkurat nå.\n
+0x316,Ønsket %s fra %s ...\n
+0x317,%s er allerede en normal fil.\n
+0x318,Endret link til %s\n
+0x319,Du lastet ikke opp %s\n
+0x31a,Laget katalog
+0x31b,Krever +%s for adgang\n
+0x31c,Endret %s/ til for å kreve +%s for adgang\n
+0x31d,Endret %s/ slik at ingen flagg kreves for adgang\n
+0x31e,Fjernet katalog
+0x31f,Ugyldig kildekatalog.\n
+0x320,Ugyldig destinasjons katalog.\n
+0x321,Du kan ikke %s filer på toppen av dem selv.\n
+0x322,finnes som en katalog -- hopper over
+0x323,På seg selv?  Nei sei æ.
+0x324,Destinasjon
+0x325,kopi
+0x326,Kopiert
+0x327,flytt
+0x328,Flyttet
+0x329,Kunne ikke skrive
+0x32a,krever
+0x32b,Skjult
+0x32c,Ikke skjult
+0x32d,Delt
+0x32e,Ikke delt
+0x32f,Lagt til link
+0x330,Endret
+0x331,Tømt
+0x332,Slettet
+0x33a,Velkommen til %B's filserver\n
+0x33b,Alle filoverføringer vil bli sendt til '%N' som standard.\n(Du kan angi et lignende bot/nick med 'get' funktionen.)\nSkriv 'help' for hjelp.\n

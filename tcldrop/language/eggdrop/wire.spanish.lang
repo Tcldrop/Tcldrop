@@ -1,0 +1,15 @@
+# wire.spanish.lang
+#   Mensajes de lenguaje del modulo wire
+#
+# $Id: wire.spanish.lang,v 1.1.1.1 2005/04/25 07:44:55 fireegl Exp $
+
+0xa000,Usted no esta en un wire.
+0xa001,Actualmente en wire
+0xa002,Usted no esta en un wire.
+0xa003,Cambiando  llave de encriptacion wire a
+0xa004,Todo el texto comuenza con ; ahora pase al wire.
+0xa005,Para ver quien esta en el wire, escriba '.onwire'.
+0xa006,Para salir, escriba '.wire off'.
+0xa007,entrando al wire
+0xa008,saliendo del wire.
+0xa009,Modulo WIRE comenzando a descargarse.

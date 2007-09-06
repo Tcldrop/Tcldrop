@@ -1,0 +1,23 @@
+######################################################################
+# ø name: console.portuguese.lang                                    #
+# ø info: idioma para mensagens do módulo 'console'                  #
+# ø author: Plínio Monteiro Brandão                                  #
+# ø nickname: absolute [absolute@brasirc.net]                        #
+# ø credits:                                                         #
+#           - SuperBot - Eggdrop Internet Services                   #
+#           - HomePage - http://www.superbot.com.br                  #
+#           - BrasIRC.NET - http://www.brasirc.net                   #
+######################################################################
+
+# # $Id: console.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+
+0xb040,Configurações de Console atuais:
+0xb041,Suas configurações de Console:
+0xb042,Canal:
+0xb043,Flags de Console:
+0xb044,Flags de Visualização:
+0xb045,Echo:
+0xb046,Modo de Leitura:
+0xb047,Console de Canal:
+0xb048,Sim
+0xb049,Não
