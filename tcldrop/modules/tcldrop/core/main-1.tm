@@ -105,7 +105,8 @@ namespace eval ::tcldrop::core {
 
 # Add our modules directory to the package require search path:
 if {([info exists ::mod-path] && [file isdirectory ${::mod-path}]) || [file isdirectory [set ::mod-path [file join $::tcldrop(dirname) modules]]] || [file isdirectory [set ::mod-path [file join . modules]]] || [set ::mod-path [file dirname [info script]]]} {
-	if {[lsearch -exact $::auto_path ${::mod-path}] == -1} { lappend ::auto_path ${::mod-path} }
+	#if {[lsearch -exact $::auto_path ${::mod-path}] == -1} { lappend ::auto_path ${::mod-path} }
+	::tcl::tm::path add ${::mod-path}
 } else {
 	return -code error {Can't find any suitable mod-path!}
 }
