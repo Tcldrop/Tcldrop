@@ -3,9 +3,9 @@
 #		* sha1 hashing.
 #	Depends: encryption.
 #
-# $Id: sha1.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 # This module provides the sha1 and encpass Tcl commands.
@@ -32,19 +32,18 @@ namespace eval ::tcldrop::encryption::sha1 {
 	variable version {0.2}
 	variable script [info script]
 	variable name {encryption::sha1}
+	# Provide the sha1 module:
+	package provide tcldrop::$name 1
+	package provide tcldrop::sha1 1
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {SHA1 hashing via the sha1 package.}
-	variable rcsid {$Id: sha1.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list]
-	# Provide the sha1 module:
-	package provide tcldrop::sha1 $version
-	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	checkmodule encryption
 	# Export all the commands that should be available to 3rd-party scripters:
-	#eval namespace export $commands
+	#namespace export {*}$commands
 }
 
 package require sha1

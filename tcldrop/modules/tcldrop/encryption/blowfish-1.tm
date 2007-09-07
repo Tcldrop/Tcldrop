@@ -28,14 +28,14 @@
 namespace eval ::tcldrop::encryption::blowfish {
 	variable version {0.1}
 	variable name {encryption::blowfish}
+	package provide tcldrop::$name 1
+	package provide tcldrop::blowfish 1
 	variable depends {encryption}
 	variable author {Tcldrop-Dev}
 	variable description {Provides a pure-Tcl blowfish.}
 	variable commands [list blowfish]
 	variable script [info script]
 	variable rcsid {$Id$}
-	package provide tcldrop::$name $version
-	package provide tcldrop::blowfish $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	::package require blowfish
@@ -47,12 +47,10 @@ namespace eval ::tcldrop::encryption::blowfish {
 	proc encrypt {key string} { ::base64::encode -maxlen 0 [::blowfish::blowfish -mode ecb -dir encrypt -key $key $string] }
 	proc decrypt {key string} { string trimright [::blowfish::blowfish -mode ecb -dir decrypt -key $key [::base64::decode $string]] "\0" }
 	proc encpass {password} { ::base64::encode -maxlen 0 [::blowfish::blowfish -mode ecb -dir encrypt -key $password $password] }
-	catch {
-		namespace ensemble create -subcommands [list encrypt decrypt encpass]
-		namespace ensemble create -command ::tcldrop::blowfish -subcommands [list encrypt decrypt encpass]
-		namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass]
-		#namespace unknown unknown
-	}
+	namespace ensemble create -subcommands [list encrypt decrypt encpass]
+	namespace ensemble create -command ::tcldrop::blowfish -subcommands [list encrypt decrypt encpass]
+	namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass]
+	#namespace unknown unknown
 }
 
 bind load - encryption::blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0

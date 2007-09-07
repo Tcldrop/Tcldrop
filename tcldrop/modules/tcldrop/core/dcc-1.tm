@@ -3,7 +3,7 @@
 #		* All core DCC binds and commands.
 #	Depends: core::conn.
 #
-# $Id: dcc.tcl,v 1.17 2006/05/19 04:48:29 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005,2006 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
@@ -36,16 +36,16 @@ namespace eval ::tcldrop::core::dcc {
 	variable depends {console partyline core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
-	variable rcsid {$Id: dcc.tcl,v 1.17 2006/05/19 04:48:29 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable script [info script]
 	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle calldcc callchon callchof dccdumpfile dccsimul]
 	# putdccall getdccaway dccbroadcast putdccbut
 	# Provide the core::dcc module:
-	package provide tcldrop::$name $version
+	package provide tcldrop::$name 1
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 # Note, the console stuff will have to function differently from Eggdrops,

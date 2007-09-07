@@ -1,4 +1,4 @@
-# partyline.tcl --
+# party.tcl --
 #	Handles:
 #		* This module provides the core partyline support.
 #
@@ -26,17 +26,18 @@
 #
 #	partyline module for tcldrop.  (REQUIRED)
 
-namespace eval ::tcldrop::partyline {
+namespace eval ::tcldrop::party {
+	variable name {party}
 	variable version {0.1}
-	variable name {partyline}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
 	variable depends {console bots core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Core partyline support.}
 	variable commands [list callparty getparty setparty party whom dccbroadcast dccputchan getdccaway setdccaway whomlist callchjn callchpt callaway callchat callact callbcst]
 	variable rcsid {$Id: partyline.tcl,v 1.6 2005/05/19 03:55:42 fireegl Exp $}
-	variable script [info script]
-	# Provide the partyline module:
-	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
@@ -54,26 +55,26 @@ namespace eval ::tcldrop::partyline {
 #           is matched against the botnetnick of the bot that unlinked.
 #           Wildcards are supported in mask.
 #         Module: core
-bind disc - * ::tcldrop::partyline::DISC -priority -1000
-proc ::tcldrop::partyline::DISC {bot {reason {Unlinked.}}} {
+bind disc - * ::tcldrop::party::DISC -priority -1000
+proc ::tcldrop::party::DISC {bot {reason {Unlinked.}}} {
 	callparty quit *:*@$bot line $reason
 	callparty disc $bot line $reason
 }
 
-bind link - * ::tcldrop::partyline::LINK -priority -1000
-proc ::tcldrop::partyline::LINK {bot via} {
+bind link - * ::tcldrop::party::LINK -priority -1000
+proc ::tcldrop::party::LINK {bot via} {
 	callparty link $bot handle $bot bot $bot via $via
 }
 
-bind chon - * ::tcldrop::partyline::CHON -priority 0
-proc ::tcldrop::partyline::CHON {handle idx} {
+bind chon - * ::tcldrop::party::CHON -priority 0
+proc ::tcldrop::party::CHON {handle idx} {
 	if {[set chan [getchan $idx]] != -1} {
 		callparty connect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
 	}
 }
 
-bind chof - * ::tcldrop::partyline::CHOF -priority 0
-proc ::tcldrop::partyline::CHOF {handle idx} {
+bind chof - * ::tcldrop::party::CHOF -priority 0
+proc ::tcldrop::party::CHOF {handle idx} {
 	if {[set chan [getchan $idx]] != -1} {
 		callparty disconnect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
 	}
@@ -89,7 +90,7 @@ proc ::tcldrop::partyline::CHOF {handle idx} {
 #      with an extra argument indicating the channel the user is on.
 #    Module: core
 # {FireEgl KEEEEEEEL Proteus-D@adsl-220-213-190.bhm.bellsouth.net * 0 {zzz . . .}}
-proc ::tcldrop::partyline::whom {{chan {*}} {usermask {*:*@*}}} {
+proc ::tcldrop::party::whom {{chan {*}} {usermask {*:*@*}}} {
 	global party_users
 	set list [list]
 	foreach u [array names party_users $usermask] {
@@ -102,7 +103,7 @@ proc ::tcldrop::partyline::whom {{chan {*}} {usermask {*:*@*}}} {
 	return $list
 }
 
-proc ::tcldrop::partyline::whomlist {{chan {*}} {usermask {*:*@*}}} {
+proc ::tcldrop::party::whomlist {{chan {*}} {usermask {*:*@*}}} {
 	global party_users
 	set list [list]
 	foreach u [array names party_users $usermask] {
@@ -121,7 +122,7 @@ proc ::tcldrop::partyline::whomlist {{chan {*}} {usermask {*:*@*}}} {
 #      "*** (Bot) <message>" for users on other bots
 #    Returns: nothing
 #    Module: core
-proc ::tcldrop::partyline::dccbroadcast {message} { callparty broadcast ${::botnet-nick} line $message }
+proc ::tcldrop::party::dccbroadcast {message} { callparty broadcast ${::botnet-nick} line $message }
 
 #  dccputchan <channel> <message>
 #    Description: sends your message to everyone on a certain channel on the
@@ -129,7 +130,7 @@ proc ::tcldrop::partyline::dccbroadcast {message} { callparty broadcast ${::botn
 #      through 99999.
 #    Returns: nothing
 #    Module: core
-proc ::tcldrop::partyline::dccputchan {channel message} { callparty chat ${::botnet-nick} chan $channel line $message }
+proc ::tcldrop::party::dccputchan {channel message} { callparty chat ${::botnet-nick} chan $channel line $message }
 
 #  boot <user@bot> [reason]
 #     Description: Sends a request to boot a user from the partyline.
@@ -140,7 +141,7 @@ proc ::tcldrop::partyline::dccputchan {channel message} { callparty chat ${::bot
 #    Returns: away message for a dcc chat user (or "" if the user is not
 #      set away)
 #    Module: core
-proc ::tcldrop::partyline::getdccaway {idx} {
+proc ::tcldrop::party::getdccaway {idx} {
 	foreach u [array names ::party_users [string tolower ${idx}:*@${::botnet-nick}]] {
 		array set userinfo $::party_users($u)
 		if {[info exists userinfo(away)] && $userinfo(away) != {}} { return $userinfo(away) }
@@ -153,10 +154,10 @@ proc ::tcldrop::partyline::getdccaway {idx} {
 #     If set to "", the user is marked as no longer away.
 #    Returns: nothing
 #    Module: core
-proc ::tcldrop::partyline::setdccaway {idx text} { callparty away ${idx}:*@${::botnet-nick} line $text }
+proc ::tcldrop::party::setdccaway {idx text} { callparty away ${idx}:*@${::botnet-nick} line $text }
 
-proc ::tcldrop::partyline::callparty {command usermask args} { CallParty $command $usermask $args }
-proc ::tcldrop::partyline::CallParty {command usermask arguments} {
+proc ::tcldrop::party::callparty {command usermask args} { CallParty $command $usermask $args }
+proc ::tcldrop::party::CallParty {command usermask arguments} {
 	global party_users
 	foreach u [array names party_users [string tolower $usermask]] {
 		array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost {Uknown@Uknown} chans [list] source {}]
@@ -203,7 +204,7 @@ proc ::tcldrop::partyline::CallParty {command usermask arguments} {
 }
 
 # Makes changes to the ::partyline array.
-proc ::tcldrop::partyline::party {command usermask args} {
+proc ::tcldrop::party::party {command usermask args} {
 	switch -- $command {
 		{add} {
 			array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost $usermask chans [list] source {} idletime [clock seconds]]
@@ -228,18 +229,18 @@ proc ::tcldrop::partyline::party {command usermask args} {
 # $what is $idx:$handle@$botnet-nick for the "user" type..
 # $what will be an integer for a "chan" type.  (Eggdrop only supports integers)  The assoc module will be used to convert the int to a channel name if needed.
 # $what will be <integer>,<$idx:$handle@$botnet-nick> for a "chanuser" type.
-proc ::tcldrop::partyline::setparty {type what args} {
+proc ::tcldrop::party::setparty {type what args} {
 	foreach u [array names ::party_users $idx:*@*] {
 	}
 }
 
-proc ::tcldrop::partyline::getparty {type what args} {
+proc ::tcldrop::party::getparty {type what args} {
 
 }
 
 
-bind chon - * ::tcldrop::partyline::CHON
-proc ::tcldrop::partyline::CHON {handle idx} {
+bind chon - * ::tcldrop::party::CHON
+proc ::tcldrop::party::CHON {handle idx} {
 	party add ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick}
 }
 
@@ -258,7 +259,7 @@ proc ::tcldrop::partyline::CHON {handle idx} {
 #           (botnet master).
 #         Module: core
 # CHJN: Stupito FireEgl 0 * 9 Proteus-D@adsl-220-213-190.bhm.bellsouth.net
-proc ::tcldrop::partyline::callchjn {bot handle chan flag idx userhost args} {
+proc ::tcldrop::party::callchjn {bot handle chan flag idx userhost args} {
 	foreach {type flags mask proc} [bindlist chjn] {
 		if {[string match -nocase $mask $chan]} {
 			if {[catch { $proc $bot $handle $chan $flag $idx $userhost } err]} {
@@ -279,7 +280,7 @@ proc ::tcldrop::partyline::callchjn {bot handle chan flag idx userhost args} {
 #           binding. flags are ignored; the mask is matched against the
 #           channel and can contain wildcards.
 #         Module: core
-proc ::tcldrop::partyline::callchpt {bot handle idx {chan {}} {reason {}}} {
+proc ::tcldrop::party::callchpt {bot handle idx {chan {}} {reason {}}} {
 	foreach {type flags mask proc} [bindlist chpt] {
 		if {[string match -nocase $mask $chan]} {
 			if {[llength [info args $proc]] >= 5} {
@@ -311,7 +312,7 @@ proc ::tcldrop::partyline::callchpt {bot handle idx {chan {}} {reason {}}} {
 #           bot the user is connected to and supports wildcards. flags are
 #           ignored.
 #         Module: core
-proc ::tcldrop::partyline::callaway {bot idx {text {}}} {
+proc ::tcldrop::party::callaway {bot idx {text {}}} {
 	foreach {type flags mask proc} [bindlist away] {
 		if {[string match -nocase $mask $bot]} {
 			if {[catch { $proc $bot $idx $text } err]} {
@@ -334,7 +335,7 @@ proc ::tcldrop::partyline::callaway {bot idx {text {}}} {
 #           you can't rely on a local user record. The mask is checked against
 #           the entire line of text and supports wildcards.
 #         Module: core
-proc ::tcldrop::partyline::callchat {handle chan text} {
+proc ::tcldrop::party::callchat {handle chan text} {
 	foreach {type flags mask proc} [bindlist chat] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
@@ -355,7 +356,7 @@ proc ::tcldrop::partyline::callchat {handle chan text} {
 #           this binding. flags are ignored; the mask is matched against the
 #           text of the action and can support wildcards.
 #         Module: core
-proc ::tcldrop::partyline::callact {handle chan text} {
+proc ::tcldrop::party::callact {handle chan text} {
 	foreach {type flags mask proc} [bindlist act] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
@@ -377,7 +378,7 @@ proc ::tcldrop::partyline::callact {handle chan text} {
 #           the mask is matched against the message text and can contain
 #           wildcards.
 #         Module: core
-proc ::tcldrop::partyline::callbcst {bot text} {
+proc ::tcldrop::party::callbcst {bot text} {
 	foreach {type flags mask proc} [bindlist bcst] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $bot $text } err]} {
@@ -390,7 +391,7 @@ proc ::tcldrop::partyline::callbcst {bot text} {
 	}
 }
 
-proc ::tcldrop::partyline::LOG {levels channel text} {
+proc ::tcldrop::party::LOG {levels channel text} {
 	global party_users idxlist botnet-nick
 	foreach u [array names party_users "*:*@${botnet-nick}"] {
 		array set userinfo $party_users($u)
@@ -407,18 +408,18 @@ proc ::tcldrop::partyline::LOG {levels channel text} {
 	}
 }
 
-bind load - partyline ::tcldrop::partyline::LOAD -priority 0
-proc ::tcldrop::partyline::LOAD {module} {
+bind load - partyline ::tcldrop::party::LOAD -priority 0
+proc ::tcldrop::party::LOAD {module} {
 	# This variable will store all the users who are on the partyline, each array name is in the form: 14:FireEgl@Botname
 	setdefault party_users {} -array 1 -protect 1
 	setdefault party_chans {} -array 1 -protect 1
 	setdefault party_chanusers {} -array 1 -protect 1
 }
 
-bind evnt - loaded ::tcldrop::partyline::EVNT_loaded -priority 0
-proc ::tcldrop::partyline::EVNT_loaded {event} {
-	bind log - * ::tcldrop::partyline::LOG
+bind evnt - loaded ::tcldrop::party::EVNT_loaded -priority 0
+proc ::tcldrop::party::EVNT_loaded {event} {
+	bind log - * ::tcldrop::party::LOG
 }
 
-#bind unld - partyline ::tcldrop::partyline::UNLD -priority 0
-#proc ::tcldrop::partyline::UNLD {module} { return 1 }
+#bind unld - partyline ::tcldrop::party::UNLD -priority 0
+#proc ::tcldrop::party::UNLD {module} { return 1 }

@@ -2,7 +2,7 @@
 #	Handles:
 #		* Provides all database commands.
 #
-# $Id: database.tcl,v 1.3 2005/05/19 06:39:05 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -34,19 +34,19 @@
 #
 
 namespace eval ::tcldrop::core::database {
-	variable version {0.1}
+	variable version {0.6}
 	variable name {core::database}
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all database commands.}
 	variable script [info script]
-	variable rcsid {$Id: database.tcl,v 1.3 2005/05/19 06:39:05 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list Database database calldatabase]
 	# Provide the database module:
-	package provide tcldrop::$name $version
+	package provide tcldrop::$name 1
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval [linsert $commands 0 namespace export]
+	namespace export {*}$commands
 }
 
 # This is mostly a fancy interface to using the [dict] command..

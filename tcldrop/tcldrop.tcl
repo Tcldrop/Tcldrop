@@ -174,8 +174,12 @@ namespace eval ::tcldrop {
 						# If the Tcldrop runs the exit command, it instead runs the [tcldrop exit] command here:
 						interp alias $interpname exit {} [namespace current]::tcldrop exit $name
 						# Load the core of the Tcldrop, which in turn will load the required modules, source the config file, etc:
-						#$interpname eval [list source [file join $tcldrop(dirname) modules core core.tcl]] } error]} {
-						$interpname eval [list package require tcldrop::core::main] } error]} {
+						# FixMe: There's some kind of bug in Tcl that prevents it from loading the ::tcl::tm::* procs until after a package require is done on some other package first.
+						$interpname eval [list package require http]
+						# FixMe: Add more paths to search here:
+						$interpname eval [list ::tcl::tm::path add {./modules}]
+						$interpname eval [list package require tcldrop::core::main]
+					} error]} {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
 					return 1
 				} else {

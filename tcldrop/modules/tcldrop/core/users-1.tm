@@ -3,7 +3,7 @@
 #		* All userfile-related Tcl commands.
 #	Depends: core.
 #
-# $Id: users.tcl,v 1.4 2005/05/19 06:39:05 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -33,26 +33,24 @@ namespace eval ::tcldrop::core::users {
 	variable depends {channels core::database encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all userfile-related Tcl commands.}
-	variable rcsid {$Id: users.tcl,v 1.4 2005/05/19 06:39:05 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable script [info script]
 	variable commands [list adduser countusers validuser finduser matchattr matchchanattr userlist passwdok getuser setuser getinfo getchaninfo getting-users chhandle chattr botattr chflags addbot deluser delhost addchanrec delchanrec haschanrec save backup reload chpass setlaston addhost]
 	# Provide the core::users module:
-	package provide tcldrop::$name $version
+	package provide tcldrop::$name 1
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval [linsert $commands 0 namespace export]
+	namespace export {*}$commands
 	# Create ensembles:
-	catch {
-		variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser +bot addbot -host delhost +host addhost]
-		namespace ensemble create -command ::users -map $aliases -subcommands $commands
-		namespace ensemble create -command ::user -map $aliases -subcommands $commands
-		namespace ensemble create -map $aliases -subcommands $commands
-		namespace ensemble create -command [namespace parent]::user -map $aliases -subcommands $commands
-		namespace ensemble create -command ::tcldrop::users -map $aliases -subcommands $commands
-		namespace ensemble create -command ::tcldrop::user -map $aliases -subcommands $commands
-		namespace ensemble create -command user -map $aliases -subcommands $commands
-	}
+	variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser +bot addbot -host delhost +host addhost]
+	namespace ensemble create -command ::users -map $aliases -subcommands $commands
+	namespace ensemble create -command ::user -map $aliases -subcommands $commands
+	namespace ensemble create -map $aliases -subcommands $commands
+	namespace ensemble create -command [namespace parent]::user -map $aliases -subcommands $commands
+	namespace ensemble create -command ::tcldrop::users -map $aliases -subcommands $commands
+	namespace ensemble create -command ::tcldrop::user -map $aliases -subcommands $commands
+	namespace ensemble create -command user -map $aliases -subcommands $commands
 }
 
 #    (41) NKCH (stackable)

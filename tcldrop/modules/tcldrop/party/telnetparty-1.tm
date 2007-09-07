@@ -1,11 +1,11 @@
-# telnetparty.tcl --
+# party/telnet.tcl --
 #	Handles:
 #		Telnet interface for users.
-#	Depends: partyline.
+#	Depends: party.
 #
-# $Id: telnetparty.tcl,v 1.6 2005/05/07 19:50:02 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 #	telnetparty module for tcldrop.  (REQUIRED)
@@ -32,38 +32,38 @@
 # if you want to use -n -t command line options to login to the bot.
 
 
-namespace eval ::tcldrop::telnetparty {
+namespace eval ::tcldrop::party::telnet {
 	variable version {0.4}
-	variable name {telnetparty}
-	variable depends {partyline channels console core::users core::dcc core::conn core}
+	variable name {party::telnet}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	variable depends {party channels console core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the telnet interface for users.}
-	variable rcsid {$Id: telnetparty.tcl,v 1.6 2005/05/07 19:50:02 fireegl Exp $}
-	variable script [info script]
+	variable rcsid {$Id$}
 	variable commands [list]
-	# Provide the telnetparty module:
-	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	# Pre-depends on the partyline module:
-	checkmodule partyline
+	# Pre-depends on the party module:
+	checkmodule party
 }
 
-proc ::tcldrop::telnetparty::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::telnetparty::Read -writable ::tcldrop::telnetparty::Write -errors ::tcldrop::telnetparty::Error module telnetparty handle *] }
+proc ::tcldrop::party::telnet::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::telnet::Write -errors ::tcldrop::party::telnet::Error module telnetparty handle *] }
 
-proc ::tcldrop::telnetparty::Error {idx {error {}}} {
+proc ::tcldrop::party::telnet::Error {idx {error {}}} {
 	array set chatinfo [getidxinfo $idx]
 	callparty quit ${idx}:$chatinfo(handle)@${::botnet-nick}
 }
 
-proc ::tcldrop::telnetparty::Write {idx} {
+proc ::tcldrop::party::telnet::Write {idx} {
 	setidxinfo $idx [list state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline]
 	if {[info exists use-telnet-banner] && ${::use-telnet-banner}} { dccdumpfile $idx ${::telnet-banner} }
 	if {${::open-telnets} || [countusers] == 0} { putdcc $idx {(If you are new, enter 'NEW' here.)} }
 	putdcc $idx {Handle: } -nonewline 1 -flush 1
 }
 
-proc ::tcldrop::telnetparty::Read {idx line} {
+proc ::tcldrop::party::telnet::Read {idx line} {
 	if {[info exists ::idxlist($idx)]} { array set chatinfo $::idxlist($idx) } else { killidx $idx }
 	switch -- $chatinfo(state) {
 		{TELNET_ID} {
@@ -140,7 +140,7 @@ proc ::tcldrop::telnetparty::Read {idx line} {
 	return 0
 }
 
-#proc ::tcldrop::telnetparty::CHAT {user chan text} {
+#proc ::tcldrop::party::telnet::CHAT {user chan text} {
 #	if {[string match {*@*} $user]} { set text "<${user}> $text" } else { set text "*** (${user}) $text" }
 #	foreach {i d} [idxlist [list traffictype partyline module telnetparty state CHAT]] {
 #		array set chatinfo $d
@@ -150,7 +150,7 @@ proc ::tcldrop::telnetparty::Read {idx line} {
 #	}
 #}
 
-#proc ::tcldrop::telnetparty::BCST {bot text} {
+#proc ::tcldrop::party::telnet::BCST {bot text} {
 #	foreach {i d} [idxlist [list traffictype partyline module telnetparty state CHAT]] {
 #		array set chatinfo $d
 #		putdcc $chatinfo(idx) "*** ($bot) $text"
@@ -158,8 +158,8 @@ proc ::tcldrop::telnetparty::Read {idx line} {
 #}
 
 # This has to be a LOAD bind:
-bind load - telnetparty ::tcldrop::telnetparty
-proc ::tcldrop::telnetparty {module} {
+bind load - telnetparty ::tcldrop::party::telnet
+proc ::tcldrop::party::telnet {module} {
 	setdefault open-telnets 1
 	setdefault info-party 0
 	setdefault connect-timeout 27
@@ -171,12 +171,12 @@ proc ::tcldrop::telnetparty {module} {
 	setdefault require-p 0
 	setdefault default-flags {p}
 	# Add new listen types (these are used by the [listen] command):
-	addlistentype telnetparty connect ::tcldrop::telnetparty::Connect ident 1
-	addlistentype users connect ::tcldrop::telnetparty::Connect ident 1
-#	bind chat - * ::tcldrop::telnetparty::CHAT -priority -100
-#	bind bcst - * ::tcldrop::telnetparty::BCST -priority -100
+	addlistentype telnetparty connect ::tcldrop::party::telnet::Connect ident 1
+	addlistentype users connect ::tcldrop::party::telnet::Connect ident 1
+#	bind chat - * ::tcldrop::party::telnet::CHAT -priority -100
+#	bind bcst - * ::tcldrop::party::telnet::BCST -priority -100
 }
 
 # Don't allow the telnetparty module to be unloaded:
-bind unld - telnetparty ::tcldrop::telnetparty::UNLD
-proc ::tcldrop::telnetparty::UNLD {module} { return 1 }
+bind unld - telnetparty ::tcldrop::party::telnet::UNLD
+proc ::tcldrop::party::telnet::UNLD {module} { return 1 }

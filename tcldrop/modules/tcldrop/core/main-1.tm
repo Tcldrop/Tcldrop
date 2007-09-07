@@ -35,7 +35,7 @@
 # FixMe: $config should be loaded first if the variable exists, before we eval $config-eval.
 
 # Tcldrop requires at least Tcl v8.5.
-package require Tcl 8.5
+::package require Tcl 8.5
 # Cleanup/FixMe: Support/Kludges for Tcl v8.4 are to be removed.
 
 # This is just a way to count how many times each proc is called:
@@ -78,14 +78,16 @@ update idletasks
 # Here begins the "core" module:
 namespace eval ::tcldrop::core {
 	variable version {0.6.1}
-	variable name {core::main}
+	variable name {core}
+	variable script [info script]
+	package provide tcldrop::${name} $version
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::${name}::main $version
 	variable depends {tcldrop}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
 	variable commands [list addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit]
-	variable script [info script]
-	package provide tcldrop::${name} $version
 	namespace export {*}$commands
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -101,14 +103,24 @@ namespace eval ::tcldrop::core {
 	variable Flood
 	array set Flood {}
 	set ::modules(core) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script]
-}
-
-# Add our modules directory to the package require search path:
-if {([info exists ::mod-path] && [file isdirectory ${::mod-path}]) || [file isdirectory [set ::mod-path [file join $::tcldrop(dirname) modules]]] || [file isdirectory [set ::mod-path [file join . modules]]] || [set ::mod-path [file dirname [info script]]]} {
-	#if {[lsearch -exact $::auto_path ${::mod-path}] == -1} { lappend ::auto_path ${::mod-path} }
-	::tcl::tm::path add ${::mod-path}
-} else {
-	return -code error {Can't find any suitable mod-path!}
+	#package prefer latest
+	# Set a default mod-path if it's not already set:
+	if {![info exists ::mod-path]} { set ::mod-path {./modules} }
+	if {![info exists ::mod-paths]} { set ::mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ${::mod-path}] }
+	# Add to the paths to search for Tcl Modules:
+	foreach m ${::mod-paths} {
+		if {[file isdirectory $m]} {
+			::tcl::tm::path add $m
+			# Set the "official" Tcldrop mod-path:
+			set ::mod-path $m
+		}
+	}
+	puts "[::tcl::tm::list]"
+	# Add to the paths to search for Tcl packages:
+	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts]] {
+		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
+	}
+	unset m
 }
 
 # Provided by Dossy@EFNet:
@@ -971,14 +983,15 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0}]
 	array set opts $options
-	if {(($opts(-version) != {0}) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err])} {
+	if {(($opts(-version) != {0}) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err] && [catch { ::package require "tcldrop::${module}::main" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err] && [catch { ::package require "tcldrop::${module}::main" } err])} {
 		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
 		return 0
 	} else {
 		array set modinfo [list name $module version $err depends [list] commands [list] rcsid {} script {} author {} description {}]
+		# FixMe: Modules should set ::modules($module) themselves:
 		foreach i [array names modinfo] { catch { set modinfo($i) [set "::tcldrop::${module}::$i"] } }
 		set ::modules($module) [array get modinfo]
-		# Import the commands...
+		# FixMe: Modules should run [::namespace import] themselves.
 		if {[catch { ::uplevel \#0 [list ::namespace import -force "::tcldrop::${module}::*"] } err]} { putlog "Error importing namespace ::tcldrop::${module}::* $err" }
 		foreach {type flags mask proc} [bindlist load] {
 			if {[string match -nocase $mask $module]} {
@@ -989,8 +1002,10 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 				countbind $type $mask $proc
 			}
 		}
+		# FixMe: Modules should lappend ::protected(namespaces) (and whatever else) themselves.
 		lappend ::protected(namespaces) "::tcldrop::${module}"
 		# Load the corresponding .lang file:
+		# FixMe: Modules should do addlangsections themselves..I think.
 		if {[addlangsection [lindex [split $module :] 0]]} {
 			putlog "[format [lang 0x20f core] $module]    (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
 		} else {
@@ -1332,10 +1347,11 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	::tcldrop::encryption::default encpass sha1
 	#::tcldrop::encryption::default encpass md5
 	# These are eggdrop1.7 style modules, which eggdrop1.6 loads as part of the core:
-	checkmodule telnetparty
+	checkmodule party
+	checkmodule party::telnet
+	checkmodule party::terminal
+	checkmodule party::irc
 	checkmodule bots::oldbotnet
-	checkmodule terminalparty
-	checkmodule ircparty
 	checkmodule dns
 	if {[rehash $type]} {
 		setdefault botnet-nick $::nick -protect 1

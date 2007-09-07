@@ -1,8 +1,8 @@
-# dccparty.tcl --
+# party/dcc.tcl --
 #
-# $Id: dccparty.tcl,v 1.3 2005/05/03 22:47:11 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,37 +19,42 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
-#	dccparty module for tcldrop.  (REQUIRED)
+#	party::dcc module for tcldrop.  (REQUIRED)
 #
 # This module provides the dcc chat interface for users to access the bot.
 
-namespace eval ::tcldrop::dccparty {
-	# Provide the dccparty module:
+namespace eval ::tcldrop::party::dcc {
 	variable version {0.4}
-	package provide tcldrop::dccparty $version
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	variable name {party::dcc}
+	package provide tcldrop::$name $version
+	variable depends {party::telnet channels console core::users core::dcc core::conn core}
+	variable author {Tcldrop-Dev}
+	variable description {Provides the dcc interface for users.}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	variable rcsid {$Id: dccparty.tcl,v 1.3 2005/05/03 22:47:11 fireegl Exp $}
+	variable commands [list]
+	variable rcsid {$Id$}
 	# checkmodule console
-	checkmodule partyline
-	# Note: This module depends on the telnetparty module, because they're so similar and might as well share code.
-	checkmodule telnetparty
+	# Note: This module depends on the party::telnet module, because they're so similar and might as well share code.
+	checkmodule party
 	# Export all the commands that should be available to 3rd-party scripters:
-	#namespace export
+	#namespace export {*}$commands
 }
 
 # This is when they do a /dcc chat $botnick
-bind ctcp p DCC ::tcldrop::dccparty::DCC -priority 1000
-proc ::tcldrop::dccparty::DCC {nick host hand dest key text} {
+bind ctcp p DCC ::tcldrop::party::dcc::DCC -priority 1000
+proc ::tcldrop::party::dcc::DCC {nick host hand dest key text} {
 	if {[isbotnick $dest]} {
 		if {$key == {DCC} && [string toupper [lindex [set text [split $text]] 0]] == {CHAT} && [expr 1024 < [set port [lindex $text end]] < 65535]} {
 			set host [lindex [split $host @] end]
 			# FixMe: $althost should be used if we can't connect to $host:
 			set althost [lindex $text 2]
-			set fail [catch { connect $host $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::telnetparty::Read -errors ::tcldrop::telnetparty::Error -writable ::tcldrop::dccparty::Write } idx]
+			set fail [catch { connect $host $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::party::telnet::Read -errors ::tcldrop::party::telnet::Error -writable ::tcldrop::party::dcc::Write } idx]
 			if {!$fail} { setidxinfo $idx [list idx $idx handle $hand remote $host hostname $host dccchatip $dccchatip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds]] }
 		}
 	}
@@ -57,9 +62,9 @@ proc ::tcldrop::dccparty::DCC {nick host hand dest key text} {
 }
 
 # This is when they do a /ctcp $botnick CHAT
-bind ctcp p CHAT ::tcldrop::dccparty::CHAT -priority 1000
+bind ctcp p CHAT ::tcldrop::party::dcc::CHAT -priority 1000
 # FixMe: This doesn't seem to work yet.
-proc ::tcldrop::dccparty::CHAT {nick uhost handle dest key text} {
+proc ::tcldrop::party::dcc::CHAT {nick uhost handle dest key text} {
 	if {[isbotnick $dest]} {
 		# FixMe: 3232235523 (192.168.0.3) and 7777 is hardcoded for now..
 		puthelp "PRIVMSG $nick :\001DCC CHAT chat 3232235523 7777\001"
@@ -68,26 +73,26 @@ proc ::tcldrop::dccparty::CHAT {nick uhost handle dest key text} {
 }
 
 # Note: This proc is only used when people do a /ctcp <bot> CHAT
-proc ::tcldrop::dccparty::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::telnetparty::Read -writable ::tcldrop::dccparty::Write -errors ::tcldrop::telnetparty::Error module dccparty] }
+proc ::tcldrop::party::dcc::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::dcc::Write -errors ::tcldrop::party::telnet::Error module dccparty] }
 
-# Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::telnetparty::Error proc.
-proc ::tcldrop::dccparty::Error {idx {error {}}} { ::tcldrop::telnetparty::Error $idx $error }
+# Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::party::telnet::Error proc.
+proc ::tcldrop::party::dcc::Error {idx {error {}}} { ::tcldrop::party::telnet::Error $idx $error }
 
-proc ::tcldrop::dccparty::Write {idx} {
+proc ::tcldrop::party::dcc::Write {idx} {
 	array set chatinfo $::idxlist($idx)
 	if {![info exists chatinfo(handle)] || $chatinfo(handle) == {*}} {
 		# Note: We share code with the telnetparty module.
-		::tcldrop::telnetparty::Write $idx
+		::tcldrop::party::telnet::Write $idx
 	} else {
 		array set chatinfo [list state CHAT_PASS other pass timestamp [clock seconds] traffictype partyline]
 		set ::idxlist($idx) [array get chatinfo]
 	}
 }
 
-# Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::telnetparty::Read proc.
-proc ::tcldrop::dccparty::Read {idx line} { ::tcldrop::telnetparty::Read $idx $line }
+# Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::party::telnet::Read proc.
+proc ::tcldrop::party::dcc::Read {idx line} { ::tcldrop::party::telnet::Read $idx $line }
 
-proc ::tcldrop::dccparty::dccchatcodefrompubsafetcl {} {
+proc ::tcldrop::party::dcc::dccchatcodefrompubsafetcl {} {
 	if {1024 < $dccChatPort && $dccChatPort < 65535} {
 		if {[info exists DccChatSock]} {
 			putlog "SafeTcl/DCC: Already listening on port ${dccChatPort}."
@@ -211,14 +216,14 @@ proc ::tcldrop::dccparty::dccchatcodefrompubsafetcl {} {
 	}
 }
 
-bind load - dccparty ::tcldrop::dccparty::LOAD -priority 0
-proc ::tcldrop::dccparty::LOAD {module} {
+bind load - dccparty ::tcldrop::party::dcc::LOAD -priority 0
+proc ::tcldrop::party::dcc::LOAD {module} {
 	# Add new listen types (these are used by the [listen] command):
-	addlistentype dccparty connect ::tcldrop::dccparty::Connect ident 1
-	bind unld - dccparty ::tcldrop::dccparty::UNLD -priority 0
+	addlistentype dccparty connect ::tcldrop::party::dcc::Connect ident 1
+	bind unld - dccparty ::tcldrop::party::dcc::UNLD -priority 0
 }
 
-proc ::tcldrop::dccparty::UNLD {module} {
+proc ::tcldrop::party::dcc::UNLD {module} {
 	# FixMe: dellistentype here.
 	return 1
 }

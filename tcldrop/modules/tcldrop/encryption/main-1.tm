@@ -2,9 +2,9 @@
 #	Handles:
 #		* core encryption support.
 #
-# $Id: encryption.tcl,v 1.3 2005/05/19 06:39:05 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 # This module provides the encpass, encrypt, and decrypt Tcl commands.
@@ -29,15 +29,17 @@
 namespace eval ::tcldrop::encryption {
 	variable version {0.1}
 	variable name {encryption}
-	variable depends {core}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	variable depends {core::main}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the core encryption support.}
 	variable commands [list encpass Encpass encrypt Encrypt decrypt Decrypt]
-	variable script [info script]
-	variable rcsid {$Id: encryption.tcl,v 1.3 2005/05/19 06:39:05 fireegl Exp $}
-	package provide tcldrop::$name $version
+	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval [linsert $commands 0 namespace export]
+	namespace export {*}$commands
 }
 
 # ToDo/FixMe: Make this a namespace ensemble..

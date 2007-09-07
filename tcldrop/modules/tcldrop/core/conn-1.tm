@@ -3,7 +3,7 @@
 #		* The connect and control commands, used for all outgoing connections.
 #	Depends: core::conn.
 #
-# $Id: conn.tcl,v 1.17 2005/07/31 04:17:25 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -34,22 +34,22 @@ namespace eval ::tcldrop::core::conn {
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {The connect and control commands, used for all outgoing connections.}
-	variable rcsid {$Id: conn.tcl,v 1.17 2005/07/31 04:17:25 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable script [info script]
 	variable commands [list valididx killsock dccused sock2idx idx2sock initidx idxlist listidx setidxinfo getidxinfo idxinfo assignidx registeridx unregisteridx putidx killidx killsock idx2sock sock2idx listen connect control config controlsock addlistentype myip traffic timeout]
-	package provide tcldrop::$name $version
+	package provide tcldrop::$name 1
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	::package require proxy
+	::package require proxy::https
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 	# Create ensembles:
 	namespace ensemble create -subcommands $commands
 	namespace ensemble create -command ::tcldrop::conn -subcommands $commands
 	namespace ensemble create -command ::conn -subcommands $commands
 }
 
-package require proxy
-package require proxy::https
 
 # Returns the bots IP in long form:
 proc ::tcldrop::core::conn::myip {} { if {${::my-ip} != {}} { ip2decimal ${::my-ip} } else { ip2decimal ${::default-ip} } }

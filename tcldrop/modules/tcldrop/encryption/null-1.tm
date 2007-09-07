@@ -3,9 +3,9 @@
 #		* Provides "null" encryption.
 #	Depends: encryption.
 #
-# $Id: null.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,19 +22,19 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::encryption::null {
 	variable version {0.1}
 	variable name {encryption::null}
+	package provide tcldrop::$name 1
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides "null" encryption.}
 	variable commands [list]
 	variable script [info script]
-	variable rcsid {$Id: null.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $}
-	package provide tcldrop::$name $version
+	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Pre-depends on the encryption module:
