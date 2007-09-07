@@ -1,4 +1,4 @@
-# share/share_users.tcl --
+# share/users --
 #	Handles:
 #		* Provides the ability to share user info with other bots.
 #
@@ -25,18 +25,19 @@
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::share::users {
-	variable version {0.1}
 	variable name {share::users}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the ability to share user info with other bots.}
-	variable script [info script]
 	variable rcsid {$Id$}
 	variable commands [list ]
-	package provide tcldrop::$name $version
-	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 proc ::tcldrop::share::users::? {} {

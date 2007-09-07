@@ -1,8 +1,8 @@
-# share/share.tcl --
+# share/main --
 #	Handles:
 #		* Provides the ability to share anything with other bots.
 #
-# $Id: share.tcl,v 1.2 2005/04/25 08:10:07 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003-2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
@@ -22,23 +22,25 @@
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
 # The author of this project can be reached at FireEgl@Tcldrop.US
-# Or can be found on IRC (EFNet or FreeNode) as FireEgl.
+# Or can be found on IRC (EFNet, FreeNode, or OFTC) as FireEgl.
 #
 # This uses the database module, so basically anything set in the database can be shared with other bots.
 
 namespace eval ::tcldrop::share {
-	variable version {0.1}
 	variable name {share}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the ability to share anything with other bots.}
-	variable script [info script]
-	variable rcsid {$Id: share.tcl,v 1.2 2005/04/25 08:10:07 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list share callshare]
-	package provide tcldrop::$name $version
-	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 proc ::tcldrop::share::callshare {type command data {options {}}} {

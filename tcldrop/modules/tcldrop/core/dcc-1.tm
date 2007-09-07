@@ -1,11 +1,11 @@
-# core/dcc.tcl --
+# core/dcc --
 #	Handles:
 #		* All core DCC binds and commands.
 #	Depends: core::conn.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -31,20 +31,18 @@
 # This includes user AND bot AND script connections.
 
 namespace eval ::tcldrop::core::dcc {
-	variable version {0.1}
 	variable name {core::dcc}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {console partyline core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}
-	variable script [info script]
 	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle calldcc callchon callchof dccdumpfile dccsimul]
 	# putdccall getdccaway dccbroadcast putdccbut
-	# Provide the core::dcc module:
-	package provide tcldrop::$name 1
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
-	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 }
 

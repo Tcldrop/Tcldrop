@@ -1,11 +1,11 @@
-# core/users.tcl --
+# core/users --
 #	Handles:
 #		* All userfile-related Tcl commands.
 #	Depends: core.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,27 +22,23 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
-# Or can be found on IRC (EFNet or FreeNode) as FireEgl.
+# The author of this project can be reached at FireEgl@Tcldrop.US
+# Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 #
 #	core::users module for Tcldrop.  (REQUIRED)
 
 namespace eval ::tcldrop::core::users {
 	variable version {0.7}
 	variable name {core::users}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {channels core::database encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all userfile-related Tcl commands.}
 	variable rcsid {$Id$}
-	variable script [info script]
 	variable commands [list adduser countusers validuser finduser matchattr matchchanattr userlist passwdok getuser setuser getinfo getchaninfo getting-users chhandle chattr botattr chflags addbot deluser delhost addchanrec delchanrec haschanrec save backup reload chpass setlaston addhost]
-	# Provide the core::users module:
-	package provide tcldrop::$name 1
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
-	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export {*}$commands
-	# Create ensembles:
 	variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser +bot addbot -host delhost +host addhost]
 	namespace ensemble create -command ::users -map $aliases -subcommands $commands
 	namespace ensemble create -command ::user -map $aliases -subcommands $commands
@@ -51,6 +47,7 @@ namespace eval ::tcldrop::core::users {
 	namespace ensemble create -command ::tcldrop::users -map $aliases -subcommands $commands
 	namespace ensemble create -command ::tcldrop::user -map $aliases -subcommands $commands
 	namespace ensemble create -command user -map $aliases -subcommands $commands
+	namespace export {*}$commands
 }
 
 #    (41) NKCH (stackable)

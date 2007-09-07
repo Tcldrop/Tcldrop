@@ -1,11 +1,11 @@
-# conn.tcl --
+# core/conn --
 #	Provides:
 #		* The connect and control commands, used for all outgoing connections.
-#	Depends: core::conn.
+#	Depends: core.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 # Notes:
@@ -31,15 +31,16 @@
 namespace eval ::tcldrop::core::conn {
 	variable version {0.7}
 	variable name {core::conn}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {The connect and control commands, used for all outgoing connections.}
 	variable rcsid {$Id$}
-	variable script [info script]
 	variable commands [list valididx killsock dccused sock2idx idx2sock initidx idxlist listidx setidxinfo getidxinfo idxinfo assignidx registeridx unregisteridx putidx killidx killsock idx2sock sock2idx listen connect control config controlsock addlistentype myip traffic timeout]
-	package provide tcldrop::$name 1
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	::package require proxy
 	::package require proxy::https
 	# Export all the commands that should be available to 3rd-party scripters:

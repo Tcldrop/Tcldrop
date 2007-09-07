@@ -1,10 +1,10 @@
-# core/database.tcl --
+# core/database --
 #	Handles:
 #		* Provides all database commands.
 #
 # $Id$
 #
-# Copyright (C) 2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 #	core::database module for tcldrop.
@@ -36,15 +36,15 @@
 namespace eval ::tcldrop::core::database {
 	variable version {0.6}
 	variable name {core::database}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all database commands.}
-	variable script [info script]
 	variable rcsid {$Id$}
 	variable commands [list Database database calldatabase]
-	# Provide the database module:
-	package provide tcldrop::$name 1
-	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 }
