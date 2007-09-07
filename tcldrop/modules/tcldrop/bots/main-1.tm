@@ -2,9 +2,9 @@
 #	Handles:
 #		* The core bot related commands for all bot types.
 #
-# $Id: bots.tcl,v 1.3 2005/04/28 05:11:26 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005,2006 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -30,20 +30,22 @@
 
 
 namespace eval ::tcldrop::bots {
-	# Provide the bots module:
-	variable version {0.1}
 	variable name {bots}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Core bot related components.}
 	variable script [info script]
 	variable commands [list bots putbot putallbots islinked botids link unlink addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
-	variable rcsid {$Id: bots.tcl,v 1.3 2005/04/28 05:11:26 fireegl Exp $}
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
+	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 	# Create ensembles:
 	catch { namespace ensemble create -command Bots -subcommands $commands }
 }

@@ -32,11 +32,11 @@ namespace eval ::tcldrop::party::dcc {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	variable name {party::dcc}
 	package provide tcldrop::$name $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {party::telnet channels console core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the dcc interface for users.}
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	variable commands [list]
 	variable rcsid {$Id$}
 	# checkmodule console
@@ -73,7 +73,7 @@ proc ::tcldrop::party::dcc::CHAT {nick uhost handle dest key text} {
 }
 
 # Note: This proc is only used when people do a /ctcp <bot> CHAT
-proc ::tcldrop::party::dcc::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::dcc::Write -errors ::tcldrop::party::telnet::Error module dccparty] }
+proc ::tcldrop::party::dcc::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::dcc::Write -errors ::tcldrop::party::telnet::Error module party::dcc] }
 
 # Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::party::telnet::Error proc.
 proc ::tcldrop::party::dcc::Error {idx {error {}}} { ::tcldrop::party::telnet::Error $idx $error }
@@ -216,11 +216,12 @@ proc ::tcldrop::party::dcc::dccchatcodefrompubsafetcl {} {
 	}
 }
 
-bind load - dccparty ::tcldrop::party::dcc::LOAD -priority 0
+bind load - party::dcc ::tcldrop::party::dcc::LOAD -priority 0
 proc ::tcldrop::party::dcc::LOAD {module} {
 	# Add new listen types (these are used by the [listen] command):
 	addlistentype dccparty connect ::tcldrop::party::dcc::Connect ident 1
-	bind unld - dccparty ::tcldrop::party::dcc::UNLD -priority 0
+	addlistentype party::dcc connect ::tcldrop::party::dcc::Connect ident 1
+	bind unld - party::dcc ::tcldrop::party::dcc::UNLD -priority 0
 }
 
 proc ::tcldrop::party::dcc::UNLD {module} {

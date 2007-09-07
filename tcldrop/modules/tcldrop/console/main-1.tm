@@ -1,11 +1,11 @@
-# console/console.tcl --
+# console/main --
 #	Handles:
 #		* Provides commands for getting/setting console infos.
 #	Depends: core::users, core::dcc.
 #
-# $Id: console.tcl,v 1.4 2005/04/29 00:04:41 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,24 +22,26 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::console {
 	variable version {0.5}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	variable name {console}
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {channels core::users core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides commands for getting/setting console infos.}
-	variable {$Id: console.tcl,v 1.4 2005/04/29 00:04:41 fireegl Exp $}
+	variable {$Id$}
 	variable commands [list getconsole setconsole echo strip getchan setchan console store initconsole]
 	variable script [info script]
-	# Provide the console module:
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 # Stores the console data in the userfile for $idx:

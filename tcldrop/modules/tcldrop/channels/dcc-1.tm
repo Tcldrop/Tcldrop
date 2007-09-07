@@ -1,11 +1,11 @@
-# channels/dcc.tcl --
+# channels/dcc --
 #	Handles:
 #		* Channel related DCC commands.
 #	Depends: channels.
 #
-# $Id: dcc.tcl,v 1.5 2006/05/19 04:39:40 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2005,2006 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,18 +26,18 @@
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::channels::dcc {
+	variable name {channels::dcc}
 	variable version {0.1}
 	variable script [info script]
-	variable name {channels::dcc}
-	variable depends {channels core::dcc core}
-	variable author {Tcldrop-Dev}
-	variable description {Channel related DCC commands.}
-	variable rcsid {$Id: dcc.tcl,v 1.5 2006/05/19 04:39:40 fireegl Exp $}
-	variable commands [list]
-	# Provide the channels::dcc module:
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	variable depends {channels core::dcc core}
+	variable author {Tcldrop-Dev}
+	variable description {Channel related DCC commands.}
+	variable rcsid {$Id$}
+	variable commands [list]
 	# Pre-depends on the channels module:
 	checkmodule channels
 }

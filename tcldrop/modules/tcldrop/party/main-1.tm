@@ -408,7 +408,7 @@ proc ::tcldrop::party::LOG {levels channel text} {
 	}
 }
 
-bind load - partyline ::tcldrop::party::LOAD -priority 0
+bind load - party ::tcldrop::party::LOAD -priority 0
 proc ::tcldrop::party::LOAD {module} {
 	# This variable will store all the users who are on the partyline, each array name is in the form: 14:FireEgl@Botname
 	setdefault party_users {} -array 1 -protect 1
@@ -421,5 +421,5 @@ proc ::tcldrop::party::EVNT_loaded {event} {
 	bind log - * ::tcldrop::party::LOG
 }
 
-#bind unld - partyline ::tcldrop::party::UNLD -priority 0
+#bind unld - party ::tcldrop::party::UNLD -priority 0
 #proc ::tcldrop::party::UNLD {module} { return 1 }

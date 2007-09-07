@@ -1,11 +1,11 @@
-# irc/irc.tcl --
+# irc/main --
 #	Handles:
 #		* Provides all IRC related commands.
 #	Depends: server, channels.
 #
-# $Id: irc.tcl,v 1.9 2006/04/15 21:10:42 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 Tcldrop Development Team <Tcldrop-Devel>
+# Copyright (C) 2003,2004,2005,2006,2007 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,27 +22,28 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::irc {
 	variable version {0.6}
 	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	variable name {irc}
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {server channels core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all IRC related commands.}
-	variable rcsid {$Id: irc.tcl,v 1.9 2006/04/15 21:10:42 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list resetchan onchan dumpfile botonchan nick2hand hand2nick handonchan getchanhost getchanjoin onchansplit chanlist getchanidle getchanmode pushmode flushmode topic ischanjuped botisop botishalfop botisvoice isop ishalfop wasop washalfop isvoice ischanban ischanexempt ischaninvite chanbans chanexempts chaninvites resetbans resetexempts resetinvites callmsgm callpubm callmsg callpub callmode callneed callflud callsign calljoin callpart callsplt callrejn calltopc callnick callkick callnotc +enforcebans callne callneop callnein callneky callnelm callbeub]
-	# Provide the irc module:
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	# Pre-depends on these modules:
 	checkmodule server
 	checkmodule channels
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 

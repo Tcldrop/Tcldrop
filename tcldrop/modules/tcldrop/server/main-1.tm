@@ -1,11 +1,11 @@
-# server.tcl --
+# server/main --
 #	Handles:
 #		* IRC server support.
 #	Depends: core::conn, core.
 #
-# $Id: server.tcl,v 1.17 2005/07/31 04:15:24 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 #	server module for Tcldrop.
@@ -31,18 +31,19 @@
 namespace eval ::tcldrop::server {
 	variable version {0.8}
 	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	variable name {server}
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {IRC server support.}
-	variable rcsid {$Id: server.tcl,v 1.17 2005/07/31 04:15:24 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list isbotnick jump putserv puthelp putquick queuesize clearqueue putqueue putnow server quit callraw]
-	# Provide the server module:
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 proc ::tcldrop::server::isbotnick {nick} { string equal -nocase $nick $::botnick }

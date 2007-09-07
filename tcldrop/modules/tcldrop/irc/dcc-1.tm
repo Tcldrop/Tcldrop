@@ -1,11 +1,11 @@
-# irc/dcc.tcl --
+# irc/dcc --
 #	Handles:
 #		* All IRC related DCC binds.
 #	Depends: irc.
 #
-# $Id: dcc.tcl,v 1.2 2005/04/25 08:09:46 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2005 Tcldrop Development Team <Tcldrop-Devel>
+# Copyright (C) 2005,2006,2007 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -22,21 +22,21 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::irc::dcc {
 	variable version {0.1}
 	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	variable name {irc::dcc}
-	variable depends {irc channels core::dcc core}
-	variable author {Tcldrop-Dev}
-	variable description {All IRC related DCC binds.}
-	variable rcsid {$Id: dcc.tcl,v 1.2 2005/04/25 08:09:46 fireegl Exp $}
-	# Provide the irc::dcc module:
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	variable depends {irc channels core::dcc core}
+	variable author {Tcldrop-Dev}
+	variable description {All IRC related DCC binds.}
+	variable rcsid {$Id$}
 }
 
 proc ::tcldrop::irc::dcc::STATUS {handle idx text} {

@@ -25,7 +25,7 @@
 # The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
-#	telnetparty module for tcldrop.  (REQUIRED)
+#	party::telnet module for tcldrop.  (REQUIRED)
 #
 # This module provides the telnet interface for users to access the bot.
 # Note: support for stdin/stdout is also in this module, so it's REQUIRED
@@ -49,7 +49,7 @@ namespace eval ::tcldrop::party::telnet {
 	checkmodule party
 }
 
-proc ::tcldrop::party::telnet::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::telnet::Write -errors ::tcldrop::party::telnet::Error module telnetparty handle *] }
+proc ::tcldrop::party::telnet::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::telnet::Write -errors ::tcldrop::party::telnet::Error module party::telnet handle *] }
 
 proc ::tcldrop::party::telnet::Error {idx {error {}}} {
 	array set chatinfo [getidxinfo $idx]
@@ -142,7 +142,7 @@ proc ::tcldrop::party::telnet::Read {idx line} {
 
 #proc ::tcldrop::party::telnet::CHAT {user chan text} {
 #	if {[string match {*@*} $user]} { set text "<${user}> $text" } else { set text "*** (${user}) $text" }
-#	foreach {i d} [idxlist [list traffictype partyline module telnetparty state CHAT]] {
+#	foreach {i d} [idxlist [list traffictype partyline module party::telnet state CHAT]] {
 #		array set chatinfo $d
 #		if {($chatinfo(console-echo) || ![string equal -nocase $user $chatinfo(handle)]) && ([string match -nocase $chatinfo(console-chan) $chan] || [string match -nocase $chan $chatinfo(console-chan)])} {
 #			putdcc $chatinfo(idx) "<${user}> $text"
@@ -151,14 +151,14 @@ proc ::tcldrop::party::telnet::Read {idx line} {
 #}
 
 #proc ::tcldrop::party::telnet::BCST {bot text} {
-#	foreach {i d} [idxlist [list traffictype partyline module telnetparty state CHAT]] {
+#	foreach {i d} [idxlist [list traffictype partyline module party::telnet state CHAT]] {
 #		array set chatinfo $d
 #		putdcc $chatinfo(idx) "*** ($bot) $text"
 #	}
 #}
 
 # This has to be a LOAD bind:
-bind load - telnetparty ::tcldrop::party::telnet
+bind load - party::telnet ::tcldrop::party::telnet
 proc ::tcldrop::party::telnet {module} {
 	setdefault open-telnets 1
 	setdefault info-party 0
@@ -172,11 +172,12 @@ proc ::tcldrop::party::telnet {module} {
 	setdefault default-flags {p}
 	# Add new listen types (these are used by the [listen] command):
 	addlistentype telnetparty connect ::tcldrop::party::telnet::Connect ident 1
+	addlistentype party::telnet connect ::tcldrop::party::telnet::Connect ident 1
 	addlistentype users connect ::tcldrop::party::telnet::Connect ident 1
 #	bind chat - * ::tcldrop::party::telnet::CHAT -priority -100
 #	bind bcst - * ::tcldrop::party::telnet::BCST -priority -100
 }
 
-# Don't allow the telnetparty module to be unloaded:
-bind unld - telnetparty ::tcldrop::party::telnet::UNLD
+# Don't allow the party::telnet module to be unloaded:
+bind unld - party::telnet ::tcldrop::party::telnet::UNLD
 proc ::tcldrop::party::telnet::UNLD {module} { return 1 }

@@ -1,10 +1,10 @@
-# channels/channels.tcl --
+# channels/main --
 #	Handles:
 #		* All channel related commands.  (mainly the ones that translate into database commands)
 #
-# $Id: channels.tcl,v 1.8 2005/07/31 04:17:25 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,29 +21,30 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
-#	channels module for tcldrop.
+#	channels module for Tcldrop.
 #	Depends on: none.
 
 namespace eval ::tcldrop::channels {
-	variable version {0.8}
 	variable name {channels}
+	variable version {0.8}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core::database core}
 	variable author {Tcldrop-Dev}
 	variable description {All channel related commands.}
 	variable commands [list channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores]
-	variable script [info script]
-	variable rcsid {$Id: channels.tcl,v 1.8 2005/07/31 04:17:25 fireegl Exp $}
-	# Provide the channels module:
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
+	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval [linsert $commands 0 namespace export]
+	namespace export {*}$commands
 	# Create ensembles:
-	catch { namespace ensemble create -command Channels -subcommands $commands }
+	namespace ensemble create -command Channels -subcommands $commands
 }
 
 # Note: - is used in place of a channel name when it applies globally.

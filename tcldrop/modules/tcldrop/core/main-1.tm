@@ -1346,12 +1346,11 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	#::tcldrop::encryption::default encpass tea
 	::tcldrop::encryption::default encpass sha1
 	#::tcldrop::encryption::default encpass md5
-	# These are eggdrop1.7 style modules, which eggdrop1.6 loads as part of the core:
+	checkmodule bots::oldbotnet
 	checkmodule party
 	checkmodule party::telnet
 	checkmodule party::terminal
 	checkmodule party::irc
-	checkmodule bots::oldbotnet
 	checkmodule dns
 	if {[rehash $type]} {
 		setdefault botnet-nick $::nick -protect 1

@@ -34,14 +34,14 @@ namespace eval ::tcldrop::party::terminal {
 	variable version {0.1}
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
 	variable depends {party core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {The terminal interface for users to access the bot.}
 	variable rcsid {$Id$}
 	variable commands [list]
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	# Pre-depends on the partyline module:
 	checkmodule party
 }
@@ -70,7 +70,7 @@ proc ::tcldrop::party::terminal::start {event} {
 		}
 		proc ::tcldrop::party::terminal::Write {idx} {
 			fileevent stdout writable {}
-			registeridx $idx [list idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_ID info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module terminalparty]
+			registeridx $idx [list idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_ID info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module party::terminal]
 			putdcc $idx {### ENTERING DCC CHAT SIMULATION ###}
 			::tcldrop::party::telnet::Write $idx
 		}
@@ -86,7 +86,7 @@ proc ::tcldrop::party::terminal::start {event} {
 proc ::tcldrop::party::terminal::EVNT_init {event} {
 	if {$::tcldrop(host_env) == {wish}} {
 		proc ::tcldrop::stdin {text} { ::tcldrop::party::telnet::Read 1 $text }
-		registeridx 1 [list idx 1 sock stdout filter ::tcldrop::party::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module terminalparty]
+		registeridx 1 [list idx 1 sock stdout filter ::tcldrop::party::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module party::terminal]
 		putdcc 1 {### ENTERING DCC CHAT SIMULATION ###}
 		::tcldrop::party::telnet::Write 1
 	}
@@ -95,11 +95,11 @@ proc ::tcldrop::party::terminal::EVNT_init {event} {
 # This is used when we're running in wish:
 proc ::tcldrop::party::terminal::IDXFilter {idx text args} { if {[catch { stdout $text }]} { return $text } }
 
-bind load - terminalparty ::tcldrop::party::terminal::LOAD -priority 0
+bind load - party::terminal ::tcldrop::party::terminal::LOAD -priority 0
 proc ::tcldrop::party::terminal::LOAD {module} {
 	bind evnt - init ::tcldrop::party::terminal::EVNT_init -priority 10000
 	# Don't allow the module to unload:
-	bind unld - terminalparty ::tcldrop::party::terminal::UNLD
+	bind unld - party::terminal ::tcldrop::party::terminal::UNLD
 	proc ::tcldrop::party::terminal::UNLD {module} { return 1 }
 }
 

@@ -25,18 +25,20 @@
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::dns {
-	variable version {0.1}
 	variable name {dns}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the dnslookup commands.}
 	variable commands [list dnslookup testip]
-	variable script [info script]
-	variable rcsid {$Id: dns.tcl,v 1.5 2006/04/15 04:21:07 fireegl Exp $}
-	package provide tcldrop::$name $version
-	if {![info exists ::tcldrop]} { return }
+	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
-	eval namespace export $commands
+	namespace export {*}$commands
 }
 
 proc ::tcldrop::dns::testip {ip} { regexp {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }

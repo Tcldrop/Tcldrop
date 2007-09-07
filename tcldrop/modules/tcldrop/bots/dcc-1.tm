@@ -3,9 +3,9 @@
 #		* Bot related DCC commands.
 #	Depends: bots.
 #
-# $Id: dcc.tcl,v 1.3 2005/04/28 05:11:27 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,17 +26,18 @@
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::bots::dcc {
+	variable name {bots::dcc}
 	variable version {0.1}
 	variable script [info script]
-	variable name {bots::dcc}
-	variable depends {bots core::users core::dcc core::conn core}
-	variable author {Tcldrop-Dev}
-	variable description {Bot related DCC commands.}
-	variable rcsid {$Id: dcc.tcl,v 1.3 2005/04/28 05:11:27 fireegl Exp $}
-	variable commands [list]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	variable depends {bots core::users core::dcc core::conn core}
+	variable author {Tcldrop-Dev}
+	variable description {Bot related DCC commands.}
+	variable rcsid {$Id$}
+	variable commands [list]
 	# Pre-depends on the channels module:
 	checkmodule bots
 }

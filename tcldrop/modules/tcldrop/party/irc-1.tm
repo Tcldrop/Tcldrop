@@ -678,7 +678,7 @@ proc ::tcldrop::party::irc::WALL {hand msg} {
 
 if {[info exists ::tcldrop]} {
 	### Special stuff for Tcldrop..
-	checkmodule partyline
+	checkmodule party
 	proc ::tcldrop::party::irc::callircparty {idx command arg} {
 		foreach {type flags mask proc} [bindlist ircparty] {
 			if {[string match -nocase $mask $command]} {
@@ -694,7 +694,7 @@ if {[info exists ::tcldrop]} {
 		return 0
 	}
 	# This has to be a LOAD bind:
-	bind load - ircparty ::tcldrop::party::irc
+	bind load - party::irc ::tcldrop::party::irc
 	proc ::tcldrop::party::irc {module} {
 		setdefault open-telnets 1
 		setdefault info-party 0

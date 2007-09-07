@@ -2,9 +2,9 @@
 #	Handles:
 #		* Provides oldbotnet (Eggdrop v1.4) botnet support (it's compatible with Eggdrop v1.6).
 #
-# $Id: oldbotnet.tcl,v 1.4 2005/04/29 00:04:40 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005,2006 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -40,16 +40,17 @@
 namespace eval ::tcldrop::bots::oldbotnet {
 	variable version {0.1}
 	variable name {bots::oldbotnet}
-	variable depends {bots core::conn core::users core}
-	variable author {Tcldrop-Dev}
-	variable description {oldbotnet support.}
 	variable script [info script]
-	variable commands [list putoldbotnet]
-	variable rcsid {$Id: oldbotnet.tcl,v 1.4 2005/04/29 00:04:40 fireegl Exp $}
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	eval namespace export $commands
+	variable depends {bots core::conn core::users core}
+	variable author {Tcldrop-Dev}
+	variable description {oldbotnet support.}
+	variable commands [list putoldbotnet]
+	variable rcsid {$Id$}
+	namespace export {*}$commands
 	# Pre-depends on the bots module:
 	checkmodule bots
 }
