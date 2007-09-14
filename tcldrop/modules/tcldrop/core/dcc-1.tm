@@ -37,7 +37,7 @@ namespace eval ::tcldrop::core::dcc {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	if {![info exists ::tcldrop]} { return }
-	variable depends {core core::users core::conn party::main console::main}
+	variable depends {core core::users core::conn party console}
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}

@@ -34,7 +34,7 @@ namespace eval ::tcldrop::party {
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
 	package provide tcldrop::partyline $version
-	variable depends {console::main bots::main core::users core::dcc core::conn core}
+	variable depends {console bots core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Core partyline support.}
 	variable commands [list callparty getparty setparty party whom dccbroadcast dccputchan getdccaway setdccaway whomlist callchjn callchpt callaway callchat callact callbcst]
