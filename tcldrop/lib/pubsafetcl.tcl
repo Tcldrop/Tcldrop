@@ -43,9 +43,9 @@ namespace eval pubsafetcl {
 			}
 		}
 		catch { safe::interpConfigure $interp -noStatics -nestedLoadOk -accessPath $subpaths -deleteHook [list [namespace current]::create $interp] -nested 1 }
-		catch { $interp eval { package require tcllib } }
+		#catch { $interp eval { package require tcllib } }
 		# We have to hide these commands cuz they let people do nasty things:
-		foreach c {after vwait time trace} { catch { $interp hide $c } }
+		foreach c {after vwait trace} { catch { $interp hide $c } }
 		$interp eval {
 			# Make some dummy variables:
 			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0]
@@ -304,7 +304,7 @@ namespace eval pubsafetcl {
 			# by phrek:
 			proc gcd {num div} { if {!$div || !$num} { return 0 } elseif {![set res [expr { $num % $div }]]} { return $div } else { gcd $div $res } }
 			proc date {args} { strftime {%d %b %Y} }
-			proc time {args} { if {[llength $args]} { return -code error {time is disabled.} } else { strftime {%H:%M} } }
+			#proc time {args} { if {[llength $args]} { return -code error {time is disabled.} } else { strftime {%H:%M} } }
 			proc randstring {length {chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}} {
 				set count [string length $chars]
 				for {set index 0} {$index < $length} {incr index} { append result [string index $chars [rand $count]] }
@@ -811,7 +811,7 @@ namespace eval pubsafetcl {
 					foreach ns $args {
 						switch -- [string trim $ns {: }] {
 							{::} - {} {
-								after idle [list [namespace current]::create $interp]
+								after idle [list after 0 [list [namespace current]::create $interp]]
 								return "Resetting $interp ..."
 							}
 						}
@@ -821,6 +821,33 @@ namespace eval pubsafetcl {
 			eval [linsert $args 0 interp invokehidden $interp namespace $subcommand]
 		}
 		interp alias $interp namespace {} [namespace current]::Namespace $interp
+
+		interp hide $interp time
+		variable TimeNoticeLast 9
+		proc Time {interp args} {
+			if {[llength $args] == 2 && [lindex $args end] > 10000} {
+				return -code error "[lindex $args end] is too high, use 10000 or less."
+			} else {
+				set notice 0
+				switch -glob -- $args {
+					{*file *} - {*for *} - {*info *} - {*interp *} - {*namespace *} - {*proc *} - {*puts *} - {*rename *} - {*string *} - {*while *} - {*time *} {
+						# Always send the annoying notice for these commands.
+						set notice 1
+					}
+					{default} {
+						# Only send the annoying notice once every 99 seconds otherwise.
+						variable TimeNoticeLast
+						if {[clock seconds] - $TimeNoticeLast > 99} {
+							set TimeNoticeLast [clock seconds]
+							set notice 1
+						}
+					}
+				}
+				if {$notice} { interp eval $interp { puts NOTICE {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, string, time, while.  You should time commands from your own tclsh instead!} } }
+				eval [linsert $args 0 interp invokehidden $interp time]
+			}
+		}
+		interp alias $interp time {} [namespace current]::Time $interp
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
 		catch { namespace delete [namespace current]::$interp }
@@ -889,6 +916,7 @@ namespace eval pubsafetcl {
 					#extraCommands add $extraCommands
 					# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
 					catch { pubsafetcl limit time -granularity 1 -milliseconds 1499 -seconds [clock seconds] }
+					catch { pubsafetcl recursionlimit 99 }
 					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval [join $args] } out]
 					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
 					variable Cancel

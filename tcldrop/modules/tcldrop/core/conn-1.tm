@@ -28,6 +28,9 @@
 # Notes:
 # connect address port -buffering line -control procname -proxytype https -proxyhost address -proxytype socks5 -proxyhost address
 
+::package require proxy
+::package require proxy::https
+
 namespace eval ::tcldrop::core::conn {
 	variable version {0.7}
 	variable name {core::conn}
@@ -41,8 +44,6 @@ namespace eval ::tcldrop::core::conn {
 	variable description {The connect and control commands, used for all outgoing connections.}
 	variable rcsid {$Id$}
 	variable commands [list valididx killsock dccused sock2idx idx2sock initidx idxlist listidx setidxinfo getidxinfo idxinfo assignidx registeridx unregisteridx putidx killidx killsock idx2sock sock2idx listen connect control config controlsock addlistentype myip traffic timeout]
-	::package require proxy
-	::package require proxy::https
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 	# Create ensembles:
@@ -51,14 +52,13 @@ namespace eval ::tcldrop::core::conn {
 	namespace ensemble create -command ::conn -subcommands $commands
 }
 
-
 # Returns the bots IP in long form:
-proc ::tcldrop::core::conn::myip {} { if {${::my-ip} != {}} { ip2decimal ${::my-ip} } else { ip2decimal ${::default-ip} } }
+proc ::tcldrop::core::conn::myip {} { if {${::my-ip} ne {}} { ip2decimal ${::my-ip} } else { ip2decimal ${::default-ip} } }
 
 # Keeps track of how many bytes go in/out:
 proc ::tcldrop::core::conn::traffic {{type {}} {direction {}} {bytes {0}}} {
 	variable Traffic
-	if {$type != {}} {
+	if {$type ne {}} {
 		if {[info exists Traffic($type)]} {
 			# Set the info array to the current counts.
 			array set info $Traffic($type)
@@ -76,7 +76,7 @@ proc ::tcldrop::core::conn::traffic {{type {}} {direction {}} {bytes {0}}} {
 		if {[clock seconds] - $info(restart) > 86400} { array set info [list daily-in 0 daily-out 0 restart [clock seconds]] }
 		# Write the new counts back to the Traffic variable:
 		set Traffic($type) [array get info]
-		if {$direction != {}} {
+		if {$direction ne {}} {
 			# Return either in or out for $type:
 			list $info(daily-$direction) $info(total-$direction)
 		} else {
@@ -150,21 +150,20 @@ proc ::tcldrop::core::conn::Connect {opts} {
 proc ::tcldrop::core::conn::ProxyControl {idx sock status id {reason {}}} {
 	global idxlist
 	if {[info exists ::idxlist($idx)]} {
-		if {$status eq {ok}} {
+		if {$status eq {ok} && ![eof $sock]} {
 			array set idxinfo $::idxlist($idx)
-			eval [list fconfigure $sock -buffering $idxinfo(-buffering) -blocking $idxinfo(-blocking) -encoding $idxinfo(-encoding) -translation $idxinfo(-translation)] $idxinfo(-fconfigure)
-			fileevent $sock writable [list ::tcldrop::core::conn::Write $idx]
-			fileevent $sock readable [list ::tcldrop::core::conn::Read $idx]
-			foreach {idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)} [fconfigure $sock -sockname] { break }
-			foreach {idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)} [fconfigure $sock -peername] { break }
+			fconfigure $sock -buffering $idxinfo(-buffering) -blocking $idxinfo(-blocking) -encoding $idxinfo(-encoding) -translation $idxinfo(-translation) {*}$idxinfo(-fconfigure)
+			fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
+			fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
+			lassign [fconfigure $sock -sockname] idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)
 			set idxinfo(port) $idxinfo(local-port)
+			# Async sockets may not yet be connected which causes an error, so we catch this here..  (We'll try to do this again in the Write proc)
+			#catch { lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port) }
 			setidxinfo $idx [array get idxinfo]
 		} else {
 			killidx $idx
 		}
 	} else {
-		catch { fileevent $sock writable {} }
-		catch { fileevent $sock readable {} }
 		catch { fconfigure $sock -buffering full -blocking 0 }
 		catch { close $sock }
 	}
@@ -203,7 +202,7 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 			}
 			array set options [list -timeout 0 -callback {}]
 			array set options $arg
-			if {$options(-timeout) && $options(-callback) != {}} {
+			if {$options(-timeout) && $options(-callback) ne {}} {
 				set Timeout($id) [concat [array get options] [list timeout [set timeout [list [namespace current]::Timeout timeout $id]] afterid [after $options(-timeout) $timeout]]]
 				return 1
 			} else {
@@ -258,7 +257,7 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 		catch { close $sock }
 	} else {
 		array set idxinfo $::idxlist($idx)
-		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error != {}} {
+		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error ne {}} {
 			set error "net: error!(read) idx $idx  $error"
 		} elseif {[info exists idxinfo(-control)]} {
 			# For speed, we process all available lines.  (This is absolutely necessary when running inside an Eggdrop, because Eggdrop's event loops are 1 second apart)
@@ -268,9 +267,9 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 					putlog [set error "Error in $idxinfo(-control): $retval"]
 					puterrlog $::errorInfo
 					break
-				} elseif {[string equal {1} $retval]} {
+				} elseif {$retval eq {1}} {
 					# The control proc requested a killidx by returning 1.
-					putloglev d * "net: killidx! idx $idx (socket $sock)  (requested by $idxinfo(-control))"
+					putloglev d * "net: killidx! idx $idx (socket $sock)  (Requested by $idxinfo(-control))"
 					Timeout cancel $idx
 					killidx $idx
 					break
@@ -282,14 +281,14 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 		} else {
 			set error "net: control!(read) idx $idx  (no control proc defined!)"
 		}
-		if {$error != {} && [info exists idxlist($idx)]} {
+		if {$error ne {} && [info exists idxlist($idx)]} {
 			putloglev d * $error
 			# Tell the errors proc about the error, if they have one defined.
 			if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev e * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
-			killidx $idx
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
 			if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev e * "Error in $idxinfo(-control): $error" }
 			Timeout cancel $idx
+			killidx $idx
 		} else {
 			# Reset the inactive-timeout timer:
 			Timeout reset $idx
@@ -301,13 +300,14 @@ proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 	Timeout cancel $idx
 	if {[info exists ::idxlist($idx)]} {
 		array set idxinfo $::idxlist($idx)
+		catch { fileevent $idxinfo(sock) writable {} }
 		# Note, I don't know if it's possible to get an error or EOF from here, but just in case:
-		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error != {}} {
+		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error ne {}} {
 			set error "net: error!(write) idx $idx  $error"
 		} elseif {[eof $idxinfo(sock)]} {
-			set error  "net: error!(write) idx $idx  EOF"
+			set error "net: error!(write) idx $idx  EOF"
 		}
-		if {$error != {}} {
+		if {$error ne {}} {
 			putloglev d * "${error}"
 			# Tell the errors proc about the error, if they have one defined.
 			if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev de * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
@@ -315,9 +315,15 @@ proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
 			# FixMe: Find out if Eggdrop calls the control proc with "" even though the connection was never established.
 			#if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev d * "Error in $idxinfo(-control): $error" }
-		} elseif {[info exists idxinfo(-writable)]} {
-			catch { fileevent $idxinfo(sock) writable {} }
-			$idxinfo(-writable) $idx
+		} else {
+			# Try to set the remote-* things now (in case they failed to get set from ProxyControl):
+			catch {
+				lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)
+				setidxinfo $idx [array get idxinfo]
+			}
+			if {[info exists idxinfo(-writable)]} {
+				$idxinfo(-writable) $idx
+			}
 		}
 		# Start the inactive-timeout timer:
 		if {$error eq {}} { timeout start $idx -timeout [expr { $idxinfo(-inactive-timeout) * 1000 }] -callback [list ::tcldrop::core::conn::InactiveTimeout $idx] }
@@ -418,7 +424,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 			# Support for types that modules may provide goes here.
 			variable ListenTypes
 			if {[info exists ListenTypes($type)]} {
-				if {${::my-ip} != {}} { set myaddr ${::my-ip} } else { set myaddr ${::default-ip} }
+				if {${::my-ip} ne {}} { set myaddr ${::my-ip} } else { set myaddr ${::default-ip} }
 				array set options [concat [list traffictype unknown type $type ident 0 dns 0 ssl $ssl connect {} myaddr $myaddr] $ListenTypes($type) $args]
 			} else {
 				return -code error "No such listen type: $type"
@@ -444,7 +450,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 	if {!$fail} {
 		fconfigure $sock -buffering line -blocking 0
 		if {$myaddr eq {0.0.0.0}} { set info "Listening on *:$port" } else { set info "Listening on ${myaddr}:$port" }
-		foreach {local-ip local-hostname local-port} [fconfigure $sock -sockname] { break }
+		lassign [fconfigure $sock -sockname] local-ip local-hostname local-port
 		registeridx [set idx [assignidx]] [list idx $idx sock $sock module $type handle ($type) remote $myaddr hostname $myaddr local-ip ${local-ip} local-hostname ${local-hostname} local-port ${local-port} port $port myaddr $myaddr type $type other "lstn  $port" timestamp [clock seconds] info $info]
 		putlog "Listening at ${myaddr}:$port  ($type)"
 		return $port
@@ -491,8 +497,8 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 		}
 		return
 	}
-	foreach {idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)} [fconfigure $sock -sockname] { break }
-	foreach {idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)} [fconfigure $sock -peername] { break }
+	lassign [fconfigure $sock -sockname] idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)
+	lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)
 	array set optinfo $options
 	registeridx [set idx [assignidx]] [concat [array get idxinfo] [list -inactive-timeout ${::inactive-timeout} idx $idx sock $sock handle * ident {-telnet} hostname [set hostname [lindex [fconfigure $sock -peername] 1]] ip $ip remote -telnet@$hostname port $port type $optinfo(type) ssl $optinfo(ssl) other "$optinfo(type)-in" timestamp [unixtime] traffictype misc]]
 	putloglev d * "net: connect! idx $idx (socket $sock)"
@@ -507,12 +513,12 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 	}
 	switch -- $optinfo(ident) {
 		{1} - {2} - {default} {
-			afteridle [list ::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [list ::tcldrop::core::conn::Ident $idx [array get optinfo]]]
+			after idle [list ::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [list ::tcldrop::core::conn::Ident $idx [array get optinfo]]]
 		}
 	}
-	if {$optinfo(connect) != {}} { $optinfo(connect) $idx }
 	fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
 	fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
+	if {$optinfo(connect) ne {}} { $optinfo(connect) $idx }
 }
 
 # Sends $text to $idx:
@@ -552,16 +558,18 @@ proc ::tcldrop::core::conn::putidx {idx text {opts {}}} {
 proc ::tcldrop::core::conn::killidx {idx args} {
 	if {[info exists ::idxlist($idx)]} {
 		array set idxinfo $::idxlist($idx)
-		catch { fileevent $idxinfo(sock) writable {} }
-		catch { fileevent $idxinfo(sock) readable {} }
-		#catch { flush $idxinfo(sock) }
 		unset -nocomplain ::idxlist($idx)
-		array set options [list -now 0]
-		array set options $args
-		if {$options(-now)} {
-			catch { close $idxinfo(sock) }
-		} else {
-			if {[info exists idxinfo(sock)]} { after idle [list after 0 [list catch [list close $idxinfo(sock)]]] }
+		if {[info exists idxinfo(sock)]} {
+			catch { fileevent $idxinfo(sock) writable {} }
+			catch { fileevent $idxinfo(sock) readable {} }
+			#catch { flush $idxinfo(sock) }
+			array set options [list -now 0]
+			array set options $args
+			if {$options(-now)} {
+				catch { close $idxinfo(sock) }
+			} else {
+				after 0 [list catch [list close $idxinfo(sock)]]
+			}
 		}
 		return 1
 	}
@@ -672,7 +680,7 @@ proc ::tcldrop::core::conn::idxinfo {idx {info {}} {value {}}} {
 			{} { return $::idxlist($idx) }
 			{default} {
 				array set idxinfo $::idxlist($idx)
-				if {$value != {}} {
+				if {$value ne {}} {
 					set idxinfo($info) $value
 					set ::idxlist($idx) [array get idxinfo]
 					return $value
@@ -723,20 +731,21 @@ bind load - core::conn ::tcldrop::core::conn::LOAD -priority 0
 proc ::tcldrop::core::conn::LOAD {module} {
 	setdefault my-hostname {}
 	setdefault my-ip {}
-	setdefault ident-timeout 13
-	setdefault connect-timeout 237
+	setdefault ident-timeout 30
+	setdefault connect-timeout 240
 	setdefault inactive-timeout 9999
-	setdefault resolve-timeout 15
+	setdefault resolve-timeout 30
 	if {[setdefault max-dcc 99] > 999} { set ::max-dcc 999 }
 	setdefault proxy {} -protect 1
 	variable Traffic
 	array set Traffic {}
 	array set ::idxlist {}
 	# Protect the idxlist global from being deleted during restarts:
-	if {[lsearch -exact $::protected(globals) {idxlist}] == -1} { lappend ::protected(globals) {idxlist} }
+	if {{idxlist} ni $::protected(globals)} { lappend ::protected(globals) {idxlist} }
 	variable IDXCount
 	if {![info exists IDXCount]} { variable IDXCount 1 }
-	package require ident
+	::package require ident 1
+	::uplevel #0 [list ::namespace import -force [namespace current]::*]
 }
 
 bind evnt - loaded ::tcldrop::core::conn::EVNT_loaded -priority 100000
@@ -751,8 +760,8 @@ proc ::tcldrop::core::conn::EVNT_prerestart {event} {
 	counter start exempt
 	set status {}
 	foreach c [file channels] {
-		if {[lsearch -exact $protected(filechannels) $c] == -1} {
-			if {[sock2idx $c] != {}} {
+		if {$c ni $protected(filechannels)} {
+			if {[sock2idx $c] ne {}} {
 				counter incr exemptidx
 			} elseif {![catch { close $c }]} {
 				counter incr successsock
@@ -773,6 +782,6 @@ proc ::tcldrop::core::conn::EVNT_prerestart {event} {
 # Don't allow the core::conn module to be unloaded:
 bind unld - core::conn ::tcldrop::core::conn::UNLD -priority 0
 proc ::tcldrop::core::conn::UNLD {module} {
-	package forget ident
+	::package forget ident
 	return 1
 }

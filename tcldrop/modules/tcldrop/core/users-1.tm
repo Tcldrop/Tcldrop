@@ -71,7 +71,13 @@ proc ::tcldrop::core::users::callnkch {oldhandle newhandle} {
 }
 
 # Returns the number of users in the user database:
-proc ::tcldrop::core::users::countusers {} { dict size $::database(users) }
+proc ::tcldrop::core::users::countusers {} {
+	if {[info exists ::database(users)]} {
+		dict size $::database(users)
+	} else {
+		return 0
+	}
+}
 
 # Checks to see if $handle is a valid user in the user database:
 # Returns 1 if they are, 0 if they're not.
@@ -462,6 +468,6 @@ proc ::tcldrop::core::users::EVNT_loaded {event} { reload }
 
 bind unld - core::users ::tcldrop::core::users::UNLD
 proc ::tcldrop::core::users::UNLD {module} {
-	bind evnt * * ::tcldrop::core::users::*
-	return 0
+	unbind evnt * * ::tcldrop::core::users::*
+	return 1
 }

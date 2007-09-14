@@ -1,4 +1,4 @@
-# bots.tcl --
+# bots/main --
 #	Handles:
 #		* The core bot related commands for all bot types.
 #
@@ -32,22 +32,21 @@
 namespace eval ::tcldrop::bots {
 	variable name {bots}
 	variable version {0.1}
-	variable script [info script]
-	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-	package provide tcldrop::$name $version
-	package provide tcldrop::${name}::main $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
 	variable depends {core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Core bot related components.}
-	variable script [info script]
 	variable commands [list bots putbot putallbots islinked botids link unlink addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
 	variable rcsid {$Id$}
-	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
-	# Create ensembles:
-	catch { namespace ensemble create -command Bots -subcommands $commands }
+	namespace ensemble create -command Bots -subcommands $commands
+	namespace unknown unknown
+	namespace path [list ::tcldrop]
+	variable script [info script]
+	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	if {![info exists ::tcldrop]} { return }
 }
 
 proc ::tcldrop::bots::addbottype {type args} {
@@ -327,6 +326,10 @@ proc ::tcldrop::bots::LOAD {module} {
 	variable Bots
 	array set Bots {}
 	bind evnt - loaded ::tcldrop::bots::EVNT_loaded -priority 0
+	bind unld - bots ::tcldrop::bots::UNLD -priority 0
+	proc ::tcldrop::bots::UNLD {module} {
+		return 1
+	}
 }
 
 proc ::tcldrop::bots::EVNT_loaded {event} {

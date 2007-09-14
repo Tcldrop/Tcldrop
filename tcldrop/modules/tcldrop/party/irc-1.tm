@@ -34,7 +34,7 @@ namespace eval ::tcldrop::party::irc {
 	variable version {0.1}
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-	variable depends {party irc server channels console core::users core::dcc core::conn core}
+	variable depends {party::main irc::main server::main channels::main console::main core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the IRC interface for users.}
 	variable rcsid {$Id$}

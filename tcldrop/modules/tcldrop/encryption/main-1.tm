@@ -36,10 +36,10 @@ namespace eval ::tcldrop::encryption {
 	variable depends {core::main}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the core encryption support.}
-	variable commands [list encpass Encpass encrypt Encrypt decrypt Decrypt]
 	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export {*}$commands
+	namespace export encpass Encpass encrypt Encrypt decrypt Decrypt
+	variable commands [namespace export]
 }
 
 # ToDo/FixMe: Make this a namespace ensemble..
@@ -127,5 +127,5 @@ proc ::tcldrop::encryption::LOAD {module} {
 	array set Defaults [list encpass [list] encrypt [list] decrypt [list]]
 }
 
-# bind unld - encryption ::tcldrop::encryption::UNLD -priority 0
-# proc ::tcldrop::encryption::UNLD {module} { return 1 }
+bind unld - encryption ::tcldrop::encryption::UNLD -priority 0
+proc ::tcldrop::encryption::UNLD {module} { return 1 }

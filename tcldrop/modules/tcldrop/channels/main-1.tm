@@ -30,20 +30,19 @@
 namespace eval ::tcldrop::channels {
 	variable name {channels}
 	variable version {0.8}
+	variable author {Tcldrop-Dev}
+	variable description {All channel related commands.}
+	variable predepends {core}
+	variable depends {core::database core}
+	variable rcsid {$Id$}
 	variable script [info script]
+	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores
+	variable commands [namespace export]
+	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands [namespace export] script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
-	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	variable depends {core::database core}
-	variable author {Tcldrop-Dev}
-	variable description {All channel related commands.}
-	variable commands [list channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores]
-	variable rcsid {$Id$}
-	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export {*}$commands
-	# Create ensembles:
 	namespace ensemble create -command Channels -subcommands $commands
 }
 
@@ -706,6 +705,9 @@ proc ::tcldrop::channels::Save {type} {
 }
 
 proc ::tcldrop::channels::UNLD {module} {
+	unbind evnt - save ::tcldrop::channels::Save -priority 3
+	unbind evnt - hourly-updates ::tcldrop::channels::Save -priority 4
+	unbind evnt - die ::tcldrop::channels::Save -priority 0
 	# FixMe: Add these unload commands:
 	#unloadchannels
 	#unloadbeis ignore
@@ -716,7 +718,7 @@ proc ::tcldrop::channels::UNLD {module} {
 	unloadhelp [file join set channels.help]
 	unloadhelp chaninfo.help
 	unloadmodule channels::dcc
-	return 0
+	return 1
 }
 
 proc ::tcldrop::channels::LOAD {module} {
@@ -746,7 +748,6 @@ proc ::tcldrop::channels::LOAD {module} {
 	bind evnt - save ::tcldrop::channels::Save -priority 3
 	bind evnt - hourly-updates ::tcldrop::channels::Save -priority 4
 	bind evnt - die ::tcldrop::channels::Save -priority 0
-	bind evnt - save ::tcldrop::channels::Save -priority 0
 	# Note, these settings are defined here, but their actual functions are in the irc module (or possibly other modules):
 	setudef str chanmode ${::global-chanmode}
 	setudef int idle-kick ${::global-idle-kick}
@@ -770,7 +771,7 @@ proc ::tcldrop::channels::LOAD {module} {
 	setudef str need-halfop {}
 	setudef str need-voice {}
 	# Note/FixMe: global-chanset should be a list, see if it's a list in Eggdrop.
-	foreach n ${::global-chanset} { if {$n != {}} { catch { setudef flag [string range $n 1 end] [string index $n 0] } } }
+	foreach n ${::global-chanset} { if {$n ne {}} { catch { setudef flag [string range $n 1 end] [string index $n 0] } } }
 	loadbeis ignore
 	loadbeis ban
 	loadbeis exempt

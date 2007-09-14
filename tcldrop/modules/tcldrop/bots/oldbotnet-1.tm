@@ -1,4 +1,4 @@
-# bots/oldbotnet.tcl --
+# bots/oldbotnet --
 #	Handles:
 #		* Provides oldbotnet (Eggdrop v1.4) botnet support (it's compatible with Eggdrop v1.6).
 #
@@ -24,7 +24,7 @@
 # The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 #
-#	oldbotnet module for tcldrop.  (optional, but loaded by default for compatibility reasons)
+#	bots::oldbotnet module for Tcldrop.  (optional, but loaded by default for Eggdrop compatibility reasons)
 #
 # This module provides the ability to talk to old eggdrop bots (1.6 and less).
 # It does NOT support Eggdrop 1.7 (1.9?) and higher bots.
@@ -38,34 +38,39 @@
 # This module only provides support for the ORIGINAL eggdrop botnet protocol.
 
 namespace eval ::tcldrop::bots::oldbotnet {
-	variable version {0.1}
 	variable name {bots::oldbotnet}
-	variable script [info script]
-	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-	package provide tcldrop::$name $version
-	# This makes sure we're loading from a tcldrop environment:
-	if {![info exists ::tcldrop]} { return }
+	variable version {0.1}
+	variable predepends {bots}
 	variable depends {bots core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {oldbotnet support.}
-	variable commands [list putoldbotnet]
 	variable rcsid {$Id$}
-	namespace export {*}$commands
-	# Pre-depends on the bots module:
-	checkmodule bots
+	namespace export putoldbotnet
+	variable commands [namespace export]
+	namespace unknown unknown
+	namespace path [list ::tcldrop::bots ::tcldrop]
+	variable script [info script]
+	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	if {![info exists ::tcldrop]} { return }
 }
 
 # This is for INCOMING bot connections only:
-proc ::tcldrop::bots::oldbotnet::Connect {idx} { setidxinfo $idx [list control ::tcldrop::bots::oldbotnet::Read writable ::tcldrop::bots::oldbotnet::Write_IN module oldbotnet state BOT_IN other {b-in  } timestamp [unixtime] traffictype botnet] }
+proc ::tcldrop::bots::oldbotnet::Connect {idx} {
+	putloglev d * "in oldbotnet::Connect $idx"
+	setidxinfo $idx [list -control ::tcldrop::bots::oldbotnet::Read -writable ::tcldrop::bots::oldbotnet::Write_IN module oldbotnet state BOT_IN other {b-in  } timestamp [unixtime] traffictype botnet]
+}
 
 # This is for INCOMING bot connections only:
-proc ::tcldrop::bots::oldbotnet::Write_IN {idx} {
+proc ::tcldrop::bots::oldbotnet::Write_IN {idx {line {}}} {
+	putloglev d * "in oldbotnet::Write_IN $idx $line"
 	putidx $idx {Nickname.}
 	setidxinfo $idx [list state BOT_ID other {b-id  } traffictype {botnet} timestamp [clock seconds] direction {in} handlen 9 numversion 0]
 }
 
 proc ::tcldrop::bots::oldbotnet::Errors {idx error} {
-	putlog "Got error on $idx $error"
+	puterrlog "Got error on ${idx}: $error"
 	# FixMe: This should handle all errors.
 }
 
@@ -124,8 +129,11 @@ proc ::tcldrop::bots::oldbotnet::Write_OUT {idx} {
 # > el
 
 proc ::tcldrop::bots::oldbotnet::Read {idx line} {
+	putloglev d * "in oldbotnet::Read $idx $line"
 	array set idxinfo $::idxlist($idx)
+	putloglev d * "idxinfo(state): $idxinfo(state)"
 	switch -- $idxinfo(state) {
+		{BOT_IN} { Write_IN $idx $line }
 		{BOT_ID} {
 			# This is for INCOMING bot connections only; $line should contain the remotes response to our "Nickname." prompt.
 			if {[matchattr $line b]} {
@@ -619,7 +627,6 @@ proc ::tcldrop::bots::oldbotnet::CHAT {handle chan text} {
 	return 0
 }
 
-bind load - bots::oldbotnet ::tcldrop::bots::oldbotnet::LOAD -priority 0
 proc ::tcldrop::bots::oldbotnet::LOAD {module} {
 	variable Bots
 	array set Bots {}
@@ -639,10 +646,12 @@ proc ::tcldrop::bots::oldbotnet::LOAD {module} {
 	addlistentype bots connect ::tcldrop::bots::oldbotnet::Connect ident 1
 	# FixMe: It would be slightly more preferred if all the bind's were moved into this proc.
 }
+bind load - bots::oldbotnet ::tcldrop::bots::oldbotnet::LOAD -priority 0
 
-bind unld - bots::oldbotnet ::tcldrop::bots::oldbotnet::UNLD -priority 0
 proc ::tcldrop::bots::oldbotnet::UNLD {module} {
 	# FixMe: Need to unbind all of the binds used in this .tcl
 	# FixMe: Need to delbottype and dellistentype here.
-	return 0
+	return 1
 }
+bind unld - bots::oldbotnet ::tcldrop::bots::oldbotnet::UNLD -priority 0
+

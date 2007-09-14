@@ -218,7 +218,7 @@ proc ::tcldrop::irc::callsplt {nick uhost {handle {*}} {chanmask {*}} {msg {net-
 				array set channickinfo $channelnicks([set element [string tolower $channel,$nick]])
 				array set channickinfo [list split [clock seconds] split-timer [after [expr { ${::wait-split} * 1001 }] [list ::tcldrop::irc::callsign $nick $uhost $handle $channel $msg]]]
 				set channelnicks($element) [array get channickinfo]
-				if {[string match -nocase $mask "$channel $from"] && [matchattr $handle $flags $channel]} {
+				if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 					if {[catch { $proc $nick $uhost $handle $channel } err]} {
 						putlog "Error in $proc: $err"
 						puterrlog "$::errorInfo"
@@ -238,8 +238,10 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 			array set channickinfo $channelnicks([set element [string tolower $channel,$nick]])
 			array set channickinfo [list split 0 nick $nick op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0]
-			after cancel $channickinfo(split-timer)
-			unset channickinfo(split-timer)
+			if {[info exists channickinfo(split-timer)]} {
+				after cancel $channickinfo(split-timer)
+				unset channickinfo(split-timer)
+			}
 			set channelnicks($element) [array get channickinfo]
 			if {[catch { $proc $nick $uhost $handle $channel } err]} {
 				putlog "Error in $proc: $err"
@@ -479,17 +481,15 @@ proc ::tcldrop::irc::FLUD_msg {nick uhost handle text} { if {[detectflood ${::fl
 
 bind ctcp - * ::tcldrop::irc::FLUD_ctcp -priority 1000
 proc ::tcldrop::irc::FLUD_ctcp {nick uhost handle dest key text} {
-	if {[isbotnetnick $dest]} {
+	if {[isbotnick $dest] || $dest eq {}} {
 		# FixMe: Should the channel be "" for msg floods or something else?
 		if {[detectflood ${::flood-ctcp} ctcp $uhost]} {
 			callflud $nick $uhost $handle ctcp ""
 			return 1
 		}
-	} else {
-		if {[detectflood [channel get $dest flood-ctcp] ctcp $dest $uhost]} {
-			callflud $nick $uhost $handle ctcp $dest
-			return 1
-		}
+	} elseif {[validchan $dest] && [detectflood [channel get $dest flood-ctcp] ctcp $dest $uhost]} {
+		callflud $nick $uhost $handle ctcp $dest
+		return 1
 	}
 	return 0
 }
@@ -1649,8 +1649,9 @@ proc ::tcldrop::irc::LOAD {module} {
 }
 
 proc ::tcldrop::irc::UNLD {module} {
+	unbind evnt - disconnect-server ::tcldrop::irc::disconnect-server -priority 1000
 	unloadhelp [file join set irc.help]
-	unloadmodule irc::dcc
-	unloadmodule irc::msg
-	return 0
+	#unloadmodule irc::dcc
+	#unloadmodule irc::msg
+	return 1
 }

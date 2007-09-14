@@ -38,7 +38,7 @@ namespace eval ::tcldrop::party::telnet {
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
-	variable depends {party channels console core::users core::dcc core::conn core}
+	variable depends {party channels::main console::main core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the telnet interface for users.}
 	variable rcsid {$Id$}

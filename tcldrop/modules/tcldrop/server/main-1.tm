@@ -553,7 +553,6 @@ proc ::tcldrop::server::LOAD {module} {
 	bind evnt - exit ::tcldrop::server::EVNT_exit -priority 0
 	loadhelp server.help
 	loadhelp [file join set server.help]
-	bind unld - server ::tcldrop::server::UNLD -priority 10
 	bind evnt - loaded ::tcldrop::server::EVNT_loaded -priority 100000
 	return 0
 }
@@ -569,23 +568,25 @@ proc ::tcldrop::server::EVNT_loaded {event} {
 
 proc ::tcldrop::server::UNLD {module} {
 	if {![info exists ::restart]} {
-		unbind * * * ::tcldrop::server::*
+		#unbind * * * ::tcldrop::server::*
 		quit $module
-		unsetdefault servers
-		unsetdefault default-port
-		unsetdefault server-online
-		unsetdefault server
-		unsetdefault serveraddress
-		unsetdefault server-idx
-		unsetdefault botname
-		unsetdefault botnick
-		unsetdefault server-timeout
-		unsetdefault server-cycle-wait
-		unsetdefault servererror-quit
-		unsetdefault check-stoned
-		unsetdefault max-queue-msg
+		#unsetdefault servers
+		#unsetdefault default-port
+		#unsetdefault server-online
+		#unsetdefault server
+		#unsetdefault serveraddress
+		#unsetdefault server-idx
+		#unsetdefault botname
+		#unsetdefault botnick
+		#unsetdefault server-timeout
+		#unsetdefault server-cycle-wait
+		#unsetdefault servererror-quit
+		#unsetdefault check-stoned
+		#unsetdefault max-queue-msg
 	}
 	unloadhelp server.help
 	unloadhelp [file join set server.help]
-	return 0
+	return 1
 }
+bind unld - server ::tcldrop::server::UNLD -priority 10
+

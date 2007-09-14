@@ -34,20 +34,25 @@
 #
 
 namespace eval ::tcldrop::core::database {
-	variable version {0.6}
 	variable name {core::database}
+	variable version {0.6}
 	variable script [info script]
-	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-	package provide tcldrop::$name $version
-	if {![info exists ::tcldrop]} { return }
 	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all database commands.}
 	variable rcsid {$Id$}
-	variable commands [list Database database calldatabase]
-	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export {*}$commands
+	namespace path [list ::tcldrop::core ::tcldrop]
+	namespace export Database database calldatabase
+	variable commands [namespace export]
+	variable namespace [namespace current]
+	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace $namespace]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	namespace unknown unknown
+	if {![info exists ::tcldrop]} { return }
 }
+
+# FixMe: This module needs an overhaul, to take advantage of Tcl v8.5.
 
 # This is mostly a fancy interface to using the [dict] command..
 # It allows the dicts to be accessed by their database name and not by the dictionaryValue/dictionaryVariable.
@@ -172,7 +177,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 				set error [catch { set ::database($database) [eval [linsert $arguments 0 dict create]] } return]
 				if {!$error} { calldatabase $database create $arguments [array get options] }
 				return -code $error $return
-			} elseif {$arguments != {}} {
+			} elseif {$arguments ne {}} {
 				set error [catch { eval [linsert $arguments 0 dict set ::database($database)] } return]
 				if {!$error} { calldatabase $database init $arguments [array get options] }
 				return -code $error $return
@@ -316,5 +321,7 @@ proc ::tcldrop::core::database::LOAD {module} {
 	protected globals database database-basename database-perm quiet-save
 }
 
-# bind unld - core::database ::tcldrop::core::database::UNLD -priority 10
-# proc ::tcldrop::core::database::UNLD {module} { return 0 }
+bind unld - core::database ::tcldrop::core::database::UNLD -priority 10
+proc ::tcldrop::core::database::UNLD {module} {
+	return 1
+}

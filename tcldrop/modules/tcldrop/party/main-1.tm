@@ -33,11 +33,12 @@ namespace eval ::tcldrop::party {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
-	variable depends {console bots core::users core::dcc core::conn core}
+	package provide tcldrop::partyline $version
+	variable depends {console::main bots::main core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Core partyline support.}
 	variable commands [list callparty getparty setparty party whom dccbroadcast dccputchan getdccaway setdccaway whomlist callchjn callchpt callaway callchat callact callbcst]
-	variable rcsid {$Id: partyline.tcl,v 1.6 2005/05/19 03:55:42 fireegl Exp $}
+	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
@@ -421,5 +422,7 @@ proc ::tcldrop::party::EVNT_loaded {event} {
 	bind log - * ::tcldrop::party::LOG
 }
 
-#bind unld - party ::tcldrop::party::UNLD -priority 0
-#proc ::tcldrop::party::UNLD {module} { return 1 }
+bind unld - party ::tcldrop::party::UNLD -priority 0
+proc ::tcldrop::party::UNLD {module} {
+	return 1
+}

@@ -1,11 +1,11 @@
-# null.tcl --
+# encryption/null --
 #	Handles:
 #		* Provides "null" encryption.
 #	Depends: encryption.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@ namespace eval ::tcldrop::encryption::null {
 	variable version {0.1}
 	variable name {encryption::null}
 	package provide tcldrop::$name 1
+	variable predepends {encryption}
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides "null" encryption.}
@@ -42,6 +43,7 @@ namespace eval ::tcldrop::encryption::null {
 	proc encrypt {key string} { set string }
 	proc decrypt {key string} { set string }
 	proc encpass {password} { set password }
+	namespace path [list ::tcldrop::encryption ::tcldrop]
 }
 
 bind load - encryption::null ::tcldrop::encryption::null::LOAD -priority 0

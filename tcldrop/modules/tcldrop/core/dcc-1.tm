@@ -37,7 +37,7 @@ namespace eval ::tcldrop::core::dcc {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	if {![info exists ::tcldrop]} { return }
-	variable depends {console partyline core::conn core::users core}
+	variable depends {core core::users core::conn party::main console::main}
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}
@@ -429,9 +429,9 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 }
 
 proc ::tcldrop::core::dcc::SAVE {handle idx text} {
-	after idle [list callevent save]
 	putcmdlog "#$handle# save $text"
 	putdcc $idx {Saving...}
+	after idle [list after 0 [list callevent save]]
 	return 0
 }
 
@@ -610,5 +610,5 @@ proc ::tcldrop::core::dcc::UNLD {module} {
 	unloadhelp cmds1.help
 	unloadhelp cmds2.help
 	unloadhelp [file join set cmds1.help]
-	return 0
+	return 1
 }

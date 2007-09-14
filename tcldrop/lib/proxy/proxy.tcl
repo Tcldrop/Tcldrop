@@ -95,7 +95,7 @@ proc ::proxy::Finish {id status {reason {}}} {
 	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) }
 	switch -- $status {
 		{ok} {
-			after idle [list eval $info(-command) $info(socket) $status $id]
+			after 0 [list eval $info(-command) $info(socket) $status $id]
 		}
 		{error} - {eof} - {default} {
 			catch { close $info(socket) }

@@ -2,10 +2,10 @@
 #
 #	Ident client for Tcl (See RFC 1413).
 #
-# Copyright (C) 2003,2004,2005 by Philip Moore <Tcl@Atlantica.US>
+# Copyright (C) 2003,2004,2005,2006,2007 by Philip Moore <Tcl@Atlantica.US>
 # This code may be distributed under the same terms as Tcl.
 #
-# RCS: @(#) $Id: ident.tcl,v 1.3 2005/05/06 08:25:29 fireegl Exp $
+# RCS: @(#) $Id$
 #
 # This package provides an ident client (See RFC 1413),
 # used for querying a remote system to find the username
@@ -80,7 +80,7 @@ package provide ident 1.0
 
 namespace eval ::ident {
 	variable version {1.0}
-	variable rcsid {$Id: ident.tcl,v 1.3 2005/05/06 08:25:29 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable Count
 	if {![info exists Count]} { variable Count 0 }
 	namespace export ident
@@ -95,10 +95,14 @@ proc ::ident::ident {args} {
 				if {![catch {fconfigure $d -peername} peerinfo]} {
 					set info(rhost) [lindex $peerinfo 0]
 					set info(rport) [lindex $peerinfo 2]
+				} else {
+					return -code error "Error getting peer info: $peerinfo"
 				}
 				if {![catch {fconfigure $d -sockname} sockinfo]} {
 					set info(lhost) [lindex $sockinfo 0]
 					set info(lport) [lindex $sockinfo 2]
+				} else {
+					return -code error "Error getting sock info: $sockinfo"
 				}
 			}
 			{-lhost} - {-localhost} - {-chost} - {-clienthost} - {-myaddr} { set info(lhost) $d }
@@ -120,7 +124,7 @@ proc ::ident::ident {args} {
 	} elseif {![info exists info(rport)]} {
 		return -code error {You must specify at least one of these options: -sock, -rport, or -remote}
 	} elseif {![info exists info(lhost)]} { set info(lhost) {} }
-	after idle [list ::ident::Connect $id]
+	after 0 [list ::ident::Connect $id]
 	if {[info exists info(command)] && $info(command) != {}} {
 		set info(ident) {}
 		set info(status) {na}

@@ -34,7 +34,7 @@ namespace eval ::tcldrop::party::dcc {
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	variable depends {party::telnet channels console core::users core::dcc core::conn core}
+	variable depends {party::telnet channels::main console::main core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the dcc interface for users.}
 	variable commands [list]

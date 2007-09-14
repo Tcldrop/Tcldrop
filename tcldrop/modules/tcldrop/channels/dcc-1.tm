@@ -33,13 +33,12 @@ namespace eval ::tcldrop::channels::dcc {
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	variable predepends {channels}
 	variable depends {channels core::dcc core}
 	variable author {Tcldrop-Dev}
 	variable description {Channel related DCC commands.}
 	variable rcsid {$Id$}
 	variable commands [list]
-	# Pre-depends on the channels module:
-	checkmodule channels
 }
 
 proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {

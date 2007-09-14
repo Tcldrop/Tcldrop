@@ -1,11 +1,11 @@
-# md5.tcl --
+# encryption/md5 --
 #	Handles:
 #		* Provides the [md5] command, as well as md5 password hashing.
 #	Depends: encryption.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -33,21 +33,25 @@ namespace eval ::tcldrop::encryption::md5 {
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the [md5] command as well as md5 password hashing.}
-	variable commands [list]
 	variable script [info script]
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export md5
-	::package require md5 1
+	variable commands [namespace export]
 }
 
-#  md5 <string>
-#    Returns: the 128 bit MD5 message-digest of the specified string
-proc ::tcldrop::encryption::md5::md5 {string} { ::md5::md5 $string }
+# Because Eggdrop's ::md5 command returns the md5 in hex, and tcllib's ::md5 command returns the md5 in binary, we have to do this crap:
+if {![catch { package require md5 1 }] && [info commands {::md5}] eq {::md5} && [info commands {::md5::real_md5}] ne {::md5::real_md5}} {
+	rename ::md5 ::md5::real_md5
+	#  md5 <string>
+	#    Returns: the 128 bit MD5 message-digest of the specified string
+	proc ::tcldrop::encryption::md5::md5 {string} { string tolower [::hex -mode encode -- [::md5::real_md5 -- $string]] }
+	# Replace the original ::md5::md5 proc with this one, so it knows about ::md5::real_md5:
+	proc ::md5::md5 {string} { string tolower [::hex -mode encode -- [::md5::real_md5 -- $string]] }
+}
 proc ::tcldrop::encryption::md5::encpass {password} { ::md5::hmac $password $password }
-
 bind load - encryption::md5 ::tcldrop::encryption::md5::LOAD -priority 0
 bind load - md5 ::tcldrop::encryption::md5::LOAD -priority 0
 proc ::tcldrop::encryption::md5::LOAD {module} {
@@ -55,7 +59,6 @@ proc ::tcldrop::encryption::md5::LOAD {module} {
 	bind unld - encryption::md5 ::tcldrop::encryption::md5::UNLD
 	bind unld - md5 ::tcldrop::encryption::md5::UNLD
 }
-
 proc ::tcldrop::encryption::md5::UNLD {module} {
 	catch { package forget md5 }
 	return 0

@@ -1,4 +1,4 @@
-# core/core.tcl --
+# core/main --
 #	Handles:
 #		* Provides all core Tcl commands and bind types.
 #		* Initializes the bot by loading the other core modules and sourcing the config file.
@@ -36,7 +36,7 @@
 
 # Tcldrop requires at least Tcl v8.5.
 ::package require Tcl 8.5
-# Cleanup/FixMe: Support/Kludges for Tcl v8.4 are to be removed.
+# Cleanup/FixMe: Support/Kludges for Tcl v8.4 are to be removed.  Only Tcl v8.5+ is supported.
 
 # This is just a way to count how many times each proc is called:
 if {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info exists ::env(proc_counter)] && $::env(proc_counter)} {
@@ -115,7 +115,6 @@ namespace eval ::tcldrop::core {
 			set ::mod-path $m
 		}
 	}
-	puts "[::tcl::tm::list]"
 	# Add to the paths to search for Tcl packages:
 	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts]] {
 		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
@@ -200,8 +199,10 @@ if {![llength [info commands ctime]]} { proc ::tcldrop::core::ctime {time {forma
 
 proc ::tcldrop::core::unames {args} { return "$::tcl_platform(os) $::tcl_platform(osVersion)" }
 
-# Null password encryption.. Used only when an encryption module isn't chosen:
+# Null password encryption.. Used only when an encryption module isn't (yet) loaded:
 #proc ::tcldrop::core::encpass {password args} { set password }
+
+proc ::tcldrop::core::protected {type args} { set ::protected($type) [lsort -unique [concat $::protected($type) $args]] }
 
 # Sets global variables, being careful not to overwrite any that may already exist.
 # This is mainly used after loading the config file, to fill in the gaps that the config may leave.
@@ -224,8 +225,8 @@ proc ::tcldrop::core::setdefault {var {value {}} args} {
 
 # Unsets a global variable:
 proc ::tcldrop::core::unsetdefault {var args} {
-	if {[set pos [lsearch -exact $::protected(globals)] $var] != -1} { set ::protected(globals) [lreplace $::protected(globals) $pos $pos] }
-	if {[info exists "::$var"]} { unset "::$var" }
+	if {[set pos [lsearch -exact $::protected(globals) $var]] != -1} { set ::protected(globals) [lreplace $::protected(globals) $pos $pos] }
+	#if {[info exists "::$var"]} { unset "::$var" }
 }
 
 #proc ::tcldrop::core::islist {s} { expr { ![catch { llength $s }] } }
@@ -278,8 +279,8 @@ proc ::tcldrop::core::lprepend {varName args} {
 	upvar 1 $varName var
 	# Ensure that the variable exists and contains a list
 	lappend var
-	# Now we insert all the arguments in one go
-	set var [eval [list linsert $var 0] $args]
+	# Now we insert all the arguments in one go (yes, I know this looks crazy, but it's the fastest way in Tcl 8.5, see http://wiki.tcl.tk/1482)
+	set var [linsert $var [set var 0] {*}$args]
 }
 
 # Sets the default language:
@@ -352,7 +353,7 @@ proc ::tcldrop::core::addlangsection {section {language {}}} {
 	set retval 0
 	# Loading Eggdrop's .lang's first, and then ours, so that ours can override Eggdrops if needed.
 	foreach langfile [list [file join ${lang-path} eggdrop "${section}.${language}.lang"] [file join ${lang-path} "${section}.${language}.lang"]] {
-		if {![catch { open $langfile r } fid]} {
+		if {[file readable $langfile] && ![catch { open $langfile r } fid]} {
 			set continued 0
 			while {[gets $fid line] >= 0} {
 				if {[string equal [string index $line 0] {#}]} {
@@ -887,7 +888,6 @@ proc ::tcldrop::core::afteridle {args} { after idle [list after 0 $args] }
 # This proc is from Papillon@EFNet
 # (Papillon) -> I've enabeled this to apply to ipv6 hosts aswell, it does not mask them yet, but I'll look into it
 # Note: This is untested and unmodified.
-# FixMe: I'd rather this not use regexp's if possible.. regexp is slow, and therefore evil. =P
 if {![llength [info commands maskhost]]} {
 	proc ::tcldrop::core::maskhost {x} {
 		if {[string match "*\**" [lindex [split $x @] 1]]} { return $x }
@@ -910,6 +910,7 @@ if {![llength [info commands maskhost]]} {
 	}
 }
 
+# FixMe: This may be moved or copied to the bots module:
 proc ::tcldrop::core::isbotnetnick {nick} { string equal -nocase $nick ${::botnet-nick} }
 
 # detectflood returns 1 if a flood was detected, or 0 if it wasn't.
@@ -967,32 +968,47 @@ proc ::tcldrop::core::ClearFlood {id} {
 	}
 }
 
-# Every $hourly-updates we call the "hourly-updates" event:
-proc ::tcldrop::core::HourlyUpdates {minute hour day month year} { callevent hourly-updates }
-# Every $daily-updates we call the "daily-updates" event:
-proc ::tcldrop::core::DailyUpdates {minute hour day month year} { callevent daily-updates }
-
-
 # The loadmodule and unloadmodule commands MUST be defined here.
 # Because package require loads the packages from the global namespace (I think).
 # And because [namespace import] imports into the current namespace.
 # FixMe: We need to keep up with what modules are loaded, and their versions.
 proc ::tcldrop::core::loadmodule {module args} { LoadModule $module $args }
 proc ::tcldrop::core::LoadModule {module {options {}}} {
-	if {[info exists ::modules($module)]} { return 1 }
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0}]
 	array set opts $options
-	if {(($opts(-version) != {0}) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err] && [catch { ::package require "tcldrop::${module}::main" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err] && [catch { ::package require "tcldrop::${module}::main" } err])} {
+	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err] && [catch { ::package require "tcldrop::${module}::main" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err] && [catch { ::package require "tcldrop::${module}::main" } err])} {
 		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
 		return 0
 	} else {
-		array set modinfo [list name $module version $err depends [list] commands [list] rcsid {} script {} author {} description {}]
-		# FixMe: Modules should set ::modules($module) themselves:
-		foreach i [array names modinfo] { catch { set modinfo($i) [set "::tcldrop::${module}::$i"] } }
+		# Defaults for modinfo:
+		array set modinfo [list name $module version $err depends [list] predepends [list] commands [list] rcsid {} script {} author {} description {} namespace "::tcldrop::${module}"]
+		# Modules can set ::modules($module) themselves, but for the ones that don't, there's this code:
+		foreach i [array names modinfo] { if {[info exists "$modinfo(namespace)::$i"]} { set modinfo($i) [set "$modinfo(namespace)::$i"] } }
+		# In case the module set ::modules($module) itself, we use that info:
+		if {[info exists ::modules($module)]} { array set modinfo $::modules($module) }
 		set ::modules($module) [array get modinfo]
-		# FixMe: Modules should run [::namespace import] themselves.
-		if {[catch { ::uplevel \#0 [list ::namespace import -force "::tcldrop::${module}::*"] } err]} { putlog "Error importing namespace ::tcldrop::${module}::* $err" }
+		# predepends modules get loaded before we do any LOAD binds for this module:
+		foreach m $modinfo(predepends) { ::tcldrop::core::CheckModule $m $options }
+		# depends modules get loaded when we hit the Tcl event-loop next:
+		foreach m $modinfo(depends) { if {$m ni $modinfo(predepends)} { after 0 [list ::tcldrop::core::CheckModule $m $options] } }
+		if {[namespace exists $modinfo(namespace)]} {
+			if {$modinfo(namespace) ni $::protected(namespaces)} { lappend ::protected(namespaces) $modinfo(namespace) }
+			namespace eval $modinfo(namespace) {
+				# Make sure the module has ::tcldrop in its command search path:
+				if {{::tcldrop} ni [set NamespacePath [namespace path]]} {
+					namespace path [lappend NamespacePath {::tcldrop}]
+					unset NamespacePath
+				}
+				# Set the unknown command as unqualified (default is ::unknown):
+				if {[namespace unknown] eq {}} { namespace unknown unknown }
+			}
+			# Import the modules' commands into the global namespace.  Modules may run namespace import themselves (either at the end of their script, or from the LOAD bind) (especially if they want to use the -force option), but for the ones that don't, we do it here:
+			if {[catch { ::uplevel \#0 [list ::namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* $err" }
+			# Import them into the ::tcldrop namespace also, using -force:
+			if {[catch { namespace eval ::tcldrop [list namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* $err" }
+		}
+		# Call the LOAD binds for $module:
 		foreach {type flags mask proc} [bindlist load] {
 			if {[string match -nocase $mask $module]} {
 				if {[catch { $proc $module } err]} {
@@ -1002,22 +1018,26 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 				countbind $type $mask $proc
 			}
 		}
-		# FixMe: Modules should lappend ::protected(namespaces) (and whatever else) themselves.
-		lappend ::protected(namespaces) "::tcldrop::${module}"
 		# Load the corresponding .lang file:
-		# FixMe: Modules should do addlangsections themselves..I think.
+		# FixMe: Modules should do addlangsections themselves from their own LOAD binds..shouldn't they?
 		if {[addlangsection [lindex [split $module :] 0]]} {
 			putlog "[format [lang 0x20f core] $module]    (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
 		} else {
 			putlog "[format [lang 0x210 core] $module]                        (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
 		}
-		foreach m $modinfo(depends) { after idle [list ::tcldrop::core::LoadModule $m] }
 		return 1
 	}
+	return 0
 }
 
 proc ::tcldrop::core::checkmodule {module args} { CheckModule $module $args }
-proc ::tcldrop::core::CheckModule {module {options {}}} { LoadModule $module $options }
+proc ::tcldrop::core::CheckModule {module {options {}}} {
+	if {[info exists ::modules($module)]} {
+		return 1
+	} else {
+		LoadModule $module $options
+	}
+}
 
 proc ::tcldrop::core::unloadmodule {{module {*}} args} { UnloadModule $module $args }
 proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
@@ -1033,7 +1053,7 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 			# FixMe: Prevent loops when 2 modules depend on each other (modules shouldn't depend on each other though).
 			switch -- $m {
 				$d - {core} - {tcldrop} {}
-				{default} { UnloadModule $d $options }
+				{default} { after 0 [list UnloadModule $d $options] }
 			}
 		}
 		set force 0
@@ -1066,7 +1086,7 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 		if {$success} {
 			set msg "([join $msg {, }])"
 			putlog "[format {%-2.40s %-18.32s %-0.38s} [lang 0x206 core] $m $msg]"
-			unset modules($m)
+			unset -nocomplain modules($m)
 		} else {
 			set out [format [lang 0x207 core]]
 		}
@@ -1107,6 +1127,7 @@ proc ::tcldrop::core::moduledeps {module} {
 # Tells you if a module is loaded or not:
 proc ::tcldrop::core::moduleloaded {module args} { ModuleLoaded $module $args }
 proc ::tcldrop::core::ModuleLoaded {module {options {}}} { info exists ::modules($module) }
+
 
 proc ::tcldrop::core::callevent {event} {
 	foreach {type flags mask proc} [bindlist evnt] {
@@ -1162,7 +1183,7 @@ proc ::tcldrop::core::reloadhelp {args} {
 	if {[llength $args] == 0} { set args [array names ::help-files] }
 	foreach file $args {
 		putlog "Reloading help $file ..."
-		if {[unloadhelp $file] && [loadhelp $file]} { puts "Done!" }
+		if {[unloadhelp $file] && [loadhelp $file]} { putlog "Done!" }
 	}
 }
 
@@ -1173,7 +1194,7 @@ proc ::tcldrop::core::unloadhelp {args} {
 	foreach file $args {
 		putlog "Unloading help $file ..."
 		foreach typecommandfilename [set help-files($file)] {
-			unset help($typecommandfilename)
+			array unset help $typecommandfilename
 		}
 	}
 	return 1
@@ -1195,13 +1216,11 @@ proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 # Rename the exit command, so that we can handle exits better:
 if {![llength [info commands ::tcldrop::core::Exit]]} {
 	rename ::exit ::tcldrop::core::Exit
-	proc ::tcldrop::core::exit {{code {0}}} {
+	proc ::tcldrop::core::exit {{code {0}} {reason {Exit}}} {
 		variable Exit $code
 		catch { callevent exit }
-		# Call the real Exit as an idle task:
-		after idle [list after 0 [list ::tcldrop::core::Exit $code]]
-		# Delete the pid file:
-		file delete -force -- $::pidfile
+		catch { ::tcldrop::core::Exit $code }
+		catch { file delete -force -- $::pidfile }
 		return $code
 	}
 	interp alias {} exit {} ::tcldrop::core::exit
@@ -1224,15 +1243,15 @@ proc ::tcldrop::core::die {{reason {DIE}} {code {0}}} {
 	catch { calldie $reason $code }
 	catch { callevent die }
 	catch { putlog "* die $code $reason" }
-	# It's important that it exit's as an idle task:
-	after idle [list after 0 [list exit $code]]
-	return $code
+	exit $code
 }
 # RacBot renamed die to shutdown:
+# We use this as a slow/safe shutdown, by allowing idle events to finish first:
 proc ::tcldrop::core::shutdown {{reason {SHUTDOWN}} {code {0}}} { after idle [list after 0 [list die $reason $code]] }
 
 # Rehash, just like in Eggdrop, it (re)loads the config.
 proc ::tcldrop::core::rehash {{type {}}} {
+	set ::rehash $type
 	set success 1
 	if {$type != {start}} { putlog {Rehashing ...} }
 	callevent prerehash
@@ -1272,7 +1291,8 @@ proc ::tcldrop::core::rehash {{type {}}} {
 			set success 0
 		}
 	}
-	if {$success} { callevent rehash } elseif {[catch { die $error 1 }]} { after idle [list after 0 [list exit 1]] }
+	if {$success} { callevent rehash } elseif {[catch { die $error 1 }]} { exit 1 }
+	unset ::rehash
 	set success
 }
 
@@ -1329,50 +1349,55 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule core::users
 	checkmodule core::conn
 	checkmodule core::dcc
-	# The following modules aren't really "core" modules for Tcldrop, but
-	# in Eggdrop they are part of the core which is why they're loaded here:
-	checkmodule encryption::null
-	# Note: tea doesn't work in Tcl v8.5+
-	#checkmodule encryption::tea
-	# Note: This blowfish is NOT Eggdrop compatible, but if/when one becomes available that is compatible with Eggdrop we'll switch to it and it will replace this one..
+	checkmodule encryption
+	#checkmodule encryption::null
+	# Note: This blowfish is NOT Eggdrop compatible, but if/when one (in pure-Tcl) becomes available that is compatible with Eggdrop we'll switch to it and it will replace this one..
 	checkmodule encryption::blowfish
+	# sha1 is used for encpass in Tcldrop, because it's slightly "better" than md5:
 	checkmodule encryption::sha1
+	# Loaded because is provides the Eggdrop-style [md5] command:
 	checkmodule encryption::md5
 	#::tcldrop::encryption::default encrypt tea
 	#::tcldrop::encryption::default decrypt tea
 	::tcldrop::encryption::default encrypt blowfish
 	::tcldrop::encryption::default decrypt blowfish
-	# Note: Using there's some weirdness when using md5/sha1 on at least one users system.
-	#::tcldrop::encryption::default encpass tea
 	::tcldrop::encryption::default encpass sha1
 	#::tcldrop::encryption::default encpass md5
 	checkmodule bots::oldbotnet
+	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
 	checkmodule party::telnet
 	checkmodule party::terminal
+	# The IRC party module shouldn't be loaded by default in v1.0, should it?
 	checkmodule party::irc
+	# Loaded because it provides the Eggdrop-style [dnslookup] command:
 	checkmodule dns
 	if {[rehash $type]} {
 		setdefault botnet-nick $::nick -protect 1
 		callevent $type
 		callevent loaded
+		# Every $hourly-updates we call the "hourly-updates" event:
+		proc ::tcldrop::core::HourlyUpdates {minute hour day month year} { callevent hourly-updates }
+		bind time - "${::hourly-updates} * * * *" ::tcldrop::core::HourlyUpdates
+		# Every $daily-updates we call the "daily-updates" event:
+		proc ::tcldrop::core::DailyUpdates {minute hour day month year} { callevent daily-updates }
+		bind time - "* ${::daily-updates} * * *" ::tcldrop::core::DailyUpdates
 		# Start the one-minute loop needed by scripts that use "bind time":
 		afteridle [list timer 1 [list {::tcldrop::core::calltime}] -1]
-		bind time - "${::hourly-updates} * * * *" ::tcldrop::core::HourlyUpdates
-		bind time - "* ${::daily-updates} * * *" ::tcldrop::core::DailyUpdates
 	}
+	# Don't allow the core module to be unloaded:
+	proc ::tcldrop::core::UNLD {module} { return 1 }
 	bind unld - core ::tcldrop::core::UNLD
 	if {$type eq {restart}} {
 		putlog "Restart Completed in [expr { [clock clicks -milliseconds] - $StartTime } ]ms."
 	} else {
+		if {![info exists ::botnet-nick] && [info exists ::nick]} { set ::botnet-nick $::nick } else { set ::botnet-nick {} }
 		# We wanna display how many channels and users there are (like Eggdrop):
 		if {[catch { PutLogLev o - "=== ${::botnet-nick}: [countchannels] channels, [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }]} { PutLogLev o - "=== ${::botnet-nick}: [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }
 	}
 	unset ::restart
 	set type
 }
-
-proc ::tcldrop::core::protected {type args} { set ::protected($type) [lsort -unique [concat $::protected($type) $args]] }
 
 proc ::tcldrop::core::EVNT_prestart {event} {
 	set ::protected(filechannels) [file channels]
@@ -1384,13 +1409,16 @@ proc ::tcldrop::core::EVNT_prestart {event} {
 
 proc ::tcldrop::core::EVNT_prerestart {event} {
 
-	unloadmodule core -force 1
+	# Unload all modules:
+	unloadmodule * -force 1
 
+	# Kill all timers/utimers:
 	set count 0
 	foreach {time proc id} [timerslist] {
 		killtimer $id
 		incr count
 	}
+	# Cancel all after events:
 	foreach c [after info] {
 		after cancel $c
 		incr count
@@ -1535,10 +1563,9 @@ proc ::tcldrop::core::EVNT_init {event} { global pidfile botnet-nick database-ba
 proc ::tcldrop::core::EVNT_signal {signal} {
 	variable Signal
 	# (If Signal already exists, it means we're already processing another fatal/exit signal.)
-	if {![info exists Signal]} {
+	if {![info exists Signal] || $Signal ne $signal} {
 		switch -- [string tolower $signal] {
 			{sighup} {
-				save
 				if {${::die-on-sighup}} {
 					shutdown {Caught Signal: SIGHUP (HANGUP SIGNAL) -- SIGNING OFF}
 					variable Signal {SIGHUP}
@@ -1548,7 +1575,6 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 				}
 			}
 			{sigterm} {
-				save
 				if {${::die-on-sigterm}} {
 					shutdown {Caught Signal: SIGTERM (TERMINATE SIGNAL) -- SIGNING OFF}
 					variable Signal {SIGTERM}
@@ -1557,7 +1583,6 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 				}
 			}
 			{sigint} {
-				save
 				if {[info exists ::die-on-sigint] && ${::die-on-sigint}} {
 					shutdown {Caught Signal: SIGINT}
 					variable Signal {SIGINT}
@@ -1573,17 +1598,17 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 					putlog {Caught Signal: RECEIVED QUIT SIGNAL (IGNORING)}
 				}
 			}
-			{sigbus} {
+			{sigbus} - {20} {
 				die {BUS ERROR -- CRASHING!} 20
 				variable Signal {SIGBUS}
 				exit 20
 			}
-			{sigsegv} {
+			{sigsegv} - {11} {
 				die {SEGMENT VIOLATION -- CRASHING!} 11
 				variable Signal {SIGSEGV}
 				exit 11
 			}
-			{sigfpe} {
+			{sigfpe} - {8} {
 				die {FLOATING POINT ERROR -- CRASHING!} 8
 				variable Signal {SIGFPE}
 				exit 8
@@ -1595,7 +1620,7 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 				# eh?
 			}
 			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} {
-				# Completely ignore these signals.  (They can't be triggered unless they get trapped in ../../tcldrop.tcl anyway.)
+				# Completely ignore these signals.  (They can't be triggered unless they get trapped in ../../../tcldrop.tcl anyway.)
 			}
 			{default} {
 				# Casual shutdown as the default, with exit code 1 because it's an unknown signal.
@@ -1603,11 +1628,11 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 				variable Signal [string toupper $signal]
 			}
 		}
+		# If we didn't shutdown, this will unset the Signal variable so that we can process another signal 1+ seconds in the future:
+		after idle [list after 999 [list unset -nocomplain ::tcldrop::core::Signal]]
 	}
 }
 
-# Don't allow the core module to be unloaded:
-proc ::tcldrop::core::UNLD {module} { return 1 }
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {

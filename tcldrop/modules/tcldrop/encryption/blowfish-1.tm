@@ -30,6 +30,7 @@ namespace eval ::tcldrop::encryption::blowfish {
 	variable name {encryption::blowfish}
 	package provide tcldrop::$name 1
 	package provide tcldrop::blowfish 1
+	variable predepends {encryption}
 	variable depends {encryption}
 	variable author {Tcldrop-Dev}
 	variable description {Provides a pure-Tcl blowfish.}

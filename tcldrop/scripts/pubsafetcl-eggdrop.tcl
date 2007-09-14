@@ -70,7 +70,7 @@
 ### Begin Script:
 catch { package forget pubsafetcl::eggdrop }
 catch { package forget pubsafetcl }
-if {[catch { package require pubsafetcl }] && [catch { source [file join scripts pubsafetcl.tcl] }] && [catch { source [file join [file dirname [info script]] pubsafetcl.tcl] }] && [catch { source [file join modules lib pubsafetcl.tcl] }]} { putlog {ERROR: pubsafetcl-eggdrop.tcl won't load without the pubsafetcl.tcl package.} }
+if {[catch { package require pubsafetcl }] && (![file readable [file join scripts pubsafetcl.tcl]] || [catch { source [file join scripts pubsafetcl.tcl] }]) && (![file readable [file join [file dirname [info script]] pubsafetcl.tcl]] || [catch { source [file join [file dirname [info script]] pubsafetcl.tcl] }]) && (![file readable [file join lib pubsafetcl.tcl]] || [catch { source [file join lib pubsafetcl.tcl] }])} { putlog {ERROR: pubsafetcl-eggdrop.tcl won't load without the pubsafetcl.tcl package.} }
 namespace eval pubsafetcl::eggdrop {
 	### Options:
 	## Allow DCC CHAT access on this port (Use 0 to disable):
@@ -185,12 +185,14 @@ namespace eval pubsafetcl::eggdrop {
 					set extra {Tcl:}
 				}
 				foreach l [split $evalinfo(results) \n] {
-					lappend return "#$evalinfo(count) ($evalinfo(clicks) clicks) $extra $l"
+					#lappend return "#$evalinfo(count) ($evalinfo(clicks) clicks) $extra $l"
+					lappend return "#$evalinfo(count) $extra $l"
 					if {[incr linecount] >= $lineLimit} { break }
 				}
 			}
 			if {$linecount == 0 && $errors} {
-				lappend return "#$evalinfo(count) ($evalinfo(clicks) clicks) $extra"
+				#lappend return "#$evalinfo(count) ($evalinfo(clicks) clicks) $extra"
+				lappend return "#$evalinfo(count) $extra"
 			} elseif {$linecount >= $lineLimit && [set linecount [expr {[llength [concat $evalinfo(puts) [split $evalinfo(results) \n]]] - $linecount - 1}]] >= 1} {
 				# FixMe: $evalinfo(puts) and $evalinfo(putloglev) won't be the correct llength.
 				lappend return "There's $linecount more lines, but I'm not gonna show you them!  =P"
@@ -247,7 +249,8 @@ namespace eval pubsafetcl::eggdrop {
 						set extra {Tcl:}
 					}
 					foreach l [split $evalinfo(results) \n] {
-						puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) ($evalinfo(clicks) clicks) $extra [string map {"\001" {}} [string range $l 0 400]]"
+						#puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) ($evalinfo(clicks) clicks) $extra [string map {"\001" {}} [string range $l 0 400]]"
+						puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) $extra [string map {"\001" {}} [string range $l 0 400]]"
 						if {[incr linecount] >= $lineLimit} { break }
 					}
 				}
@@ -255,7 +258,8 @@ namespace eval pubsafetcl::eggdrop {
 				foreach {s t} $evalinfo(puts) { foreach l [split $t \n] { incr linecount } }
 				foreach {l c t} $evalinfo(putloglev) { foreach l [split $t \n] { incr linecount } }
 				if {$linecount == 0 && $errors} {
-					puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) ($evalinfo(clicks) clicks) [string map {"\001" {}} $extra]"
+					#puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) ($evalinfo(clicks) clicks) [string map {"\001" {}} $extra]"
+					puthelp "PRIVMSG $chan :$nick\002:\002 #$evalinfo(count) [string map {"\001" {}} $extra]"
 				} elseif {$linecount > $lineLimit} {
 					puthelp "PRIVMSG $chan :$nick\002:\002 There's more lines, but I'm not gonna show you the rest of them!  =P"
 				}
