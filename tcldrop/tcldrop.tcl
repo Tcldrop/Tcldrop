@@ -178,7 +178,7 @@ namespace eval ::tcldrop {
 						$interpname eval [list package require http]
 						# FixMe: Add more paths to search here:
 						$interpname eval [list ::tcl::tm::path add {./modules}]
-						$interpname eval [list package require tcldrop::core::main]
+						$interpname eval [list package require tcldrop::core]
 					} error]} {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
 					return 1

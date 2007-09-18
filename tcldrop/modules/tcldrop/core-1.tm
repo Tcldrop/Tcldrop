@@ -80,8 +80,8 @@ namespace eval ::tcldrop::core {
 	variable version {0.6.1}
 	variable name {core}
 	variable script [info script]
-	package provide tcldrop::${name} $version
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::${name} $version
 	package provide tcldrop::${name}::main $version
 	variable depends {tcldrop}
 	variable author {Tcldrop-Dev}
