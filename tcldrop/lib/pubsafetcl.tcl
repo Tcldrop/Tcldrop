@@ -1,9 +1,9 @@
 # pubsafetcl.tcl --
 #
-# Copyright (C) 2004 by Philip Moore <FireEgl@Tcldrop.Org>
+# Copyright (C) 2004,2005,2006,2007 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
-# RCS: @(#) $Id: pubsafetcl.tcl,v 1.23 2007/05/12 18:43:49 fireegl Exp $
+# RCS: @(#) $Id$
 #
 # Provides a safe Tcl interpreter that can be used without the worry of infinite loops.
 # See "man n interp" and "man n safe" for more info on safe interpreters.
@@ -20,7 +20,7 @@ namespace eval pubsafetcl {
 	variable description {Provides a public safe Tcl interpreter, free from infinite loops.}
 	variable script [info script]
 	package provide pubsafetcl $version
-	variable rcsid {$Id: pubsafetcl.tcl,v 1.23 2007/05/12 18:43:49 fireegl Exp $}
+	variable rcsid {$Id$}
 	while {$::tcl_precision < 15 && ![catch { incr ::tcl_precision }]} {}
 	proc Reset {{interp {safetcl}} args} { return "Reset [create $interp]." }
 
@@ -357,7 +357,9 @@ namespace eval pubsafetcl {
 					string is list $s
 				}
 			} else {
-				proc islist {s} { expr { ![catch {llength $s}] } }
+				proc islist {s} { puts unknown "In Tcl v8.5+ you can use \[string is list\]"
+					expr { ![catch {llength $s}] }
+				}
 			}
 			proc lconcat {args} {
 				set result [list]
@@ -830,14 +832,14 @@ namespace eval pubsafetcl {
 			} else {
 				set notice 0
 				switch -glob -- $args {
-					{*file *} - {*for *} - {*info *} - {*interp *} - {*namespace *} - {*proc *} - {*puts *} - {*rename *} - {*string *} - {*while *} - {*time *} {
+					{*file *} - {*for *} - {*info *} - {*interp *} - {*namespace *} - {*proc *} - {*puts *} - {*rename *} - {*string *} - {*while *} - {*reset *} - {*die *} - {*exit *} {
 						# Always send the annoying notice for these commands.
 						set notice 1
 					}
 					{default} {
-						# Only send the annoying notice once every 99 seconds otherwise.
+						# Only send the annoying notice once every 999 seconds otherwise.
 						variable TimeNoticeLast
-						if {[clock seconds] - $TimeNoticeLast > 99} {
+						if {[clock seconds] - $TimeNoticeLast > 999} {
 							set TimeNoticeLast [clock seconds]
 							set notice 1
 						}
@@ -856,7 +858,7 @@ namespace eval pubsafetcl {
 			variable Count 0
 			variable minclicks [expr { [clock clicks] - $minclicks + 9 }]
 		}
-		array set options [list -timelimit 499]
+		array set options [list -timelimit 1750]
 		array set options $args
 		namespace eval [namespace current]::$interp [list variable timeLimit $options(-timelimit)]
 		namespace eval [namespace current]::$interp [list variable preEval {}]
@@ -865,7 +867,7 @@ namespace eval pubsafetcl {
 
 		namespace eval [namespace current]::$interp [list variable InitialCommands [$interp eval {info commands}]]
 		# Prevent abuse/confusion by not allowing commands with certain names:
-		namespace eval [namespace current]::$interp [list lappend InitialCommands hi fu i it a the it you hello re wb thx see hey well but or please plz pls how what you are of that can do kthx boring yes no may where is typo muaha rtfm google www search com exe ask okay come op voice q it o k ok in thanks thank thx lol jk nah or in bye nn night stfu wtf omg get go howdy example could give me I Hi How Hello What like nah but well If hmm lmao and he eh heh hehe heheh hehehe heheheh ah ha hah haha hahah hahaha hahahah hes You ffs o_O O_o O_O o_o just Oo oO on off oh but yea yeah like u ah aha ask err wow that it lmfao asdf asd as er uh um umm uhm gee duh timer utimer :) =) =P :P :p =p tcl .tcl safetcl .safetcl .eval im {I'm} {} { } {	} "\n" {?} {:} {;} {/} {.} {..} {...}]
+		namespace eval [namespace current]::$interp [list lappend InitialCommands hi fu i it a the it you hello re wb thx see hey well but or please plz pls how what you are of that can do kthx boring yes no may where is typo muaha rtfm google www search com exe ask okay come op voice q it o k ok in thanks thank thx lol jk nah or in bye nn night stfu wtf omg get go howdy example could give me I Hi How Hello What like nah but well If hmm lmao and he eh heh hehe heheh hehehe heheheh ah ha hah haha hahah hahaha hahahah hes You ffs o_O O_o O_O o_o just Oo oO on off oh but yea yeah like u ah aha ask err wow that it lmfao asdf asd as er uh um umm uhm gee duh http www db blah its bleh save timer utimer :) =) =P :P :p =p tcl .tcl safetcl .safetcl .eval im {I'm} {} { } {	} "\n" {?} {:} {;} {/} {.} {..} {...}]
 		namespace eval [namespace current]::$interp [list namespace export $interp]
 
 		proc [namespace current]::${interp}::extraCommands {command {extraCommands {}}} {
@@ -914,9 +916,10 @@ namespace eval pubsafetcl {
 					variable putloglev [list]
 					variable minclicks
 					#extraCommands add $extraCommands
+					# FixMe: Increase the recursionlimit as necessary:
+					catch { pubsafetcl recursionlimit 7 }
 					# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
-					catch { pubsafetcl limit time -granularity 1 -milliseconds 1499 -seconds [clock seconds] }
-					catch { pubsafetcl recursionlimit 99 }
+					catch { pubsafetcl limit time -granularity 1 -milliseconds 2499 -seconds [clock seconds] }
 					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval [join $args] } out]
 					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
 					variable Cancel
