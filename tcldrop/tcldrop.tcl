@@ -2,9 +2,9 @@
 #	Handles:
 #		* Initializing Tcldrop from within a Tcl environment.
 #
-# $Id: tcldrop.tcl,v 1.6 2006/08/01 02:01:34 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005,2006 FireEgl (Philip Moore) <@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -57,14 +57,14 @@
 
 
 namespace eval ::tcldrop {
-	variable version {0.6.0}
-	variable numversion {00060000}
+	variable version {0.6.1}
+	variable numversion {00060100}
 	variable script [info script]
 	variable name {tcldrop}
 	variable depends {Tcl}
 	variable author {Tcldrop-Dev}
 	variable description {Initializes Tcldrop from within a Tcl environment.}
-	variable rcsid {$Id: tcldrop.tcl,v 1.6 2006/08/01 02:01:34 fireegl Exp $}
+	variable rcsid {$Id$}
 	# Provide tcldrop as a package:
 	package provide $name $version
 	# tcldrop stores info's that each tcldrop needs while starting up:
@@ -76,12 +76,14 @@ namespace eval ::tcldrop {
 	variable Default {}
 	variable input
 	array set input {}
-	variable commands [list tcldrop Tcldrop]
-	eval namespace export $commands
+	namespace export tcldrop Tcldrop
+	variable commands [namespace export]
+	# FixMe: Make this a namespace ensemble:
 	proc Tcldrop {command name {arg {}}} {
 		variable Tcldrop
 		variable tcldrop
 		variable Default
+		variable mod-paths
 		if {$name == {-}} {
 			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
 			set interpname "Tcldrop-[string tolower $Default]"
@@ -105,11 +107,11 @@ namespace eval ::tcldrop {
 								{m} { set tcldrop(userfile-create) 1 }
 								{v} {
 									variable Exit 0
-									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006 Tcldrop-Dev"
+									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007 Tcldrop-Dev"
 								}
 								{h} - {?} {
 									variable Exit 0
-									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006 Tcldrop-Dev
+									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007 Tcldrop-Dev
 
 			Command line arguments:
 			  -h   help
@@ -137,7 +139,7 @@ namespace eval ::tcldrop {
 					set tcldrop(config) $config
 					set name [file tail [file rootname $config]]
 					PutLogLev $name * - "*** Attempting to start $name... (configs: $configs)"
-					PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006 Tcldrop-Dev"
+					PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007 Tcldrop-Dev"
 					if {[tcldrop start [file tail [file rootname $config]] -config $config]} {
 						incr started
 						PutLogLev $name * - "*** $name Started."
@@ -176,8 +178,8 @@ namespace eval ::tcldrop {
 						# Load the core of the Tcldrop, which in turn will load the required modules, source the config file, etc:
 						# FixMe: There's some kind of bug in Tcl that prevents it from loading the ::tcl::tm::* procs until after a package require is done on some other package first.
 						$interpname eval [list package require http]
-						# FixMe: Add more paths to search here:
-						$interpname eval [list ::tcl::tm::path add {./modules}]
+						if {![info exists mod-paths]} { set mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ./modules] }
+						$interpname eval [list ::tcl::tm::path add {*}${mod-paths}]
 						$interpname eval [list package require tcldrop::core]
 					} error]} {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]

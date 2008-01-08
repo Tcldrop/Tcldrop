@@ -314,8 +314,7 @@ namespace eval pubsafetcl {
 			proc israr {name} { regexp -- {((?:part\d{2}.)?rar|r\d{2}|\d{3})$} $name }
 			proc u2c {u} { scan $u %u }
 			proc c2u {c} { format %c $c }
-			proc stripcolors {text} {
-				puts unknown {Use stripcodes instead if you're using Eggdrop v1.6.17 or higher.  http://www.eggheads.org/support/egghtml/1.6.17/tcl-commands.html#misc}
+			proc stripcolors {text} { puts unknown {Use stripcodes instead if you're using Eggdrop v1.6.17 or higher.  http://www.eggheads.org/support/egghtml/1.6.18/tcl-commands.html#misc }
 				regsub -all -- {\003[0-9]{0,2}(,[0-9]{0,2})?|\017|\037|\002|\026|\007} $text {}
 			}
 			#proc stripcodes {strip-flags string} {

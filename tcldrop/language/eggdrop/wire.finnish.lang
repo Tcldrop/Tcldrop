@@ -1,15 +1,17 @@
 # wire.finnish.lang
-#   kieli tiedostot wire moduuliin
+#   language messages for wire module
 #
-# $Id: wire.finnish.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# Suomentanut Teemu Likonen (DtW @ IRCnet)
+#
+# $Id: wire.finnish.lang,v 2.0 2004/08/27 16:50:00 DtW Exp $
 
-0xa000,You are not on a wire.
-0xa001,Nyky‰‰n wirella
-0xa002,Et ole pitk‰‰n wire.
-0xa003,Wire kryptaus avain vaihdettu
-0xa004,Kaikki teksti aloitettu ; Nyt on menty wiren yli.
-0xa005,N‰et kuka on wiressa komennolla '.onwire'.
-0xa006,L‰hde komennolla '.wire off'.
-0xa007,liitytty wireen
-0xa008,l‰hdetty wirest‰.
-0xa009,WIRE moduuli ei ladattu.
+0xa000,Et ole salatulla kanavalla.
+0xa001,T‰m‰nhetkinen salauskoodi on
+0xa002,Poistuit salatulta kanavalta.
+0xa003,Salatun kanavan koodi on nyt
+0xa004,Kaikki teksti, joka olkaa puolipisteell‰ (;) menee salatulle kanavalle.
+0xa005,Komennolla '.onwire' n‰et, ket‰ muita on t‰ll‰ kanavalla.
+0xa006,Komennolla '.wire off' poistut kanavalta.
+0xa007,liittyi salatulle kanavalle
+0xa008,poistui salatulta kanavalta.
+0xa009,wire-modulia ei ole ladattu.

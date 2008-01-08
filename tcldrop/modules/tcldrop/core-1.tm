@@ -87,8 +87,8 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	variable commands [list addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit]
-	namespace export {*}$commands
+	namespace export addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit
+	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
 	namespace path [list ::tcldrop]
@@ -864,6 +864,12 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 #       So, I don't believe it should call time binds for times that have
 #       already past.  Any script that needs to simply be repeated every so
 #       often should use the timer command and its -1 (repeat forever) option.
+# FixMe: Add the ability to log the following:
+# timer: drift (lastmin=22, now=26)
+# timer: drift (lastmin=23, now=26)
+# timer: drift (lastmin=24, now=26)
+# timer: drift (lastmin=25, now=26)
+# (!) timer drift -- spun 4 minutes
 proc ::tcldrop::core::calltime {} {
 	lassign [set current [clock format [clock seconds] -format {%M %H %e %m %Y}]] minute hour day month year
 	foreach {type flags mask proc} [bindlist time] {

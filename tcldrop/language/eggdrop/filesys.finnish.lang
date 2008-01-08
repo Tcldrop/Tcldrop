@@ -1,58 +1,60 @@
 # filesys.finnish.lang
-#   kieli tiedostot tiedostojärjestelmä moduuliin
+#   language messages for filesys module
 #
-# $Id: filesys.finnish.lang,v 1.1.1.1 2005/04/25 07:44:50 fireegl Exp $
+# Suomentanut Teemu Likonen (DtW @ IRCnet)
+#
+# $Id: filesys.finnish.lang,v 2.0 2004/08/29 17:50:00 DtW Exp $
 
-0x300,Muutetaan tiedostojärjestelmä imagea %s ...
-0x301,filedb-update: Ei pysty avata kansiota!
-0x302,(!) Rikkinäinen muunnos filedbstä %s
-0x303,Tiedostonimi                    Koko  Lähetetty/Päivä      # Ota\n
-0x304,------------------------------  ----  -------------------  ------\n
-0x305,Ei tiedostoja tässä kansiossa.\n
-0x306,Ei vastaavia tiedostoja.\n
-0x307,Kansiota ei ole olemassa
-0x308,Tiedosto ei ole olemassa
-0x309,Tiedosto ei jaettu
-0x30a,(etäinen)
-0x30b,Ongelmia tiedoston lähetys yrityksessä
-0x30c,(lähetetty)
-0x30d,Etäinen pyyntö /%s%s%s (lähetetään)
-0x30e,\nTiedostojärjestelmä vaikuttaa rikkinäiseltä juuri nyt.\n
-0x30f,(Tiedosto-polku on asetettu vialliseen kansioon.)\n
+0x300,Muunnan tiedostoalueen tunnuksen: %s ...
+0x301,filedb-päivitys: hakemiston avaaminen epäonnistui!
+0x302,(!) Epäonnistunut filedb-muunnos: %s
+0x303,Tiedoston nimi                  Koko  Lähettäjä Päiväys      Imuroitu\n
+0x304,------------------------------  ----  --------- -----------  --------\n
+0x305,Hakemistossa ei ole tiedostoja.\n
+0x306,Ei löydy.\n
+0x307,Hakemistoa ei löydy
+0x308,Tiedostoa ei löydy.
+0x309,Tiedosto ei ole jaossa
+0x30a,(remote)
+0x30b,Virhe tiedoston lähettämisessä:
+0x30c,(lähetän)
+0x30d,Tiedoston lähetyspyynto: /%s%s%s (lähetän)
+0x30e,\nTiedostoalue näyttää olevan tällä hetkellä epäkunnossa.\n
+0x30f,(Tiedoston hakemistopolku on virheellinen.)\n
 0x310,Nykyinen hakemisto
-0x311,Uusi nykyinen hakemisto
-0x312,Ei sellaista kansiota.\n
-0x313,Laiton kansio.\n
-0x314,Ole järkevä.\n
-0x315,%s ei ole saatavissa juuri nyt.\n
-0x316,Pyyntö %s  %s lta...\n
+0x311,Nykyinen hakemisto
+0x312,Hakemistoa ei löydy.\n
+0x313,Ei ole laillinen hakemisto.\n
+0x314,Vähän järkeä mukaan, kiitos.\n
+0x315,%s ei ole saatavilla.\n
+0x316,Lähetyspyyntö: %s kohteesta %s ...\n
 0x317,%s on jo normaali tiedosto.\n
-0x318,Vaihdettu linkki %s\n
-0x319,Sinä et uploadaa %s\n
-0x31a,Kansio luotu
-0x31b,Tarvitsee +%s oikeuden\n
-0x31c,Vaihdettu %s/ tarvittavaan +%s oikeuteen\n
-0x31d,Vaihdettu %s/ tarvittavat merkit oikeuksiin\n
-0x31e,Kansio poistettu
-0x31f,Laiton lähde kansio.\n
-0x320,Laiton määränpää kansio.\n
-0x321,Et voi %s tiedostoja huipulle itseltään.\n
-0x322,kansio on olemassa -- ohitetaan
-0x323,itselleen?  huh huh.
-0x324,Määränpää
-0x325,kopioi
+0x318,Linkki muutettu: %s\n
+0x319,Et lähettänyt tiedostoa %s\n
+0x31a,Luotu hakemisto
+0x31b,Oikeuksiin vaaditaan asetus +%s\n
+0x31c,Nyt kohteeseen %s/ vaaditaan asetus +%s\n
+0x31d,Kohteeseen %s/ ei vaadita mitään erityisoikeuksia\n
+0x31e,Poistettu hakemisto
+0x31f,Virheellinen lähdehakemisto.\n
+0x320,Virheellinen kohdehakemisto.\n
+0x321,Tiedostojen %s ei onnistu niiden itsensä päälle.\n
+0x322,löytyy sen niminen hakemisto; jätetään väliin
+0x323,itsensä päälle? Ei kai...
+0x324,Kohde
+0x325,kopiointi
 0x326,Kopioitu
-0x327,liiku
-0x328,Liikutettu
-0x329,Ei pysty kirjoittamaan
-0x32a,vaatia
-0x32b,Piilotettu
-0x32c,Ei piilotettu
-0x32d,Jaettu
-0x32e,Ei jaettu
+0x327,siirto
+0x328,Siiretty
+0x329,Kirjoitus epäonnistui:
+0x32a,vaatii
+0x32b,Piilota
+0x32c,Näytä
+0x32d,Jaossa
+0x32e,Ei jaossa
 0x32f,Lisätty linkki
-0x330,Vaihdettu
+0x330,Muutettu
 0x331,Tyhjennetty
-0x332,Tyhjennetty
-0x33a,Tervetuloa %B tiedosto serveriin\n
-0x33b,Kaikki tiedonsiirrot lähetetään '%N' vakiona.\n(Voit määritellä vaihtoehtoisen nickkin 'get' komennolla.)\nKomennolla 'help' saat
+0x332,Poistettu
+0x33a,*** Tervetuloa %B:n tiedostoalueelle!\n\n
+0x33b,Tiedostojen imurointi: Botti lähettää DCC-sendinä IRCin nickille '%N'.\n(Voit halutessasi valita jonkun toisen nickin 'get' komennon yhteydessä.)\nTiedostojen lähetys:   Lähetä tiedostot DCC-sendinä botille.\nKomennolla 'help' saat apua.\n

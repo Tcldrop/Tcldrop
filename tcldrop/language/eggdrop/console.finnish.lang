@@ -1,15 +1,17 @@
 # console.finnish.lang
-#   kieli viestit konsoli moduuliin
+#   language messages for the console module
 #
-# $Id: console.finnish.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+# Suomentanut Teemu Likonen (DtW @ IRCnet)
+#
+# $Id: console.finnish.lang,v 2.0 2004/08/27 17:20:00 DtW Exp $
 
-0xb040,Tallennettu Konsoli Asetukset:
-0xb041,Tallennettu Sinun Konsoli Asetuksesi:
+0xb040,Tallennetut konsoliasetukset:
+0xb041,Konsoliasetukset tallennettu:
 0xb042,Kanava:
-0xb043,Konsoli merkit:
-0xb044,Lista merkit:
-0xb045,Kaiku:
-0xb046,Sivu asetukset:
-0xb047,Konsoli kanava:
+0xb043,Konsoliasetukset:
+0xb044,Suodatus:
+0xb045,Kaiutus:
+0xb046,Sivutus:
+0xb047,Konsolikanava:
 0xb048,kyllä
 0xb049,ei

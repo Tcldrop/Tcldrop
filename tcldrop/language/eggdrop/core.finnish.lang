@@ -1,441 +1,445 @@
 # core.finnish.lang
-#   core kieli viestit eggdroppiin
+#   core language messages for eggdrop
 #
-# $Id: core.finnish.lang,v 1.1.1.1 2005/04/25 07:44:40 fireegl Exp $
+# Suomentanut Teemu Likonen (DtW @ IRCnet)
+#
+# $Id: core.finnish.lang,v 2.0 2004/08/28 16:20:00 DtW Exp $
 
-# Yleinen tavara
-0x001,Käytössä
-0x002,Hylätty.\n
+# General stuff
+0x001,Käyttö
+0x002,Epäonnistui.\n
 
-# MOODIT_
+# MODES_
 0x130,Luotu
-0x131,viimeksi käytetty
-0x132,toimeton
-0x133,asetettu
-0x135,ei aktiivinen
+0x131,käytetty viimeksi
+0x132,ei-aktiivinen
+0x133,asettanut
+0x135,ei aktiivinen kanavalla
 0x137,ei aktiivinen
-0x138,ei asetettu botille
+0x138,ei botin asettama
 
-# BANNIT_
-0x104,Globaaliset bannit
-0x106,Kanva bannit
-0x109,Käytä komentoa '.bans all' nähdäksesi kokonais listan
-0x10a,Ei pitkiä banneja
+# BANS_
+0x104,Yleiset bannit
+0x106,Bannit kanavalle
+0x109,Komennolla '.bans all' saat listan kaikista banneista
+0x10a,Bannista poistettu
 
-# EXEMPTIT_
-0x114,Globaaliset exemptit
-0x116,Kanva exemptit
-0x119,Käytä komentoa '.exempts all' nähdäksesi kokonais listan
-0x11a,Ei pitkiä exemptejä
+# EXEMPTS_
+0x114,Yleiset erivapaudet (exempt)
+0x116,Erivapaudet kanavalle
+0x119,Komennolla '.exempts all' saat listan kaikista erivapauksista
+0x11a,Erivapaudesta poistettu
 
-# INVITESIT_
-0x124,Globaaliset invitesit
-0x126,Kanava invitesit
-0x129,Käytä komentoa '.invites all' nähdäksesi kokonais listan
-0x12a,No longer inviting
+# INVITES_
+0x124,Yleiset kutsut (invite)
+0x126,Kutsut kanavalle
+0x129,Komennolla '.invites all' saat listan kaikista kutsuista
+0x12a,Kutsusta poistettu
 
-# MODUULIT_
-0x200,Valmiiksi ladattu.
-0x201,Ei pysty kiinnittämään nykyistä kansiota.
-0x202,Ei aloitettavaa funktiota määritetty.
-0x204,Tarvitaan toinen moduuli
-0x205,Ei suljettavaa funktiota
-0x206,Moduuli suljettu:
-0x207,Ei kyseistä moduulia
-0x209,Virhe ladatessa moduulia:
-0x20a,Virhe suljettaessa moduulia:
-0x20b,Ei pysty lataamaan moduulia
-0x20c,Lamaantunut moduuli; Täällä on muisti vuoto!
-0x20d,Sinulla on asennettu moduuli, mutta ei ole valittua kryptausta\n\
-moduulille, etsi vakio config tiedostosta tietoa.\n
-0x20e,Tiedostojärjestelmä moduulia ei ladattu.
-0x20f,Moduuli ladattu: %-16s (kieli tuella)
-0x210,Moduuli ladattu: %-16s
+# MOD_
+0x200,Se on jo ladattu.
+0x201,Nykyisen hakemiston määrittäminen epäonnistui.
+0x202,Start-funktiota ei ole määritelty.
+0x204,Toinen moduli tarvitsee sitä
+0x205,Close-funktiota ei löydy
+0x206,Moduli poistettu:
+0x207,Modulia ei löydy
+0x209,Virhe modulin lataamisessa:
+0x20a,Virhe modulin poistamisessa:
+0x20b,En pysty lataamaan modulia
 
-# KÄYTTÄJÄTIEDOSTO_
-0x400,Käyttäjälistan siirto suoritettu; vaihdetaan yli
-0x402,EI PYSTY LUKEMAAN UUTTA KÄYTTÄJÄTIEDOSTOA
-0x403,Ei pysty lähettämään käyttäjätiedostoa sinulle (paikallinen virhe)
-0x404,Ei pysty löytämään yhtään mikä vastaisi tätä
-0x405,Vanha käyttäjätiedosto, käytä 'tclsh scripts/weed <käyttäjätiedosto> c' muunokseen
-0x406,Virheellinen käyttäjätiedosto formaatti.
-0x407,Vääristetty käyttäjä taltio
-0x408,Kopioidaan käyttäjä taltio
-0x409,pilattu salasana palautettu
-0x40a,Ei huomioida salattuja kanavi(a):
-0x40b,Kirjoitetaan käyttäjä tiedostoa...
-0x40c,ERROR kirjoitettaessa käyttäjätiedostoa.
-0x40d,ERROR kirjoitettaessa käyttäjätiedostoa siirtoon.
-0x40e,Käyttäjätiedoston luonti ei tarpeellinen--ohitetaan
-0x40f,Päivitetään...
-0x410,En tiedä ketään tämän nimistä.\n
-0x411,Ei kyseistä käyttäjä taltiota.
-0x412,Varmuuskopioidaan käyttäjätiedostoa...
-0x413,Hyjätty yhteys; peruutetaan käyttäjätiedoston siirto.
-0x414,Vanhan tyylinen jako anomus
-0x415,Vanhentunut jako pyyntö
-0x416,Käyttäjätiedosto hylätty
+0x20c,Paikalleen jumittunut moduli; se johtaa muistin ylivuotoihin!
+0x20d,Olet asentanut moduleja mutta et ole valinnut salausmodulia (esim. blowfish).\n\
+Tarkista botin asetustiedosto huolellisesti.\n
+0x20e,Filesys-modulia ei ole ladattu.
+0x20f,Moduli ladattu: %-16s (kielituki)
+0x210,Moduli ladattu: %-16s
 
-# SEKALAISTA_
-0x500,päättynyt
-0x501,Yhteensä
-0x502,Poistetut
-0x504,on
-0x505,Käy
-0x506,ohitetaan ensimmäinen
-0x507,(enemmän kuin %d käyvää; lista katkaistu)\n
-0x508,--- Löydetty %d vastaavaa%s.\n
-0x509,Epäselvä komento.\n
-0x50a,Mitä?  Sinä tarvitset '.help' komentoa\n
-0x50b,Komento sidottu:\n
-0x50c,Käynnistetään uudelleen...
-0x50d,es
-0x50e,Vaihdetaan logitiedostoja...
-0x512,varattu
+# USERF_
+0x400,Käyttäjätiedoston lähetys onnistui; otetaan se käyttöön
+0x402,KÄYTTÄJÄTIEDOSTON LUKEMINEN EPÄONNISTUI
+0x403,En pysty lähettämään käyttäjätiedostoa sinulle (sisäinen virhe)
+0x404,Käyttäjää ei löydy
+0x405,Vanha käyttäjätiedostoformaatti.\n\
+Käytä komentoa 'tclsh scripts/weed <käyttäjätiedosto> c'\n\
+muuntaakseni sen uudempaan formaattiin
+0x406,Tuntematon käyttäjätiedostoformaatti.
+0x407,Viallinen käyttäjätieto
+0x408,Kaksoiskappale käyttäjätiedosta
+0x409,Nollataan viallinen salasana käyttäjältä
+0x40a,Hylätään tiedot kanavilta:
+0x40b,Tallennan käyttäjätiedoston...
+0x40c,Virhe käyttäjätiedoston tallentamisessa.
+0x40d,Virhe käyttäjätiedoston tallentamisessa lähetystä varten.
+0x40e,Käyttäjätiedoston luominen ei ole tarpeellista; jatketaan eteenpäin
+0x40f,Lataan asetukset uudelleen...
+0x410,Ketään tuon nimistä ei löydy.\n
+0x411,Käyttäjätietoa ei löydy.
+0x412,Varmuuskopioin käyttäjätiedoston...
+0x413,Yhteydenotto epäonnistui; keskeytän käyttäjätiedoston lähetyksen.
+0x414,Vanhanaikainen tiedonsiirtopyyntö:
+0x415,Todella muinainen tiedonsiirtopyyntö
+0x416,Käyttäjätiedoston hylkäsi
+
+# MISC_
+0x500,vanhentunut
+0x501,Yht.
+0x502,Poistettu
+0x504,kohteessa
+0x505,Etsin
+0x506,jätän väliin ensimmäiset
+0x507,(löytyi enemmän kuin %d kpl; listaaminen lopetettiin)\n
+0x508,--- Löytyi %d kpl.\n
+0x509,Virheellinen komento.\n
+0x50a,Mitä?   Komennolla '.help' saat apua\n
+0x50b,Komentojen kiinnitykset (bind):\n
+0x50c,Käynnistän uudelleen...
+0x50d, 
+0x50e,Vaihdan lokitiedostot...
+0x512,joutilas
 0x513,POISSA
-0x516,Katkaistu
+0x516,Ei yhteyttä
 0x517,virheellinen botti
-0x518,Tunnistetaan loopia: kaksi bottia on nimetty
-0x51a,sta
-0x51b,ulkopäivitetty
-0x51c,evätty
-0x51d,petkuttaja
-0x51e,yritetään
-0x51f,MOTD tiedosto:
-0x520,Ei MOTD tiedostoa.
+0x518,Havaitsin silmukan: on kaksi bottia nimeltä
+0x51a,kohteesta
+0x51b,vanhentunut
+0x51c,hylätty
+0x51d,huijari
+0x51e,yritän
+0x51f,MOTD-tiedosto:
+0x520,Ei MOTD-tiedostoa.
 0x521,Käytä:
 0x522,<osoite>:<portti#>[/<relay-portti#>]
-0x526,avoin
-0x527,tarvitaan opit
-0x528,väijytään
+0x526,vireillä
+0x527,puuttuu opit
+0x528,tarkkailen
 0x529,taustalla
-0x52a,terminaali moodi
-0x52b,tila moodi
-0x52c,pitkä vedos moodi
-0x52d,Paikalla
-0x52e,Kätkö
-0x52f,Tcl kirjasto:
-0x530,Uusi käyttäjän saatava merkki
-0x531,tiedottaa
-0x532,Pysyvä(t) omistaja(t)
-0x534,CONFIG TIEDOSTO EI LADATTU (EI LÖYDY, TAI VIRHE)
-0x535,KÄYTTÄJÄTIEDOSTOA EI LÖYDY!  (yritä './eggdrop -m %s' luodaksesi yksi)\n
-0x536,KÄYNNISTETÄÄN BOTTI KÄYTTÄJÄTIEDOSTON LUONTI MOODISSA.\n\
-Telnettaa botille ja syötä 'UUSI' kuin sinun nickkisi.
-0x537,TAI mene IRCC:iin ja syötä komento:  /msg %s hello\n
-0x538,Tämä tekee että botti tunnistaa sinut mertarikseen.
-0x539,KÄYTTÄJÄTIEDOSTO VALMIIKSI LUOTU (poista '-m')
-0x53a,EI PYSTY KIRJOITTAMAAN TEMP HAKEMISTOA
-0x53b,Ei pysty ladata uudelleen käyttäjä tiedostoa!
-0x53c,Käyttäjätiedosto hukassa!
-0x53e,%B  (%E)\n\nSyötä tähän sinun nickkisi.\n
-0x53f,Kierrätetään logitiedostoa %s, maksimi-logikoko (%d)
-0x540,\nNickki.\n
-0x541,Viimeinen viesti toistettu %d aika(a).\n
-0x542,juped
-0x543,Ei vapaita kohtia saatavilla.
-0x544,Tcl versio:
-0x545,pää versio
+0x52a,päätemoodi
+0x52b,tilamoodi
+0x52c,lokitiedoston moodi
+0x52d,Käynnissä
+0x52e,Välimuisti
+0x52f,Tcl-kirjasto:
+0x530,Uusien käyttäjien asetukset
+0x531,ilmoita
+0x532,Vakituiset omistajat
+0x534,ASETUSTIEDOSTOA EI LÖYDY TAI SIINÄ ON VIRHE
+0x535,KÄYTTÄJÄTIEDOSTOA EI LÖYDY (luo se komennolla './eggdrop -m %s')\n
+0x536,KÄYNNISTÄN BOTIN JA LUON UUDEN KÄYTTÄJÄTIEDOSTON.\n\
+Ota telnet-yhteys bottiin ja anna käyttäjätunnukseksi 'NEW'.
+0x537,TAI kirjoita IRCin kautta komento:  /msg %s hello\n
+0x538,Tällätavoin botti tunnistaa sinut ylläpitäjäksi (master).
+0x539,KÄYTTÄJÄTIEDOSTO ON JO OLEMASSA (poista '-m' optio)
+0x53a,TEMP-HAKEMISTOON KIRJOITTAMINEN EI ONNISTU
+0x53b,Käyttäjätiedoston lataaminen epäonnistui!
+0x53c,Käyttäjätiedosto puuttuu!
+0x53e,%B  (%E)\n\nAnna käyttäjätunnuksesi.\n
+0x53f,Lokitiedoston %s maksimikoko (%d) ylittyi. Poistetaan tietoja vanhimmasta päästä.
+0x540,Käyttäjätunnus.\n
+0x541,Viimeisin viesti toistettu %d kertaa.\n
+0x542,"juped"
+0x543,Ei vapaita kytkentöjä (socket).
+0x544,Tcl-versio:
+0x545,header-versio
 
 # IRC_
 0x600,Bannattu
-0x601,Olet bannattu
-0x602,Haluan bannata itseni--poikkeama.
-0x603,tämä on hauskaa, tehdään se uudestaan!
-0x604,Hei
+0x601,Olet bannissa
+0x602,Bottia itseään ei voi laittaa banniin.
+0x603,se oli kivaa, pistetääs uusiks!
+0x604,Terve
 0x605,Heippa
-0x606,Olet bannattu, tahmassa.
-0x607,NOTICE %s :Sinun nickkisi on liian pitkä sentähden se on lyhennetty '%s'.\n
-0x608,Esitellä
-0x609,yleinen sijainti
-0x60a,NOTICE %s :Hei %s!  Olen %s, eggdrop botti.\n
-0x60b,NOTICE %s :Tunnistan sinun hostmaskisi '%s' nyt.\n
-0x60c,Koska tulit yhteiseltä irc sijainnilta, tämä meinaa että sinun pitäisi
-0x60d,aina käyttää tätä nickkiä kun puhut minulle.
+0x606,Äijä, olet bannissa.
+0x607,NOTICE %s :Sinun nick on liian pitkä, joten sitä on lyhennetty: '%s'.\n
+0x608,Esitelty:
+0x609,monen käyttäjän osoite
+0x60a,NOTICE %s :Terve %s! Olen %s, eggdrop botti.\n
+0x60b,NOTICE %s :Tunnistan sinut jatkossa osoitteen '%s' perusteella.\n
+0x60c,Koska käyttämäsi osoite on käytössä monilla henkilöillä, täytyy sinun
+0x60d,aina käyttää täsmälleen tätä nickiä, jotta tunnistan sinut oikein.
 0x60e,OLET NYT TÄMÄN BOTIN OMISTAJA
-0x60f,Botti asennus onnistunut, ensimmäinen mestari on %s
+0x60f,Botin asennus on valmis; ylläpitäjä (master) on %s
 0x610,Tervetuloa Eggdroppiin! =]
-0x611,Ensiesitelmä %s %s
-0x612,Sinä olet asettanut salasanan.
-0x613,Et ole asettanut salasanaa.
-0x615,Olet jo asettanut salasanan.
-0x616,Käytä vähintään 6 merkkiä.
+0x611,esitelty: %s (%s)
+0x612,Salasanasi on asetettu.
+0x613,Salasanaasi ei ole asetettu.
+0x615,Salasanasi on jo asetettu.
+0x616,Salasanan täytyy olla vähintään 6 merkkiä pitkä
 0x617,Salasana asetettu:
-0x618,Virheellinen salasana.
-0x619,Salasana vaihdettu:
-0x61a,Olet yhtenäinen; et voi IDENT.
+0x618,Väärä salasana.
+0x619,Salasana muutettu:
+0x61a,Käytät monen käyttäjän osoitetta; IDENT-komento ei ole käytössä.
 0x61b,NOTICE %s :Et ole %s, olet %s.\n
-0x61c,Pääse estetty.
-0x61d,Hyväksyn sinut.
-0x61e,hostmask lisätty
-0x620,Nyt:
+0x61c,Pääsy kielletty.
+0x61d,Tunnistan sinut.
+0x61e,Osoite lisätty
+0x620,Tällä hetkellä:
 0x621,Nyt:
-0x622,Poista se:
-0x624,Inforivisi on lukittu
-0x625,Inforivisi poistettu
-0x626,Inforivisi poistettu.
-0x627,Sinulla ei ole asetettu infoa
-0x628,Et ole asettanut infoa.
-0x629,En tarkkaile tätä kanavaa.
-0x62a,Alustetaan kanava info.
-0x62b,Hypätään serverille...
-0x62c,Kanava on nyt piilotettu.
-0x62d,Nyt kanavalla
-0x62e,Koskaan nähnyt kanavaa.
-0x62f,Viimeksi nähnyt
-0x630,En tunne sinua; esittele itsesi ensin.
-0x631,Ei apua.
-0x632,Ei apua saatavilla tästä.
-# 0x633 - käyttämätön
-0x634,Ei kanavalla juuri nyt.
-0x635,Vaihdetaan takaisin nickki %s
-0x636,Serveri sanoo, minun nickkini on viallinen.
-0x637,NICKKI KÄYTÖSSÄ: Yritetään '%s'
-0x638,Ei pystytä vaihtamaan nickkiä %s.  Onko minun nickkini bannattu?
-0x639,Nickki on juped
-0x63a,Kanava %s on juped. :(
-0x63b,%s sanoo En ole rekisteröitynyt, yritetään uudestaan.
-0x63c,Serveri sanoo, emme ole rekisteröityneet vielä..
-0x63d,Floodaamista @%s!  Asetetaan ignore!
-0x63f,JOIN floodaamista @%s!  Bannattu.
-0x640,Kanava floodaamista %s -- kickataan
-0x641,Yritetään serveriä
-0x642,DNS tarkistus epäonnistui
-0x643,Yhditäminen epäonnistui
-0x644,Serveri "jäätynyt"; mennään mutustelemaan...
-0x645,Katkaistaan
-0x646,Ei nykyistä serveriä.
-0x647,Moodi queue on nyt
-0x648,Serveri queue on nyt
-0x649,Auto queue on nyt
-# 0x64a - ei käytössä
-# 0x64b - ei käytössä
-0x64c,Tapahtuma kanava
+0x622,Poistaaksesi:
+0x624,Info-tietosi on lukittu
+0x625,Info-tieto poistettu kanavalta
+0x626,Info-tieto poistettu.
+0x627,Info-tietoa ei ole asetettu kanavalle
+0x628,Info-tietoa ei ole asetettu.
+0x629,En tarkkaile tuota kanavaa.
+0x62a,Kanavatiedot nollataan.
+0x62b,Vaihdan palvelinta...
+0x62c,Kanava on piilotettu.
+0x62d,Olen kanavalla
+0x62e,En ole koskaan nähnyt kanavalla.
+0x62f,Viimeksi nähty:
+0x630,En tunnista sinua. Esittelisitkö itsesi ensin.
+0x631,Ei löydy apua.
+0x632,Tuohon ei löydy apua.
+# 0x633 - unused
+0x634,En ole tuolla kanavalla juuri nyt.
+0x635,Otan käyttöön nickin %s
+0x636,IRC-palvelin ilmoittaa, että minun nick ei kelpaa.
+0x637,NICK ON JO KÄYTÖSSÄ: Yritän '%s'
+0x638,Nickin vaihtaminen (%s) ei onnistu. (Onkohan se bannissa?)
+0x639,Nick on "juped"
+0x63a,Kanava %s on "juped". :(
+0x63b,%s ilmoittaa, etten ole rekisteröitynyt. Yritän seuraavaa.
+0x63c,IRC-palvelin ilmoittaa, etten ole vielä rekisteröitynyt...
+0x63d,Floodia: @%s - hylätään (ignore)!
+0x63f,Join-floodia: @%s - banniin!
+0x640,Kanava-floodia: %s - annetaan kenkää
+0x641,Yritän palvelimelle
+0x642,DNS-kysely epäonnistui
+0x643,Yhteydenotto epäonnistui:
+0x644,IRC-palvelin jäi jumiin.
+0x645,Yhteys katkaistu:
+0x646,Ei palvelinta tällä hetkellä.
+0x647,Moodiviestit:
+0x648,Palvelinviestit:
+0x649,Help-viestit:
+# 0x64a - unused
+# 0x64b - unused
+0x64c,Käsittelen kanavaa
 0x64d,Kanava
-0x64e,Halutaan kanava
-0x64f,Kanava otsikko
-0x650,pyydetään +o -- Olen jumissa
-0x651,pyydetään -o -- Olen jumissa
-0x652,pyydetään kickiä
-0x653,VÄÄRÄ KANAVAOP ANNETTU SERVERILTÄ
-0x654,Kanava info loppu.
-0x655,lauma kick, mene istumaan nurkkaan
-0x656,banni poistettu
-0x657,Hmm, moodi info kanavalla En ole
-0x658,...ja kiitos sinulle pelaamisesta.
-0x659,Hypätään servereille (tarvitaan %d servereitä, on vain %d)
-0x65a,vaihdetaan servereitä
-0x65b,Olen liian monella kanavalla--en voi liittyä: %s
-0x65c,Kanava täynnä--en voi liittyä: %s
-0x65d,Kanava vain inviteille--en voi liittyä: %s
-0x65e,Bannattu kanavalta--en voi liittyä: %s
-0x65f,Serveri sanoo En ole kanavalla: %s
-0x660,Huono avain--en voi liittyä: %s
-0x661,NOTICE %s :Kaikki komennot on tehtävä /MSG lla. Täydellinen lista komennoista, /MSG %s help   Heippa!\n
-0x662,NOTICE %s :En hyväksy tätä hostia.\n
-0x663,NOTICE %s :Olet käyttämässä jotain muuta nickkiä tai tarvitset komennon: /MSG %s IDENT (password)\n
-0x664,NOTICE %s :Masteri, tarvit todella asettaa salasanan: with /MSG %s pass <sinun-valitsemasi-salasana>.\n
-0x665,NOTICE %s :Kaikki tärkeät komennot ovat käytössä dcc chatssa. Juuri nyt et tarvitse käyttää -m asetusta kun käynnistät botin.  Nauti !!!\n
-0x666,Tämä telnetti on liitetty  %s, eggdroppi bottiin.\nÄlä herjaa sitä, ja se aukeaa kaikille ystävillesi myös.\n
-0x667,Saat nyt valita nickkin käyttääksesi bottia,\nja salasanaa ei kukaan voi uskotella sinulta.\nMuista molemmat!
-0x668,Juuri nyt et tarvitse käyttää -m asetusta kun käynnistät botin.\nNauti !!
-0x669,Telnetti yhteys floodaaminen %s!  Ei välitetä!
-0x66a,Bannattu:
-0x66b,joini floodi
-0x66c,älä kickkii ystäviäni, oksastaja
-0x66d,...ja älä tule takaisin.
-0x66e,Vaihdettu takaisin kakkosnickki %s
-0x66f,älä deoppaa ystäviäni, oksastaja
-0x670,exempti poistettu
-0x671,Invite poistettu
-0x672,NICK floodi @%s!  Bannattu.
-0x673,nickki floodi
+0x64e,Haluan kanavalle
+0x64f,Kanavan otsikko
+0x650,vireillä: +o (viivettä...)
+0x651,vireillä: -o (viivettä...)
+0x652,vireillä: potkut
+0x653,IRC-PALVELIN SUORITTI VÄÄRÄN OPPAUKSEN
+0x654,Kanavatiedot päättyvät.
+0x655,massapotkut; odottele hetki...
+0x656,Poistettu banni
+0x657,Hmm, vai että tietoja moodeista kanavalta, jolla en ole
+0x658,...ja kiitos vaan osanotosta.
+0x659,Vaihdan palvelinta (tarvitsen %d mutta nyt on vain %d)
+0x65a,vaihdan palvelinta
+0x65b,Olen jo liian monella kanavalla; en pääse: %s
+0x65c,Kanava on täynnä; en pääse: %s
+0x65d,Kanavalle tarvitaan kutsu; en pääse: %s
+0x65e,Minut on bannattu; en pääse: %s
+0x65f,IRC-palvelin ilmoittaa, etten ole kanavalla: %s
+0x660,Virheellinen salasana (key); en pääse: %s
+0x661,NOTICE %s :Botin komennot annetaan IRCin /MSG -komennolla. Komentolista: /MSG %s help\n
+0x662,NOTICE %s :En tunnista sinua tuosta osoitteesta.\n
+0x663,NOTICE %s :Käytät joko jonkun toisen nickiä tai sitten sinun täytyy tunnistuttaa itsesi: /MSG %s IDENT <salasana>\n
+0x664,NOTICE %s :Ylläpitäjänä sinun täytyy asettaa salasana: /MSG %s pass <haluttu salasana>\n
+0x665,NOTICE %s :NOTICE %s :Kaikki tärkeimmät komennot suoritetaan DCC-chatin kautta. Jatkossa sinun ei enää tarvitse käyttää -m optiota bottia käynnistäessäsi. Onnea matkaan!\n
+0x666,Tämä on telnet-yhteys bottiin %s.\nÄlä tee mitään ilkeyksiä niin se pysyy toiminnassa ja avoinna meille kaikille.\n
+0x667,Nyt sinun tulee valita käyttäjätunnus ja salasana,\njoita käytät tässä botissa. Valitse hyvä salasana,\njota muut eivät voi arvata ja paina se mieleen.
+0x668,Jatkossa sinun ei enää tarvitse käyttää '-m' optiota bottia käynnistäessäsi.\nOnnea matkaan!
+0x669,Telnet-floodia: %s - hylätään (ignore)!
+0x66a,Bannissa:
+0x66b,join-floodia
+0x66c,älä potki kavereitani
+0x66d,...ja takaisin ei tarvitse tulla.
+0x66e,Otetaan käyttöön toissijainen nick %s
+0x66f,älä deoppaa kavereitani
+0x670,Poistettu erivapaus
+0x671,Poistettu kutsu
+0x672,Nick-floodia: @%s - banniin!
+0x673,nick-flood
 
 # EGG_
-0x700,Usage: eggdrop [options] [config-file]\n\n\
-Options:\n\
-  -n   Don't background; send all log entries to console.\n\
-  -nc  Don't background; display channel stats every 10 seconds.\n\
-  -nt  Don't background; use terminal to simulate DCC chat.\n\
-  -m   Create userfile.\n\
-  -h   Show this help.\n\
-  -v   Show version info, then quit.\n\n
+0x700,Käyttö: eggdrop [optiot] [asetustiedosto]\n\n\
+Optiot:\n\
+  -n   Ei taustalle; kaikki lokitieto tulostetaan konsoliin.\n\
+  -nc  Ei taustalle; tulosta kanavien tila 10 sekunnin välein.\n\
+  -nt  Ei taustalle; käytä terminaalia DCC-chatin korvikkeena.\n\
+  -m   Luodaan käyttäjätiedosto.\n\
+  -h   Tulostetaan nämä help-tiedot.\n\
+  -v   Näytä vain ohjelman versiotiedot.\n\n
 
-0x701,Tunnistan %s valmiiksi päällä tässä kansiossa.\n
-0x702,Jos tämä ei ole korjattu, poista '%s'\n
-0x703,* Varoitus!  Ei pysty kirjoittamaan %s tiedostoa!\n
+0x701,Huomaan, että %s on jo käynnissä tässä hakemistossa.\n
+0x702,Jos tämä on virheellinen, poista '%s'\n
+0x703,* Varoitus! En voi kirjoittaa %s tiedostoa!\n
 
-# KÄYTTÄJÄ_
-0x800,  (on globaalinen oppi)
+# USER_
+0x800,  (on yleinen op)
 0x801,  (on botti)
-0x802,  (on masteri)
+0x802,  (on ylläpitäjä (master))
 
-# KANAVA_
-0x900,Ei kyseistä kanavaa tunnistettu
-0x902,* Moodi vaihdettu %s olemattomaan %s!
-0x903,Kasa deopattu %s %s
-0x904,Kasa deopattu.  Mene istumaan nurkkaan.
-0x907,Hups.   Joku sai minut liittymään %s... lähdetään...
-0x908,Moodi vaihdettu väärän opin %s takia!  Käännetään...
-0x909,Haukutaan sairaat serveri opit
-0x90a,Moodi vaihdettu väärän kanavaopin %s takia! Käännetään...
-0x90b,Haukutaan epäsynkkaaja
-0x90c,floodaaminen
+# CHAN_
+0x900,Kanavaa ei ole
+0x902,* moodia vaihdettiin kanavalla %s, mutta %s ei löydy!
+0x903,Massa-deop kanavalla %s (toteutti %s)
+0x904,Massa-deop käynnissä...
+0x907,Hupsista. Joku laittoi minut liittymään kanavalle %s... poistun...
+0x908,Väärä op muutti moodeja kanavalla %s! Palautan takaisin...
+0x909,Väärinkäyttää IRC-palvelimen antamia op-oikeuksia
+0x90a,Henkilö ilman op-oikeuksia muutti moodeja kanavalla %s! Palautan takaisin...
+0x90b,Väärinkäyttää IRCin "desynciä"
+0x90c,flood
 
-0xa00,Ei ignooreja
-0xa01,Nykyisiä  ignooreja
-0xa02,Ei pitkiä ignooreja
+0xa00,Ei hylkäämisiä (ignore)
+0xa01,Hylkäämislistalla (ignore) ovat
+0xa02,Poistin hylkäämislistalta
 
-0xb00,Tämä botti ei ole täällä.\n
-0xb01,Tämä on botti.  Et voi jättää viestejä botille.\n
+0xb00,Botti ei ole täällä.\n
+0xb01,Se on botti. Botille ei voi lähettää viestejä.\n
 0xb02,on poissa
-0xb07,Ei saapuvia sinulle
-0xb08,Viesti varastossa
-0xb18,Botin selkuminen aloitettu....
-0xb19,Ei kyseistä käyttäjää
-0xb1a,ei kanavia
-0xb1b,Party linen jäsenet:
-0xb1c,Botit yhdistetty
-0xb1d,Muita ihmisiä botilla
-0xb1f,Yritetään linkittää
-0xb20,Ei paikalla; viesti varastoitu.
-0xb21,Viestilaatikko täynnä, anteeksi.
-0xb22,on poissa; viesti varastoitu.
-0xb23,Viesti lähetetty
-0xb24,Katkaistu:
-0xb25,Ihmisiä kanavalla
-0xb26,Ei pysty linkittämään tähän
-0xb27,Ei pysty unlinkittämään
-0xb28,Loop tunnistettu
-0xb29,Outo linkki viesti
-0xb2b,Katkaistu jäljellä
-0xb2c,Linkitetty
-0xb2d,Laiton linkki selattu
-0xb2e,Olet tuettu olemaan selattu!
-0xb2f,Hylätään botti
-0xb30,Vanhempi botti tunnistettu (ei tuettu)
-0xb31,Jäljitetään vastausta
-0xb32,ei ole olemassa
-0xb33,Remote bootit eivät ole sallituja.
-0xb34,Ei pysty boottaamaan botin omistajaa.
-0xb35,TIEDOSTON SIIRTO HYLÄTTY
-0xb37,Käyttähät ovat ristissä botnetissä
-0xb38,Party line
+0xb07,Sait viestin
+0xb08,Viesti tallennettiin
+0xb18,Aloitan botin sulkemisen...
+0xb19,Käyttäjää ei löydy
+0xb1a,ei ole kanavia
+0xb1b,Henkilöt partylinellä:
+0xb1c,Botit kytketty
+0xb1d,Muut henkilöt botissa
+0xb1f,Koetan yhdistää bottiin
+0xb20,Ei ole paikalla; talletan viestin.
+0xb21,Postilaatikko on valitettavasti täynnä.
+0xb22,on poissa; talletan viestin.
+0xb23,Viesti lähetetty:
+0xb24,Yhteys katkaistu:
+0xb25,Henkilöt kanavalla
+0xb26,Yhdistäminen ei onnistu
+0xb27,En voi katkaista yhteyttä
+0xb28,Havaitsin silmukan
+0xb29,Havaitsin vale-yhdistämisen:
+0xb2b,Yhteyden katkaisu:
+0xb2c,Yhdistetty:
+0xb2d,Kielletty yhdistäminen: leaf-botti
+0xb2e,Olet leaf-botti!
+0xb2f,Hylkäsin botin
+0xb30,Vanha bot-versio, jota ei enää tueta
+0xb31,Jäljityksen tulokset
+0xb32,ei löydy
+0xb33,Potkut toisista boteista eivät ole sallittuja.
+0xb34,Botin omistajaa ei voi potkaista.
+0xb35,TIEDOSTON LÄHETYS HYLÄTTY
+0xb37,Käyttäjät bot-verkossa:
+0xb38,Partyline
 0xb39,Paikallinen kanava
 0xb3a,Käyttäjät kanavalla
-0xb3b,Ei botteja linkitetty.
-0xb3c,Ei infoa jäljitetty:
-0xb3d,Puu liian monimutkainen!
-0xb3e,Unlinkitetään kaikki botit...
-0xb3f,Linkki tapetaan yrityksestä
-0xb40,Ei pitkään yritetä linkkiä:
-0xb41,Rikotaan linkki
-0xb42,Unlinkitetty:
-0xb43,Ei yhdistetty tätä bottia.
-0xb44,Smooshing botti tasot ja associt...
-0xb45,ei ole tunnettu botti.
-0xb46,Linkitetään itseni kanssa?  Oh poika, Fredillä ei ole pelto päivä.
-0xb47,Tämä botti on jo valmiiksi yhdistetty.
-0xb48,Väärä telnet osoite:portti varastoitu
-0xb49,Linkitetty
-0xb4a,Ei pysty löytämään käyttäjä viestiä!
-0xb4b,Ei pysty linkittämään
-0xb4c,Viestitä itsesi kanssa?  Mikä MAA tämän ovi tehdä?!
-0xb4d,Yhdistetty
-0xb4e,(Komento *BYE* poistuu rivillä itsestään.)
-0xb4f,Katkaistaan relay pyyntö
-0xb50,Olet nyt palannut
-0xb51,Relay katkaistu:
-0xb53,Dcc yhteys hukattu
-0xb54,Tiputetaan relay pyyntö
-0xb55,Onnistui!\n\nNYT RELAY BOTTIIN ON YHDISTETY
-0xb56,(Voit käyttää komentoa *BYE* enenaikaiseen yhteyden sulkemiseen.)
-0xb57,Relay linkki:
-0xb58,Lähdettiin party linelta.
-0xb59,Relay linkki lopetettu
-0xb5a,RELAY YHTEYS TIPUTETTU.\nOlet palannut nyt takaisin
-0xb5b,palataan takaisin party linelle.
-0xb5c,Tiputetaan relay linkki
-0xb5d,Katkaistaan yhteys
-0xb5e,Relay rikki
-0xb5f,Pinggi kadotettu
-0xb60,unleaflike käytös
-0xb61,Tiputettiin botti
-0xb62,Tämä botti on jo valmiiksi linkitetty.
+0xb3b,Ei yhdistettyjä botteja.
+0xb3c,Ei jäljittämistietoa:
+0xb3d,Puu on liian monimutkainen!
+0xb3e,Katkaisen kaikkien bottien yhteydet...
+0xb3f,Hylkäsin yrityksen yhdistää bottiin
+0xb40,Lopetin yhdistämisen bottiin:
+0xb41,Katkaisen yhteyden:
+0xb42,Yhteys katkaistu:
+0xb43,Ei yhteyttä tuohon bottiin.
+0xb44,Nollaan botin tietoja...
+0xb45,on tuntematon botti.
+0xb46,Yhteys omaan itseen? Kuulostaa ainakin filosofiselta...
+0xb47,Tuohon bottiin on jo yhteys.
+0xb48,Virheellinen telnet <osoite>:<portti> tallennettu:
+0xb49,Yhdistän:
+0xb4a,Käyttäjää ei löydy; relay-yhteys epäonnistui.
+0xb4b,Yhdistäminen epäonnistui:
+0xb4c,Relay-yhteys omaan itseen? Siitä ei olisi mitään hyötyä.
+0xb4d,Muodostan relay-yhteyden:
+0xb4e,(Kirjoita tyhjälle riville *BYE* peruaksesi yhteydenoton.)
+0xb4f,Relay-yhteys peruttu:
+0xb50,Olet jälleen botissa
+0xb51,Relay-yhteys peruttu:
+0xb53,DCC-yhteys katosi:
+0xb54,Lopetan yritykset relay-yhteyteen:
+0xb55,Onnistui!\n\nYHTEYS MUODOSTETTU RELAY-BOTTIIN
+0xb56,(Kirjoittamalla *BYE* voit katkaista yhteyden välittömästi.)
+0xb57,Relay-yhteys:
+0xb58,poistui partylineltä.
+0xb59,Relay-yhteys lopetettu
+0xb5a,RELAY-YHTEYS KATKESI.\nOlet jälleen botissa
+0xb5b,liittyi jälleen partylinelle.
+0xb5c,Katkaisen relay-yhteyden:
+0xb5d,Keskeytän relay-yhteyden:
+0xb5e,Relay-yhteys keskeytyi
+0xb5f,Aikakatkaisu (ping)
+0xb60,epänormaalia käytöstä leaf-botilta
+0xb61,Katkaisin yhteyden:
+0xb62,Yhteydenmuodostus bottiin on jo käynnissä.
+0xc00,En hyväksy DCC-chattia tuntemattomilta.
+0xc01,Hylkäsin DCC-chatin (ei oikeuksia)
+0xc02,Ei oikeuksia
+0xc03,Salasanan täytyy olla asetettu.
+0xc04,Hylkäsin DCC-chatin (ei salasanaa)
+0xc05,Hylkäsin DCC-chatin (tiedostoaluetta ei ole)
+0xc07,Tiedostoalueella on tällä hetkellä liian monta käyttäjää.
+0xc0c,Liian monta DCC-yhteyttä.
+0xc0d,DCC-yhteydet ovat täynnä: %s %s (%s!%s)
+0xc19,Yhteydenotto epäonnistui:
+0xc1a,DCC-yhteys epäonnistui
+0xc1c,Salasana.
+0xc1d,%s on poistettu floodauksen vuoksi.\n
+0xc1e,-=- puff -=-\n
+0xc1f,Sait potkut kohteesta %s (toteutti %s%s%s)\n
+0xc20,%s antoi potkut henkilölle %s partylineltä%s%s
+0xc21,Hylkäsin DCC-chatin (virheellinen portti)
+0xc22,Virheellinen DCC-portti
 
-0xc00,En salli DCC chatteja oudoille.
-0xc01,Evätään DCC chatti (ei pääsyä)
-0xc02,Ei pääsyä
-0xc03,Sinulla täytyy olla salasana asetettu.
-0xc04,Evätään DCC chatti (ei salasanaa)
-0xc05,Evätään DCC chatti (+x mutta ei tiedosto alue)
-0xc07,Liian moni ihminen on tiedosto alueella juuri nyt.
-0xc0c,Sori, liian monta DCC yhteyttä.
-0xc0d,DCC yhteydet täynnä: %s %s (%s!%s)
-0xc19,yhdistäminen epäonnistui
-0xc1a,DCC yhdistyminen epäonnistui
-0xc1c,Syötä salasana.
-0xc1d,%s on väkivalloin poistettu floodaamasta.\n
-0xc1e,-=- pöh -=-\n
-0xc1f,Et ole bootannut %s %s%s%s\n
-0xc20,%s bootattu %s party line%s%s
-0xc21,Evätty DCC chatti (väärä portti)
-0xc22,DCC väärä portti
-
-0xd00,Floating in limbo (ei IRC vuorovaikutus)
+0xd00,Olen limbo-botti (ei IRC-yhteyttä)
 
 # BOTNET
-0xe00,Vale viesti hylätty
-0xe01,Linkitetty
-0xe02,Väärä botti--halutaan %s, saada %s
-0xe03,on lähtenyt
-0xe04,on liittynyt
-0xe05,on nyt poissa
-0xe06,ei ole pitkään poissa
-0xe07,Nickki vaihdettu:
+0xe00,Virheellinen viesti hylätty
+0xe01,Yhdistetty:
+0xe02,Väärä botti; piti olla %s mutta tulikin %s
+0xe03,poistui:
+0xe04,liittyi:
+0xe05,on poissa
+0xe06,on paikalla
+0xe07,Nickin muutos:
 
-# dcc.c viestit
-0xe08,Linkki hylätään %s
-0xe09,Linkitetty %s.
-0xe0a,Linkitys epäonnistui %s.
-0xe0b,Huono salasana yritykseen yhdistää %s.
-0xe0c,Salasana vaaditaan yhdistämiseen %s.
-0xe0d,VIRHE linkityksessä %s: %s
-0xe0e,Botti kadotettu: %s
-0xe0f,Aikalisä: botti linkitetty %s %s:%d
-0xe10,Päästy sisään: %s (%s/%d)
-0xe11,Huono Salasana: [%s]%s/%d
-0xe12,Tämä on negatiivinen, Houston.\n
-0xe13,*** %s on liittynyt party linelle.\n
-0xe14,Dcc yhteys hukattu %s (%s/%d)
-0xe15,Salasana vanheni dcc chatissa: [%s]%s
-0xe16,DCC yhteys suljettu (%s!%s)
-0xe17,TELNET yhdistäminen epäonnistui (%s)
-0xe18,Evätään %s/%d (huono src portti)
-# 0xe19 - ei käytössä
-0xe1a,Evätään %s (huono hostname)
-0xe1b,Telnet yhteys: %s/%d
-0xe1c,Ident epäonnistui %s: %s
-0xe1d,(!) Kuunnellaan porttia %d äkisti kuoli.
-0xe1e,Evätään %s (huono nickki)
-0xe1f,Evätään %s (ei botti)
-0xe20,Evätään %s (ei käyttäjä)
-0xe21,Evätään %s (virheellinen kahva: %s)
-0xe22,Evätään telnet yhteys %s (kaksois)
-0xe23,Evätään [%s]%s (ei salasanaa)
-0xe24,Kadotettiin telnet yhteys %s/%d
-0xe25,Ident kadotettu telnetissä: %s
-0xe26,Botti asennettu onnistuneesti, ensimmäinen mestari on %s
-0xe27,Uusi käyttäjä telnetissä: [%s]%s/%d
-0xe28,Uusi telnet käyttäjä kadotettu (%s/%d)
-0xe29,Uusi telnet käyttäjä kadotettu %s (%s/%d)
-0xe2a,Uusi telnet käyttäjä tiputettu: %s/%d
-0xe2b,Uusi telnet käyttäjä tiputettu: [%s]%s/%d
-0xe2c,Tcl virhe [%s]: %s
-0xe2d,*** HUOMIO: KUOLLUT SOCKET (%d) TYYPISSÄ %s EI VANGITTU
-0xe2e,Kadotetaan yhteys silläaikaa kun identitettiin [%s/%d]
-0xe2f,Kadotettu/EOF ident yhteys
-0xe30,Kadotettu ident odotus telnet socketti!!
-0xe31,Evätty telnet: %s, Ei pääsyä
-0xe32,Evätään telnet yhteys %s (yritä käyttää minun botnetnickkiäni)
-0xe33,Telnet yhteys hukattu %s silläaikaa kun tarkistettiin tuplausta
+# dcc.c Messages
+0xe08,Hylkään yhteydenoton botista %s
+0xe09,Yhdistetty: %s.
+0xe0a,Yhdistäminen epäonnistui: %s.
+0xe0b,Virheellinen salasana; yhdistäminen epäonnistui: %s.
+0xe0c,Salasana puuttuu; yhdistäminen epäonnistui: %s.
+0xe0d,VIRHE yhdistämisessä %s: %s
+0xe0e,Kadotin botin: %s
+0xe0f,Aikakatkaisu: yhteydenotto kohteeseen %s (%s:%d)
+0xe10,Yhteys muodostettu: %s (%s/%d)
+0xe11,Virheellinen salasana: [%s]%s/%d
+0xe12,"Negative on that, Houston."\n
+0xe13,*** %s liittyi partylinelle.\n
+0xe14,DCC-yhteys katosi: %s (%s/%d)
+0xe15,Salasanatunnistuksen aikakatkaisu DCC-chatissa: [%s]%s
+0xe16,DCC-yhteys suljettu (%s!%s)
+0xe17,Saapuva telnet-yhteys epäonnistui (%s)
+0xe18,Hylkään: %s/%d (virheellinen lähdeportti)
+# 0xe19 - unused
+0xe1a,Hylkään: %s (virheellinen osoite)
+0xe1b,Telnet-yhteys: %s/%d
+0xe1c,Ident-tarkistus epäonnistui: %s: %s
+0xe1d,(!) Kuuntelemani portti %d yhtäkkiä hävisi.
+0xe1e,Hylkään: %s (virheellinen nick)
+0xe1f,Hylkään: %s (ei ole botti)
+0xe20,Hylkään: %s (ei ole käyttäjä)
+0xe21,Hylkään: %s (virheellinen käyttäjätunnus: %s)
+0xe22,Hylkään telnet-yhteyden: %s (kaksoisyhteys)
+0xe23,Hylkään: [%s]%s (ei salasanaa)
+0xe24,Telnet-yhteys katosi: %s/%d
+0xe25,Ident-aikakatkaisu telnet-yhteydessä: %s
+0xe26,Botin asennus on valmis; ylläpitäjä (master) on %s
+0xe27,Uusi käyttäjä (telnet): [%s]%s/%d
+0xe28,Käyttäjä katosi (telnet): (%s/%d)
+0xe29,Kadotin uuden käyttäjän (telnet): %s (%s/%d)
+0xe2a,Aikakatkaisu uuden käyttäjän telnet-yhteydessä: %s/%d
+0xe2b,Aikakatkaisu uuden käyttäjän telnet-yhteydessä: [%s]%s/%d
+0xe2c,Tcl-virhe [%s]: %s
+0xe2d,*** HUOMIO: DEAD SOCKET (%d) OF TYPE %s UNTRAPPED
+0xe2e,Yhteys katosi ident-testauksen aikana [%s/%d]
+0xe2f,Aikakatkaisu/EOF ident-testauksessa
+0xe30,Ident-testauksen telnet-socket katosi!!
+0xe31,Hylkään telnet-yhteyden: %s (ei oikeuksia)
+0xe32,Hylkään telnet-yhteyden: %s (yritti käyttää minun bot-verkon nickiä)
+0xe33,Telnet-yhteys katosi: %s (olin testaamassa onko kaksoisyhteyksiä)
