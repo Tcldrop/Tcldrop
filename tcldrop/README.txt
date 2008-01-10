@@ -1,4 +1,4 @@
-Tcldrop v0.6.1 - by FireEgl@EFNet <FireEgl@Tcldrop.US> - May 2005
+Tcldrop v0.6.2 - by FireEgl@EFNet <FireEgl@Tcldrop.US> - January 2008
 
 Description:
    Tcldrop is an IRC bot written in pure Tcl..
@@ -76,7 +76,6 @@ Thanks:
       stdarg for writing eggdrop1.7/modules/oldbotnet/PROTOCOL
       phrek on EFNet (op in #Tcl) For starting on the transfer and filesys modules.
       Dossy on EFNet (op in #Tcl)
-      dollar on EFNet (op in #Tcl, #EggTcl, #Tcldrop) for providing the Tcldrop.Org domain.
       iad (slann) on EFNet (op in #Tcl, #EggTcl, #Tcldrop) for creating the php-based website.
       Also, I thank all the guys hanging out in #Tcldrop on EFNet...
       Their interest pushes this project forward. =)
@@ -103,4 +102,4 @@ Contact:
    FireEgl@HotMail.Com on MSN/Hotmail
 
 Websites:
-   Tcldrop's main home is www.Tcldrop.US or www.Tcldrop.Org or http://Tcldrop.SF.Net/ or http://Tcldrop.AltURL.Com/ or http://FS.FSF.Org/tcldrop or http://Tcldrop.Atlantica.HomeIP.Net/
+   Tcldrop's main home is www.Tcldrop.US or http://Tcldrop.SF.Net/ or http://Tcldrop.AltURL.Com/ 
