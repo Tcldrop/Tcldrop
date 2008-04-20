@@ -2,9 +2,9 @@
 #	Handles:
 #		* This module provides the core partyline support.
 #
-# $Id: partyline.tcl,v 1.6 2005/05/19 03:55:42 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
