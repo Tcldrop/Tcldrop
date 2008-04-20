@@ -1,6 +1,6 @@
 # pubsafetcl.tcl --
 #
-# Copyright (C) 2004,2005,2006,2007 by Philip Moore <FireEgl@Tcldrop.US>
+# Copyright (C) 2004,2005,2006,2007,2008 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
 # RCS: @(#) $Id$
@@ -297,7 +297,7 @@ namespace eval pubsafetcl {
 				format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
 			}
 			proc decimal2ip {ip} { return "[format %u 0x[string range [set ip [format %08X $ip]] 0 1]].[format %u 0x[string range $ip 2 3]].[format %u 0x[string range $ip 4 5]].[format %u 0x[string range $ip 6 7]]" }
-			proc isnumber {string} { if {([string compare {} $string]) && (![regexp -- \[^0-9\] $string])} { return 1 } else { return 0 } }
+			proc isnumber {string} { string is digit -strict $string }
 			proc en_ordinal {n} { if {($n%100) < 10 || ($n%100) > 20} { switch -- [expr { abs($n) % 10 }] { {1} { return "${n}st" } {2} { return "${n}nd" } {3} { return "${n}rd" } {default} { return "${n}th" } } } else { return "${n}th" } }
 			proc islonger {word2 word1} { expr { [string length $word1] - [string length $word2] } }
 			proc isdigit {string} { regexp -- {^[0-9]+$} $string }
@@ -810,8 +810,8 @@ namespace eval pubsafetcl {
 				{im*} { if {[lsearch -exact $args {-force}] != -1} { return -code error {Denied! =P  -force not allowed.} } }
 				{d*} {
 					foreach ns $args {
-						switch -- [string trim $ns {: }] {
-							{::} - {} {
+						switch -- [string trim $ns {: 	}] {
+							{} {
 								after idle [list after 0 [list [namespace current]::create $interp]]
 								return "Resetting $interp ..."
 							}
@@ -823,6 +823,17 @@ namespace eval pubsafetcl {
 		}
 		interp alias $interp namespace {} [namespace current]::Namespace $interp
 
+		# Wrapper to prevent a segfault in Tcl <8.4.19 and <8.5.2
+		interp hide $interp binary
+		proc Binary {interp option args} {
+			if {$option eq {format} && [string match -nocase {*x0?*} [lindex $args 0]]} {
+				return -code error "Crash attempt DENIED! =P"
+			} else {
+				eval [linsert $args 0 interp invokehidden $interp binary $option]
+			}
+		}
+		interp alias $interp binary {} [namespace current]::Binary $interp
+
 		interp hide $interp time
 		variable TimeNoticeLast 9
 		proc Time {interp args} {
@@ -830,21 +841,26 @@ namespace eval pubsafetcl {
 				return -code error "[lindex $args end] is too high, use 10000 or less."
 			} else {
 				set notice 0
+				set error 0
 				switch -glob -- $args {
-					{*file *} - {*for *} - {*info *} - {*interp *} - {*namespace *} - {*proc *} - {*puts *} - {*rename *} - {*string *} - {*while *} - {*reset *} - {*die *} - {*exit *} {
+					{*file *} - {*for *} - {*info *} - {*interp *} - {*namespace *} - {*proc *} - {*puts *} - {*rename *} - {binary *} - {*string *} - {*while *} - {*reset *} - {*die *} - {*exit *} {
 						# Always send the annoying notice for these commands.
-						set notice 1
+						set error 1
 					}
 					{default} {
 						# Only send the annoying notice once every 999 seconds otherwise.
 						variable TimeNoticeLast
-						if {[clock seconds] - $TimeNoticeLast > 999} {
+						if {[clock seconds] - $TimeNoticeLast > 99} {
 							set TimeNoticeLast [clock seconds]
 							set notice 1
 						}
 					}
 				}
-				if {$notice} { interp eval $interp { puts NOTICE {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, string, time, while.  You should time commands from your own tclsh instead!} } }
+				if {$error} {
+					interp eval $interp { return -code error {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead! } }
+				} elseif {$notice} {
+					interp eval $interp { puts NOTICE {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead!} }
+				}
 				eval [linsert $args 0 interp invokehidden $interp time]
 			}
 		}
