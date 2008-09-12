@@ -13,6 +13,8 @@
 #	pubsafetcl::create interpname ?-option value? ...
 #
 
+if {![info exists ::auto_path]} { set ::auto_path [list] }
+
 namespace eval pubsafetcl {
 	variable version {2.2.0}
 	variable name {pubsafetcl}
@@ -55,8 +57,8 @@ namespace eval pubsafetcl {
 			set botnick [set nick {SafeTcl}]
 			set altnick {Safe_Tcl}
 			set serveraddress [set server "$env(HOSTNAME):6667"]
-			set version {1.6.18+cvs 1061803 CVS 1134120244 cvs}
-			set numversion {1061803}
+			set version {1.6.20+cvs 1062003 CVS 1214020204 cvs}
+			set numversion {1062003}
 			set lastbind {tcl}
 			set config {eggdrop.conf}
 			# Make some fake commands that don't really do anything:
@@ -272,10 +274,9 @@ namespace eval pubsafetcl {
 			proc testip {ip} { regexp -- {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
 			proc validip {ip {type {default}}} {
 				switch -- $type {
-					{short} { regexp -- {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
 					{long} - {decimal} { if {[regexp -- {^([0-9]*)([0-9])+$} $ip]) || ($ip < 0) || ($ip > 4294967295)} { return 0 } else { return 1 } }
 					{hex} { if {(![regexp -- {^([0-9]*)([0-9])+$} [set ip [format %u 0x$ip]]]) || ($ip < 0) || ($ip > 4294967295)} { return 0 } else { return 1 } }
-					{default} { regexp -- {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
+					{short} - {default} { regexp -- {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
 				}
 			}
 			proc round {n {c 0}} { if {$c > [string length [lindex [split $n .] 1]]} { return $n } else { format %.${c}f ${n}1 } }

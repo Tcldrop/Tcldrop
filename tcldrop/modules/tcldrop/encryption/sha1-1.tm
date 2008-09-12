@@ -34,6 +34,7 @@ namespace eval ::tcldrop::encryption::sha1 {
 	variable name {encryption::sha1}
 	# Provide the sha1 module:
 	package provide tcldrop::$name 1
+	package provide tcldrop::${name}::main 1
 	package provide tcldrop::sha1 1
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}

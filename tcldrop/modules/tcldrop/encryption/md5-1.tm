@@ -43,13 +43,25 @@ namespace eval ::tcldrop::encryption::md5 {
 }
 
 # Because Eggdrop's ::md5 command returns the md5 in hex, and tcllib's ::md5 command returns the md5 in binary, we have to do this crap:
-if {![catch { package require md5 1 }] && [info commands {::md5}] eq {::md5} && [info commands {::md5::real_md5}] ne {::md5::real_md5}} {
+if {![catch { package require md5 1 } ::tcldrop::encryption::md5::md5ver] && [info commands {::md5}] eq {::md5} && [info commands {::md5::real_md5}] ne {::md5::real_md5}} {
 	rename ::md5 ::md5::real_md5
 	#  md5 <string>
 	#    Returns: the 128 bit MD5 message-digest of the specified string
-	proc ::tcldrop::encryption::md5::md5 {string} { string tolower [::hex -mode encode -- [::md5::real_md5 -- $string]] }
+	proc ::tcldrop::encryption::md5::md5 {args} {
+		if {[llength $args] == 1} {
+			string tolower [::hex -mode encode -- [::md5::real_md5 -- [lindex $args 0]]]
+		} else {
+			::md5::real_md5 {*}$args
+		}
+	}
 	# Replace the original ::md5::md5 proc with this one, so it knows about ::md5::real_md5:
-	proc ::md5::md5 {string} { string tolower [::hex -mode encode -- [::md5::real_md5 -- $string]] }
+	proc ::md5::md5 {args} {
+		if {[llength $args] == 1} {
+			string tolower [::hex -mode encode -- [::md5::real_md5 -- [lindex $args 0]]]
+		} else {
+			::md5::real_md5 {*}$args
+		}
+	}
 }
 proc ::tcldrop::encryption::md5::encpass {password} { ::md5::hmac $password $password }
 bind load - encryption::md5 ::tcldrop::encryption::md5::LOAD -priority 0
@@ -58,6 +70,8 @@ proc ::tcldrop::encryption::md5::LOAD {module} {
 	::tcldrop::encryption::register md5 [list encpass ::tcldrop::encryption::md5::encpass]
 	bind unld - encryption::md5 ::tcldrop::encryption::md5::UNLD
 	bind unld - md5 ::tcldrop::encryption::md5::UNLD
+	variable md5ver
+	putlog "Using tcllib md5 version: $md5ver"
 }
 proc ::tcldrop::encryption::md5::UNLD {module} {
 	catch { package forget md5 }

@@ -29,6 +29,7 @@ namespace eval ::tcldrop::encryption::blowfish {
 	variable version {0.1}
 	variable name {encryption::blowfish}
 	package provide tcldrop::$name 1
+	package provide tcldrop::${name}::main 1
 	package provide tcldrop::blowfish 1
 	variable predepends {encryption}
 	variable depends {encryption}

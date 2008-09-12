@@ -61,6 +61,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 			after idle [list callchannel $command $channel $options]
 			# Call ourself again to set the options:
 			after idle [list eval [linsert $options 0 channel set $channel]]
+			return {}
 		}
 		{set} {
 			if {![dict exists $database(channels) $lowerchannel]} { return -code error "Invalid Channel: $channel" }

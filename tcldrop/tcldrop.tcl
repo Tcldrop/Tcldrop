@@ -122,6 +122,10 @@ namespace eval ::tcldrop {
 			  -m   userfile creation mode
 			  optional config filename (default 'tcldrop.conf')\n"
 								}
+								{d} {
+									set tcldrop(debug) 1
+									if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
+								}
 								{default} {
 									variable Exit 1
 									return "Unknown option: -$a"
@@ -167,6 +171,7 @@ namespace eval ::tcldrop {
 						# Create the interpreter that the Tcldrop will run in:
 						interp create $interpname
 						# Initialize the ::tcldrop namespace in the interpreter, and also create the global tcldrop array:
+						puts "$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]"
 						$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]
 						# Make the Tcldrop's ::tcldrop::PutLogLev actually call ::tcldrop::PutLogLev in the parent interp:
 						interp alias $interpname ::tcldrop::PutLogLev {} [namespace current]::PutLogLev $name
@@ -178,16 +183,17 @@ namespace eval ::tcldrop {
 						# Load the core of the Tcldrop, which in turn will load the required modules, source the config file, etc:
 						# FixMe: There's some kind of bug in Tcl that prevents it from loading the ::tcl::tm::* procs until after a package require is done on some other package first.
 						$interpname eval [list package require http]
-						if {![info exists mod-paths]} { set mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ./modules] }
+						if {![info exists mod-paths]} { set mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $tcldrop(dirname) modules] ./modules] }
 						$interpname eval [list ::tcl::tm::path add {*}${mod-paths}]
 						$interpname eval [list package require tcldrop::core]
 					} error]} {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
 					return 1
 				} else {
-					catch {
+					if {![catch {
 						PutLogLev $name o - "Problem Starting: $error"
-						PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]"
+					}]} {
+						catch { PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]" }
 					}
 					catch { interp delete $interpname }
 					if {![array size Tcldrop]} { set ::tcldrop::Exit 1 }

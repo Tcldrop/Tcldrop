@@ -116,7 +116,7 @@ namespace eval ::tcldrop::core {
 		}
 	}
 	# Add to the paths to search for Tcl packages:
-	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts]] {
+	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts] [file join / usr share tcltk tcl[info tclversion]] [file join / usr local share tcltk tcl[info tclversion]] [file join / usr local lib tcltk] [file join / usr local share tcltk] [file join / usr lib tcltk] [file join / usr share tcltk]] {
 		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
 	}
 	unset m
@@ -985,6 +985,7 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 	array set opts $options
 	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err] && [catch { ::package require "tcldrop::${module}::main" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err] && [catch { ::package require "tcldrop::${module}::main" } err])} {
 		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
+		puterrlog "ERROR: $::errorInfo"
 		return 0
 	} else {
 		# Defaults for modinfo:
@@ -1315,7 +1316,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault uptime [clock seconds]
 	# There's many Eggdrop Tcl scripts that check $::numversion so they can do different things based on the version..
 	# So we set numversion to the same as the current Eggdrop v1.6.x version, since that's the version we're most compatible with:
-	setdefault numversion {1061803}
+	setdefault numversion {1062003}
 	bind evnt - prestart ::tcldrop::core::EVNT_prestart -priority 100000
 	bind evnt - prerestart ::tcldrop::core::EVNT_prerestart -priority 10000
 	# All modules should have a prerestart bind.
@@ -1367,8 +1368,8 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	#::tcldrop::encryption::default decrypt tea
 	::tcldrop::encryption::default encrypt blowfish
 	::tcldrop::encryption::default decrypt blowfish
+	::tcldrop::encryption::default encpass md5
 	::tcldrop::encryption::default encpass sha1
-	#::tcldrop::encryption::default encpass md5
 	checkmodule bots::oldbotnet
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
@@ -1376,7 +1377,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule party::terminal
 	# The IRC party module shouldn't be loaded by default in v1.0, should it?
 	checkmodule party::irc
-	# Loaded because it provides the Eggdrop-style [dnslookup] command:
+	# Loaded by default because it provides the Eggdrop-style [dnslookup] command:
 	checkmodule dns
 	if {[rehash $type]} {
 		setdefault botnet-nick $::nick -protect 1
@@ -1677,6 +1678,12 @@ proc ::tcldrop::core::start {} {
 		}
 		# Setup a log bind that sends logs to the "screen":
 		bind log $console * ::tcldrop::PutLogLev -priority 0
+		if {[string match {*d*} $console]} {
+			# This happens to be our first putlog, so make sure log-time exists..
+			setdefault log-time {1}
+			# Give notice that we're running in debug mode..
+			putdebuglog {Running in debug mode.}
+		}
 		# Tell restart that it's the "start".
 		restart start
 		# init events are only called after a "start" is complete, and after we've hit the event-loop:
