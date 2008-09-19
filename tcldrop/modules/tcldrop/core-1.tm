@@ -494,15 +494,23 @@ proc ::tcldrop::core::LOG {levels channel text} {
 
 # Sends $text to all the places monitoring $levels.
 # Use * for all levels.
-# Use * for all channels, or - to specify that it's global-only.
+# Use * for all channels, or - to specify that it's global-only (non-channel related).
 proc ::tcldrop::core::putloglev {levels channel text} {
-	if {${::log-time}} { set text "[clock format [clock seconds] -format {[%H:%M]}] $text" }
+	switch -- ${::log-time} {
+		{1} { set text "[clock format [clock seconds] -format {[%H:%M]}] $text" }
+		{2} { set text "[clock format [clock seconds] -format {[%T]}] $text" }
+		{0} - {} - { } { }
+		{default} {
+			# Use a custom clock format.. Should this use a separate variable instead?
+			set text "[clock format [clock seconds] -format ${::log-time}] $text"
+		}
+	}
 	# Call all of the LOG binds here:
 	foreach {type flags mask proc} [bindlist log] {
 		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
 			if {[catch { $proc $levels $channel $text } err]} {
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				PutLogLev eo $channel "LOG ERROR $proc $levels $channel: $err\n$::errorInfo"
+				catch { PutLogLev eo $channel "LOG ERROR $proc $levels $channel: $err\n$::errorInfo" }
 				# put*log errors are considered fatal errors, so we really should exit:
 				if {![catch { exit 1 }]} { update idletasks }
 				catch { ::tcldrop::core::Exit 1 }
@@ -527,7 +535,7 @@ proc ::tcldrop::core::putdebuglog {text {channel {*}}} { putloglev d $channel $t
 # Description:
 # This command can be used to add a entry to the debug console/log.
 # (Taken from http://www.racbot.org/docs/tclcmds/scripting_tcl_commands.html)
-proc ::tcldrop::core::adddebug {output} { putdebuglog $output }
+proc ::tcldrop::core::adddebug {output} { if {[catch { putdebuglog $output - }]} { catch { PutLogLev deo - "ERROR/DEBUG: $output" } } }
 
 if {![llength [info commands bgerror]]} {
 	proc ::tcldrop::core::bgerror {{error {}} args} {
@@ -865,11 +873,11 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 #       already past.  Any script that needs to simply be repeated every so
 #       often should use the timer command and its -1 (repeat forever) option.
 # FixMe: Add the ability to log the following:
-# timer: drift (lastmin=22, now=26)
-# timer: drift (lastmin=23, now=26)
-# timer: drift (lastmin=24, now=26)
-# timer: drift (lastmin=25, now=26)
-# (!) timer drift -- spun 4 minutes
+#Â timer:Â driftÂ (lastmin=22,Â now=26)
+#Â timer:Â driftÂ (lastmin=23,Â now=26)
+#Â timer:Â driftÂ (lastmin=24,Â now=26)
+#Â timer:Â driftÂ (lastmin=25,Â now=26)
+#Â (!)Â timerÂ driftÂ --Â spunÂ 4Â minutes
 proc ::tcldrop::core::calltime {} {
 	lassign [set current [clock format [clock seconds] -format {%M %H %e %m %Y}]] minute hour day month year
 	foreach {type flags mask proc} [bindlist time] {
@@ -1311,7 +1319,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	if {![info exists StartTime] || $type != {start}} { set StartTime [clock clicks -milliseconds] }
 	if {[info exists ::restart]} { return $::restart }
 	set ::restart $type
-	setdefault log-time {1}
+	setdefault log-time {2}
 	if {$type eq {restart}} { putlog {Restarting ...} }
 	setdefault uptime [clock seconds]
 	# There's many Eggdrop Tcl scripts that check $::numversion so they can do different things based on the version..
@@ -1326,7 +1334,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault lang-sections [list]
 	# English is the default language, but users can still override it by adding an addlang command to their config.
 	set ::languages [list [set ::language {english}]]
-	# Load the language specified in the EGG_LANG env variable:
+	# Load the language specified in the EGG_LANG env variable (Eggdrop uses this too):
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
 	putlog "--- Loading Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
@@ -1360,8 +1368,9 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	#checkmodule encryption::null
 	# Note: This blowfish is NOT Eggdrop compatible, but if/when one (in pure-Tcl) becomes available that is compatible with Eggdrop we'll switch to it and it will replace this one..
 	checkmodule encryption::blowfish
-	# sha1 is used for encpass in Tcldrop, because it's slightly "better" than md5:
-	checkmodule encryption::sha1
+	#checkmodule encryption::sha1
+	# sha256 is used for encpass in Tcldrop, because it's better than md5 and sha1:
+	checkmodule encryption::sha256
 	# Loaded because is provides the Eggdrop-style [md5] command:
 	checkmodule encryption::md5
 	#::tcldrop::encryption::default encrypt tea
@@ -1369,7 +1378,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	::tcldrop::encryption::default encrypt blowfish
 	::tcldrop::encryption::default decrypt blowfish
 	::tcldrop::encryption::default encpass md5
-	::tcldrop::encryption::default encpass sha1
+	::tcldrop::encryption::default encpass sha256
 	checkmodule bots::oldbotnet
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
@@ -1380,6 +1389,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	# Loaded by default because it provides the Eggdrop-style [dnslookup] command:
 	checkmodule dns
 	if {[rehash $type]} {
+		# ::botnet-nick needs to be set to $::nick by default at some point, perferably as soon as possible..
 		setdefault botnet-nick $::nick -protect 1
 		callevent $type
 		callevent loaded
@@ -1398,7 +1408,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	if {$type eq {restart}} {
 		putlog "Restart Completed in [expr { [clock clicks -milliseconds] - $StartTime } ]ms."
 	} else {
-		if {![info exists ::botnet-nick] && [info exists ::nick]} { set ::botnet-nick $::nick } else { set ::botnet-nick {} }
+		if {(![info exists ::botnet-nick] || ${::botnet-nick} eq {}) && [info exists ::nick]} { set ::botnet-nick $::nick } else { set ::botnet-nick {} }
 		# We wanna display how many channels and users there are (like Eggdrop):
 		if {[catch { PutLogLev o - "=== ${::botnet-nick}: [countchannels] channels, [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }]} { PutLogLev o - "=== ${::botnet-nick}: [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }
 	}
@@ -1643,10 +1653,11 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
+	global restart tcldrop env tcl_interactive
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
-	if {![info exists ::restart]} {
-		# Set the highest precision that the system supports:
-		while {$::tcl_precision < 15 && ![catch { incr ::tcl_precision }]} {}
+	if {![info exists restart]} {
+		## Set the highest precision that the system supports:
+		#while {$::tcl_precision < 15 && ![catch { incr ::tcl_precision }]} {}
 		# Import the Tcldrop core commands to the ::tcldrop namespace:
 		namespace eval ::tcldrop { namespace import -force {::tcldrop::core::*} }
 		namespace eval :: {
@@ -1659,11 +1670,14 @@ proc ::tcldrop::core::start {} {
 		}
 		# The default console flags:
 		if {[info exists ::console]} { set console $::console } else { set console {oe} }
-		if {([info exists ::tcldrop(debug)] && $::tcldrop(debug)) || ([info exists ::env(DEBUG)] && $::env(DEBUG))} {
+		if {([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG))} {
 			# Add debug flag to the console if requested:
-			append console {d}
+			if {![string match {*d*} $console]} { append console {d} }
+			# Setup a log bind that sends logs to the "screen":
+			bind log $console * ::tcldrop::PutLogLev -priority 0
 			# Setting an error trace, to catch hard to see errors:
 			proc ::tcldrop::core::TraceError {var var2 op} { variable LastError
+				# Prevent error floods by only showing 1 per second:
 				if {![info exists LastError] || [clock seconds] > $LastError} {
 					set LastError [clock seconds]
 					# Try to report the error to the proper place, with lots of fallbacks:
@@ -1675,23 +1689,22 @@ proc ::tcldrop::core::start {} {
 			}
 			variable LastError 0
 			trace add variable ::errorInfo write ::tcldrop::core::TraceError
-		}
-		# Setup a log bind that sends logs to the "screen":
-		bind log $console * ::tcldrop::PutLogLev -priority 0
-		if {[string match {*d*} $console]} {
 			# This happens to be our first putlog, so make sure log-time exists..
-			setdefault log-time {1}
+			setdefault log-time {2}
 			# Give notice that we're running in debug mode..
 			putdebuglog {Running in debug mode.}
+		} else {
+			# Setup a log bind that sends logs to the "screen":
+			bind log $console * ::tcldrop::PutLogLev -priority 0
 		}
-		# Tell restart that it's the "start".
+		# Tell restart that it's the "start" (first time to start).
 		restart start
 		# init events are only called after a "start" is complete, and after we've hit the event-loop:
 		afteridle [list callevent init]
-		if {$::tcldrop(background-mode)} {
+		if {$tcldrop(background-mode)} {
 			# Disable showing logs to the "screen":
 			unbind log - * ::tcldrop::PutLogLev
-			if {!$::tcldrop(simulate-dcc)} {
+			if {!$tcldrop(simulate-dcc)} {
 				# We don't need these sockets open either (do we?):
 				catch { close stderr }
 				catch { close stdout }
@@ -1702,5 +1715,9 @@ proc ::tcldrop::core::start {} {
 	}
 }
 
-# And now we set everything into motion...  \o/
-::tcldrop::core::start
+# Setting uptime here isn't important, what is important is having a variable to check on so we know if it's already started or not (This allows this file to be sourced in the future without causing it to try to start "fresh")
+if {![info exists ::uptime]} {
+	set ::uptime [clock seconds]
+	# And now we set everything into motion...  \o/
+	::tcldrop::core::start
+}
