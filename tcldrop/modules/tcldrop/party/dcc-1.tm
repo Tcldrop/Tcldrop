@@ -66,8 +66,13 @@ bind ctcp p CHAT ::tcldrop::party::dcc::CHAT -priority 1000
 # FixMe: This doesn't seem to work yet.
 proc ::tcldrop::party::dcc::CHAT {nick uhost handle dest key text} {
 	if {[isbotnick $dest]} {
-		# FixMe: 3232235523 (192.168.0.3) and 7777 is hardcoded for now..
-		puthelp "PRIVMSG $nick :\001DCC CHAT chat 3232235523 7777\001"
+		foreach i [array names idxlist] { array set idxinfo $idxlist($i) ; if {$idxinfo(type) eq {users}} { break } }
+		if {[info exists idxinfo(local-port)]} {
+			puthelp "PRIVMSG $nick :\001DCC CHAT chat [myip] $idxinfo(local-port)\001"
+		} else {
+			putdebuglog "Local port was not found in idxlist, CTCP CHAT from $nick failed."
+			return 0
+		}
 	}
 	return 1
 }
