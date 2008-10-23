@@ -2,7 +2,7 @@
 #
 #	Provides the base proxy support for Tcl.
 #
-# Copyright (C) 2003 by Philip Moore <FireEgl@Tcl.no>
+# Copyright (C) 2003-2007 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
 # RCS: @(#) $Id$
@@ -52,11 +52,11 @@ namespace eval ::proxy {
 }
 
 proc ::proxy::connect {chain args} {
-	array set info [list -command {} -readable {} -writable {} -errors {} -user {} -pass {} socket {} -buffering line -blocking 0  -myaddr {} -async 1 -socket-command [list socket]]
+	array set info [list -command {} -readable {} -writable {} -errors {} -user {} -pass {} socket {} -buffering line -blocking 0 -myaddr {} -async 1 -socket-command [list socket]]
+	array set info $args
 	if {$info(-async)} { set async [list {-async}] } else { set async [list] }
 	if {$info(-myaddr) != {} && $info(-myaddr) != {0.0.0.0}} { set myaddr [list {-myaddr} $info(-myaddr)] } else { set myaddr [list] }
 	array set info [splitchain $chain]
-	array set info $args
 	array set firstinfo $info(1)
 	variable [set info(socket) [eval $info(-socket-command) $async $myaddr {$firstinfo(address)} {$firstinfo(port)}]]
 	array set $info(socket) [array get info]
