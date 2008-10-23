@@ -66,7 +66,15 @@ bind ctcp p CHAT ::tcldrop::party::dcc::CHAT -priority 1000
 # FixMe: This doesn't seem to work yet.
 proc ::tcldrop::party::dcc::CHAT {nick uhost handle dest key text} {
 	if {[isbotnick $dest]} {
-		foreach i [array names idxlist] { array set idxinfo $idxlist($i) ; if {$idxinfo(type) eq {users}} { break } }
+		# FixMe: is this the log we want this in?
+		putlog "CTCP CHAT: from $nick ($uhost)"
+		if {![matchattr $handle p]} { return 0 }
+		foreach i [array names ::idxlist] {
+			array set idxinfo $::idxlist($i)
+			if {$idxinfo(type) eq {users}} {
+				if {[info exists idxinfo(local-port)]} { break }
+			}
+		}
 		if {[info exists idxinfo(local-port)]} {
 			puthelp "PRIVMSG $nick :\001DCC CHAT chat [myip] $idxinfo(local-port)\001"
 		} else {

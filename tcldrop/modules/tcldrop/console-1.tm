@@ -64,6 +64,7 @@ proc ::tcldrop::console::store {idx} {
 #      console modes, or nothing if that user isn't currently on the partyline
 #    Module: core
 # Note: Eggdrop can take the channel and console-modes arguments in any order, so we'll do the same.
+# FixMe: Add support for setting console idx * which should turn on everything and -* which turns off everything
 proc ::tcldrop::console::console {idx args} {
 	foreach whatever $args {
 		if {![validchan $whatever]} {
@@ -174,15 +175,14 @@ proc ::tcldrop::console::setconsole {idx setting value} {
 	return $value
 }
 
-# FixMe: Provide the .console and .store DCC commands.
-
 bind load - console ::tcldrop::console::LOAD -priority 0
 proc ::tcldrop::console::LOAD {module} {
 	setdefault console {ocmkbxs}
 	setdefault console-autosave 1
 	setdefault force-channel 0
 	variable Levels
-	# Define the log levels, and the user-flags that are required to see logs sent to that level:
+	# Define the log levels, and the user-flags that are required to see logs sent to that level.
+	# if new log levls are added, they need to be added to the .console dcc command as well.
 	array set Levels {
 		c n
 		o mnt
@@ -217,10 +217,12 @@ proc ::tcldrop::console::LOAD {module} {
 	if {![info exists ::console-levels]} { array set ::console-levels {} }
 	array set ::console-levels [concat [array get Levels] [array get ::console-levels]]
 	loadhelp console.help
+	checkmodule console::dcc
 }
 
 bind unld - console ::tcldrop::console::UNLD -priority 0
 proc ::tcldrop::console::UNLD {module} {
 	unloadhelp console.help
+	unloadmodule console::dcc
 	return 0
 }
