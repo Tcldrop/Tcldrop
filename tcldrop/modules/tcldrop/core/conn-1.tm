@@ -138,7 +138,7 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		{default} { set info "$options(-address):$options(-port)  (via $proxycount proxies)" }
 	}
 	# Buried in the next line is the call to ::proxy::connect, which BTW can make direct connections as well as proxied connections:
-	if {[catch { registeridx [set idx [assignidx]] [concat [array get options] [list idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -command [list ::tcldrop::core::conn::ProxyControl $idx]]] remote "$options(-address):$options(-port)" info $info]] } error]} {
+	if {[catch { registeridx [set idx [assignidx]] [concat [array get options] [list idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -myaddr $options(-myaddr) -command [list ::tcldrop::core::conn::ProxyControl $idx]]] remote "$options(-address):$options(-port)" info $info]] } error]} {
 		return -code error $error
 	} else {
 		# catch { if {$options(-myaddr) eq {} || $options(-myaddr) eq {0.0.0.0} || ${::default-ip} eq {}} { set ::default-ip [lindex [fconfigure $sock -sockname] 0] } }
