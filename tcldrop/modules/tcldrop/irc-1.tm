@@ -1651,7 +1651,7 @@ proc ::tcldrop::irc::LOAD {module} {
 proc ::tcldrop::irc::UNLD {module} {
 	unbind evnt - disconnect-server ::tcldrop::irc::disconnect-server -priority 1000
 	unloadhelp [file join set irc.help]
-	#unloadmodule irc::dcc
+	unloadmodule irc::dcc
 	#unloadmodule irc::msg
 	return 1
 }
