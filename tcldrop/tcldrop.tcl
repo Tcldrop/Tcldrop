@@ -335,7 +335,7 @@ namespace eval ::tcldrop {
 			option add *menubar.relief groove widgetDefault
 			option add *menubar.borderWidth 2 widgetDefault
 			option add *text.relief flat widgetDefault
-			font create fixed -family fixedsys -size 8
+			catch {font create fixed -family fixedsys -size 8}
 			if {$tcl_platform(osVersion) > 5.0} {
 				option add *Menubutton.activeBackground SystemHighlight widgetDefault
 				option add *Menubutton.activeForeground SystemHighlightText widgetDefault

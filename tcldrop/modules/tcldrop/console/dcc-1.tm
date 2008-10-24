@@ -26,33 +26,33 @@
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::console::dcc {
-    variable name {console::dcc}
-    variable version {0.1}
-    variable script [info script]
-    regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-    package provide tcldrop::$name $version
-    # This makes sure we're loading from a tcldrop environment:
-    if {![info exists ::tcldrop]} { return }
-    variable predepends {console}
-    variable depends {channels core::users core::conn core}
-    variable author {Tcldrop-Dev}
-    variable description {Console related DCC commands.}
-    variable rcsid {$Id$}
-    variable commands [list]
+	variable name {console::dcc}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
+	variable predepends {console}
+	variable depends {channels core::users core::conn core}
+	variable author {Tcldrop-Dev}
+	variable description {Console related DCC commands.}
+	variable rcsid {$Id$}
+	variable commands [list]
 }
 
 proc ::tcldrop::console::dcc::STORE {handle idx text} {
-    # eggdrop doesn't log this command but I don't see a reason why not
-    putcmdlog "#$handle# store"
-    if {![store $idx]} {
+	# eggdrop doesn't log this command but I don't see a reason why not
+	putcmdlog "#$handle# store"
+	if {![store $idx]} {
 		putdebuglog "Failed to save console settings for idx $idx"
 		return 0
-    } else {
+	} else {
 		array set idxinfo [getidxinfo $idx]
-    }
-    if {$idxinfo(console-echo) == 0} {
+	}
+	if {$idxinfo(console-echo) == 0} {
 		set idxinfo(console-echo) [lang 0xb049]
-    } else {
+	} else {
 		set idxinfo(console-echo) [lang 0xb048]
 	}
 	# Saved your Console Settings:
@@ -68,17 +68,17 @@ proc ::tcldrop::console::dcc::STORE {handle idx text} {
 
 # eggdrop has this command in core, but we put it here (for now) since the console tcl command is in our console module
 proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
-    putcmdlog "#$handle# console $text"
-    if {$text ne {}} {
+	putcmdlog "#$handle# console $text"
+	if {$text ne {}} {
 		if {[validchan [set chan [lindex [split $text] 0]]]} {
 			# console tcl command already checks for proper permissions to set these so we don't need to do it here
-		    console $idx $chan [lrange [split $text] 1 end]
+			console $idx $chan [lrange [split $text] 1 end]
 		} else {
 			console $idx $text
 		}
 	}
-    array set idxinfo [getidxinfo $idx]
-    foreach level [split $idxinfo(console-levels) {}] {
+	array set idxinfo [getidxinfo $idx]
+	foreach level [split $idxinfo(console-levels) {}] {
 		# if new console modes are added, they need to be added to the list in console-1.tm as well
 		switch -exact -- $level {
 			m { lappend ConsoleModes {msgs} }
@@ -107,13 +107,13 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 			default { putdebuglog "Error in ::tcldrop::console::dcc::CONSOLE\; Unhandled console mode: $level" }
 		}
 	}
-    if {$text eq {}} {
+	if {$text eq {}} {
 		putdcc $idx "Your console is $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {,}])"
 		return 0
-    } else {
+	} else {
 		putdcc $idx "Set your console to $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {,}])"
 		return 0
-    }
+	}
 }
 
 bind load - console::dcc ::tcldrop::console::dcc::LOAD -priority 0

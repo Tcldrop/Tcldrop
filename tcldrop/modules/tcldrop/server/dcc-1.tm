@@ -26,19 +26,19 @@
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::server::dcc {
-    variable name {server::dcc}
-    variable version {0.1}
-    variable script [info script]
-    regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-    package provide tcldrop::$name $version
-    # This makes sure we're loading from a tcldrop environment:
-    if {![info exists ::tcldrop]} { return }
-    variable predepends {server}
-    variable depends {core::conn core}
-    variable author {Tcldrop-Dev}
-    variable description {Server related DCC commands.}
-    variable rcsid {$Id$}
-    variable commands [list]
+	variable name {server::dcc}
+	variable version {0.1}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	# This makes sure we're loading from a tcldrop environment:
+	if {![info exists ::tcldrop]} { return }
+	variable predepends {server}
+	variable depends {core::conn core}
+	variable author {Tcldrop-Dev}
+	variable description {Server related DCC commands.}
+	variable rcsid {$Id$}
+	variable commands [list]
 }
 
 proc ::tcldrop::server::dcc::JUMP {handle idx text} {
