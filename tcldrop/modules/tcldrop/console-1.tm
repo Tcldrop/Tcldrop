@@ -216,13 +216,11 @@ proc ::tcldrop::console::LOAD {module} {
 	}
 	if {![info exists ::console-levels]} { array set ::console-levels {} }
 	array set ::console-levels [concat [array get Levels] [array get ::console-levels]]
-	loadhelp console.help
 	checkmodule console::dcc
 }
 
 bind unld - console ::tcldrop::console::UNLD -priority 0
 proc ::tcldrop::console::UNLD {module} {
-	unloadhelp console.help
 	unloadmodule console::dcc
 	return 0
 }

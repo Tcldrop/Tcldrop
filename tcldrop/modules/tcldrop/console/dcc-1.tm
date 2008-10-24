@@ -122,10 +122,12 @@ proc ::tcldrop::console::dcc::LOAD {module} {
 	bind dcc nmot|nmo console ::tcldrop::console::dcc::CONSOLE -priority 1000
 	bind unld - console::dcc ::tcldrop::console::dcc::UNLD -priority 0
 	loadhelp console.help
+	loadhelp [file join set console.help]
 }
 
 proc ::tcldrop::console::dcc::UNLD {module} {
 	unbind dcc * * ::tcldrop::console::dcc::*
 	unloadhelp console.help
+	unloadhelp [file join set console.help]
 	return 0
 }

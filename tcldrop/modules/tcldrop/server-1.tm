@@ -20,8 +20,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program (see gpl.txt); if not, write to the
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-# Or visit http://www.GNU.Org/licenses/gpl.html
-#
+# Or visit http://www.GNU.Org/licenses/gpl.html#
 # The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
@@ -551,9 +550,8 @@ proc ::tcldrop::server::LOAD {module} {
 	bind raw - 005 ::tcldrop::server::005 -priority 100
 	bind die - * ::tcldrop::server::DIE -priority 0
 	bind evnt - exit ::tcldrop::server::EVNT_exit -priority 0
-	loadhelp server.help
-	loadhelp [file join set server.help]
 	bind evnt - loaded ::tcldrop::server::EVNT_loaded -priority 100000
+	checkmodule server::dcc
 	return 0
 }
 
@@ -584,8 +582,7 @@ proc ::tcldrop::server::UNLD {module} {
 		#unsetdefault check-stoned
 		#unsetdefault max-queue-msg
 	}
-	unloadhelp server.help
-	unloadhelp [file join set server.help]
+	unloadmodule server::dcc
 	return 1
 }
 bind unld - server ::tcldrop::server::UNLD -priority 10
