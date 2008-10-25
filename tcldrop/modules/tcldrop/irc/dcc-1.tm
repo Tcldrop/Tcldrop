@@ -81,9 +81,9 @@ proc ::tcldrop::irc::dcc::STATUS {handle idx text} {
 
 # Usage: act [channel] <action>
 # FixMe: Add support for console channel once ::idxlist is a dict.
-# FixMe: check if the channel is moderated,  dprintf(idx, "Cannot say to %s: It is moderated.\n", chan->dname);
 proc ::tcldrop::irc::dcc::ACT {handle idx text} {
-	lassign [split $text] chan action
+	set chan [lindex [split $text] 0]
+	set action [lrange [split $text] 1 end]
 	if {[llength [split $text]] < 2} {
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		return 0
@@ -91,9 +91,15 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 		putcmdlog "#$handle# ($chan) act $action"
 		putdcc $idx "Cannot act to ${chan}: I'm not on that channel."
 		return 0
+	# channel is moderated
+	# FixMe: check if chanmode is always returned as "+<modes>" and if it is, use string functions
+	} elseif {[regexp -- {[+][^\s]*m} [getchanmode $chan]] == 1}
+		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
+		putcmdlog "Cannot act to ${chan}: It is moderated."
+		return 0
 	} else {
 		putcmdlog "#$handle# ($chan) act $action"
-		puthelp "PRIVMSG $chan :\001ACTION${action}\001"
+		puthelp "PRIVMSG $chan :\001ACTION ${action}\001"
 		putdcc $idx "Action to ${chan}: $action"
 		return 1
 	}
@@ -101,15 +107,21 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 
 # Usage: say [channel] <message>
 # FixMe: Add support for console channel once ::idxlist is a dict.
-# FixMe: check if the channel is moderated,  dprintf(idx, "Cannot say to %s: It is moderated.\n", chan->dname);
 proc ::tcldrop::irc::dcc::SAY {handle idx text} {
-	lassign [split $text] chan message
+	set chan [lindex [split $text] 0]
+	set message [lrange [split $text] 1 end]
 	if {[llength [split $text]] < 2} {
 		putdcc $idx "[lang 0x001]: say \[channel\] <message>"
 		return 0
 	} elseif {![botonchan $chan]} {
 		putcmdlog "#$handle# ($chan) say $message"
 		putdcc $idx "Cannot say to ${chan}: I'm not on that channel."
+		return 0
+	# channel is moderated
+	# FixMe: check if chanmode is always returned as "+<modes>" and if it is, use string functions
+	} elseif {[regexp -- {[+][^\s]*m} [getchanmode $chan]] == 1}
+		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
+		putcmdlog "Cannot say to ${chan}: It is moderated."
 		return 0
 	} else {
 		putcmdlog "#$handle# ($chan) say $message"
@@ -120,12 +132,13 @@ proc ::tcldrop::irc::dcc::SAY {handle idx text} {
 }
 
 # Usage: msg <nick> <message>
-proc ::tcldrop::irc::dcc::SAY {handle idx text} {
+proc ::tcldrop::irc::dcc::MSG {handle idx text} {
 	if {[llength [split $text]] < 2} {
 		putdcc $idx "[lang 0x001]: msg <nick> <message>"
 		return 0
 	} else {
-		lassign [split $text] nick message
+		set nick [lindex [split $text] 0]
+		set message [lrange [split $text] 1 end]
 		putcmdlog "#$handle# msg $nick $message"
 		# we don't need to check if the nick is valid since .say is a lower access level than .msg
 		puthelp "PRIVMSG $nick :$message"
@@ -211,7 +224,7 @@ proc ::tcldrop::irc::dcc::OP {handle idx text} {
 	} else {
 		putcmdlog "#$handle# ($chan) op $nick"
 		putdcc $idx "Gave op to $nick on ${chan}."
-		pushmode $chan +h $nick
+		pushmode $chan +o $nick
 		return 1
 	}
 }
