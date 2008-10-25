@@ -92,8 +92,7 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 		putdcc $idx "Cannot act to ${chan}: I'm not on that channel."
 		return 0
 	# channel is moderated
-	# FixMe: check if chanmode is always returned as "+<modes>" and if it is, use string functions
-	} elseif {[regexp -- {[+][^\s]*m} [getchanmode $chan]] == 1}
+	} elseif {[string match *m* [getchanmode $chan]]}
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		putcmdlog "Cannot act to ${chan}: It is moderated."
 		return 0
@@ -118,8 +117,7 @@ proc ::tcldrop::irc::dcc::SAY {handle idx text} {
 		putdcc $idx "Cannot say to ${chan}: I'm not on that channel."
 		return 0
 	# channel is moderated
-	# FixMe: check if chanmode is always returned as "+<modes>" and if it is, use string functions
-	} elseif {[regexp -- {[+][^\s]*m} [getchanmode $chan]] == 1}
+	} elseif {[string match *m* [getchanmode $chan]]}
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		putcmdlog "Cannot say to ${chan}: It is moderated."
 		return 0
