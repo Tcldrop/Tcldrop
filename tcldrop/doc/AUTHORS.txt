@@ -13,6 +13,7 @@
     dollar     Steven Pardieck
     FireEgl    Philip Moore
     Papillon   Hallvard Rykkje
+    Pixelz     Rickard Utgren
 
   Thanks go to all the people who have made individual contributions to
   the Tcldrop project by sending bug-reports, patches, and otherwise have

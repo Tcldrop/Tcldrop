@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2005,2006,2007 Tcldrop Development Team <Tcldrop-Dev>
+# Copyright (C) 2005,2006,2007,2008 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -173,7 +173,7 @@ proc ::tcldrop::irc::dcc::OP {handle idx text} {
 		putdcc $idx "$victim is currently being auto-deopped."
 		return 0
 	# channel is +bitch and user is trying to op someone who doesn't have access
-	} elseif {([channel get $chan bitch]) && (![matchattr [nick2hand $victim $chan] nmo|nmo $chan])} {
+	} elseif {[channel get $chan bitch] && ![matchattr [nick2hand $victim $chan] nmo|nmo $chan]} {
 		putdcc $idx "$victim is not a registered op."
 		return 0
 	} else {
@@ -209,6 +209,9 @@ proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
 	} elseif {[string equal -nocase $victim $::botnick]} {
 		putdcc $idx "I'm not going to deop myself."
 		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] n|n $chan] && ![matchattr $handle n|n $chan]}  {
+		putdcc $idx "$victim is an owner for ${chan}."
+		return 0
 	# if ((chan_master(victim) || glob_master(victim)) && !(chan_owner(user) || glob_owner(user)))
 	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n] $chan}  {
 		putdcc $idx "$victim is a master for ${chan}."
@@ -224,7 +227,7 @@ proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
 	} else {
 		pushmode $chan -o $victim
 		putdcc $idx "Took op from $victim on ${chan}."
-		return 0
+		return 1
 }
 # Usage: halfop <nickname> [channel]
 # FixMe: Add support for console channel once ::idxlist is a dict.
@@ -239,12 +242,12 @@ proc ::tcldrop::irc::dcc::HALFOP {handle idx text} {
 	if {![botonchan $chan]} {
 		putdcc $idx "No such channel."
 		return 0
-	} elseif {![botisop $chan]} {
-		# FixMe: check if we're a halfop who can set +h. Not sure how this works exactly.
+	} elseif {![botisop $chan] && ![botishalfop $chan]} {
+		# FixMe: check if we're a halfop who can't set +h. This worked on unrealircd, needs to be tested on others to verify but I doubt they're different.
 		putdcc $idx "I can't help you now because I'm not a chan op or halfop on ${chan}, or halfops cannot set +h modes."
 		return 0
 	# user is not an op and is trying to halfop someone else
-	} elseif {!([matchattr $handle nmo|nmo $chan]) && ([nick2hand $victim $chan] ne $handle)} {
+	} elseif {![matchattr $handle nmo|nmo $chan] && [nick2hand $victim $chan] ne $handle} {
 		putdcc $idx "Your are not a channel op on $chan"
 		return 0
 	# user is trying to halfop himself in a channel where he doesn't have access
@@ -259,7 +262,7 @@ proc ::tcldrop::irc::dcc::HALFOP {handle idx text} {
 		putdcc $idx "$victim is currently being auto-dehalfopped."
 		return 0
 	# channel is +bitch and user is trying to halfop someone who doesn't have access
-	} elseif {([channel get $chan bitch]) && (![matchattr [nick2hand $victim $chan] nmol|nmol $chan])} {
+	} elseif {[channel get $chan bitch] && ![matchattr [nick2hand $victim $chan] nmol|nmol $chan]} {
 		putdcc $idx "$victim is not a registered halfop."
 		return 0
 	} else {
@@ -281,9 +284,9 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 	if {![botonchan $chan]} {
 		putdcc $idx "No such channel."
 		return 0
-	} elseif {![botisop $chan]} {
-		# FixMe: check if we're a halfop that can set -o modes (pretty sure this would never happen but who knows with an error text like this)
-		putdcc $idx "I can't help you now because I'm not a chan op or halfop on ${chan}, or halfops cannot set -o modes."
+	} elseif {![botisop $chan] && ![botishalfop $chan]} {
+		# FixMe: check if we're a halfop that can't set -h modes. This worked on unrealircd, needs to be tested on others to verify but I doubt they're different.
+		putdcc $idx "I can't help you now because I'm not a chan op or halfop on ${chan}, or halfops cannot set -h modes."
 		return 0
 	# user is trying to dehalfop someone in a channel where he doesn't have access
 	} elseif {![matchattr $handle nmol|nmol $chan]} {
@@ -295,6 +298,9 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 	} elseif {[string equal -nocase $victim $::botnick]} {
 		putdcc $idx "I'm not going to dehalfop myself."
 		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] n|n $chan] && ![matchattr $handle n|n $chan]}  {
+		putdcc $idx "$victim is an owner for ${chan}."
+		return 0
 	# if ((chan_master(victim) || glob_master(victim)) && !(chan_owner(user) || glob_owner(user)))
 	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n $chan]}  {
 		putdcc $idx "$victim is a master for ${chan}."
@@ -304,7 +310,7 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 		putdcc $idx "$victim has the op flag for ${chan}."
 		return 0
 	# if ((chan_halfop(victim) || (glob_halfop(victim) && !chan_dehalfop(victim))) && !(chan_master(user) || glob_master(user)))
-	} elseif {[matchattr [nick2hand $victim $chan] l|l $chan] && ![matchattr [nick2hand $victim $chan] d|d $chan] && ![matchattr $handle nmo|nmo] $chan} {
+	} elseif {[matchattr [nick2hand $victim $chan] l|l $chan] && ![matchattr [nick2hand $victim $chan] d|d $chan] && ![matchattr $handle nmo|nmo $chan]} {
 		putdcc $idx "$victim has the halfop flag for ${chan}."
 		return 0
 	# eggdrop doesn't check for this but it seems like a good idea to me
@@ -314,8 +320,98 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 	} else {
 		pushmode $chan -h $victim
 		putdcc $idx "Took halfop from $victim on ${chan}."
-		return 0
+		return 1
+	}
 }
+
+# Usage: voice <nickname> [channel]
+# FixMe: Add support for console channel once ::idxlist is a dict.
+proc ::tcldrop::irc::dcc::VOICE {handle idx text} {
+	lassign [split $text] victim chan
+	if {[llength [split $text]] < 2} {
+		putdcc $idx "[lang 0x001]: voice <nickname> \[channel\]"
+		return 0
+	}
+	putcmdlog "#$handle# ($chan) voice $victim"
+	if {![botonchan $chan]} {
+		putdcc $idx "No such channel."
+		return 0
+	} elseif {![botisop $chan] && ![botishalfop $chan]} {
+		# FixMe: Check if we're a halfop who can't set +v. This worked on unrealircd, needs to be tested on others to verify but I doubt they're different.
+		putdcc $idx "I can't help you now because I'm not a chan op or halfop on ${chan}, or halfops cannot set +v modes."
+		return 0
+	# user is not an op or halfop and is trying to voice someone else
+	} elseif {![matchattr $handle nmol|nmol $chan] && [nick2hand $victim $chan] ne $handle} {
+		putdcc $idx "Your are not a channel op or halfop on $chan"
+		return 0
+	# user is trying to voice someone in a channel where he doesn't have access
+	} elseif {![matchattr $handle nmolv|nmolv $chan]} {
+		putdcc $idx "Your do not have the voice flag for $chan"
+		return 0
+	} elseif {![onchan $victim $chan]} {
+		putdcc $idx "$victim is not on $chan"
+		return 0
+	} else {
+		pushmode $chan +v $victim
+		putdcc $idx "Gave voice to $victim on ${chan}."
+		return 1
+	}
+}
+
+# Usage: devoice <nickname> [channel]
+# FixMe: Add support for console channel once ::idxlist is a dict.
+proc ::tcldrop::irc::dcc::DEVOICE {handle idx text} {
+	lassign [split $text] victim chan
+	if {[llength [split $text]] < 2} {
+		putdcc $idx "[lang 0x001]: devoice <nickname> \[channel\]"
+		return 0
+	}
+	putcmdlog "#$handle# ($chan) devoice $victim"
+	if {![botonchan $chan]} {
+		putdcc $idx "No such channel."
+		return 0
+	} elseif {![botisop $chan] && ![botishalfop $chan]} {
+		# FixMe: check if we're a halfop that can't set -v modes. This worked on unrealircd, needs to be tested on others to verify but I doubt they're different.
+		putdcc $idx "I can't help you now because I'm not a chan op or halfop on ${chan}, or halfops cannot set -v modes."
+		return 0
+	# user is trying to devoice someone in a channel where he doesn't have access
+	} elseif {![matchattr $handle nmol|nmol $chan]} {
+		putdcc $idx "Your are not a channel op or halfop on $chan"
+		return 0
+	} elseif {![onchan $victim $chan]} {
+		putdcc $idx "$victim is not on $chan"
+		return 0
+	} elseif {[string equal -nocase $victim $::botnick]} {
+		putdcc $idx "I'm not going to devoice myself."
+		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] n|n $chan] && ![matchattr $handle n|n $chan]}  {
+		putdcc $idx "$victim is an owner for ${chan}."
+		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n $chan]}  {
+		putdcc $idx "$victim is a master for ${chan}."
+		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] o|o $chan] && ![matchattr $handle nm|nm $chan]} {
+		putdcc $idx "$victim has the op flag for ${chan}."
+		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] l|l $chan] && ![matchattr $handle nmo|nmo $chan]} {
+		putdcc $idx "$victim has the halfop flag for ${chan}."
+		return 0
+	} elseif {[matchattr [nick2hand $victim $chan] v|v $chan] && ![matchattr $handle nmol|nmol $chan]} {
+		putdcc $idx "$victim has the voice flag for ${chan}."
+		return 0
+	} elseif {![matchattr $handle nm] && [matchattr [nick2hand $victim $chan] b]} {
+		putdcc $idx "I'm not going to devoice fellow bots."
+		return 0
+	} else {
+		pushmode $chan -v $victim
+		putdcc $idx "Took voice from $victim on ${chan}."
+		return 1
+	}
+}
+
+
+
+
 
 bind load - irc::dcc ::tcldrop::irc::dcc::LOAD -priority 10
 proc ::tcldrop::irc::dcc::LOAD {module} {
@@ -327,6 +423,8 @@ proc ::tcldrop::irc::dcc::LOAD {module} {
 	bind dcc nmo|nmo deop ::tcldrop::irc::dcc::DEOP -priority 1000
 	bind dcc nmol|nmol halfop ::tcldrop::irc::dcc::HALFOP -priority 1000
 	bind dcc nmol|nmol dehalfop ::tcldrop::irc::dcc::DEHALFOP -priority 1000
+	bind dcc nmolv|nmolv voice ::tcldrop::irc::dcc::VOICE -priority 1000
+	bind dcc nmolv|nmolv devoice ::tcldrop::irc::dcc::DEVOICE -priority 1000
 	# FixMe: What's with these weird priorities?
 	bind dcc n status ::tcldrop::irc::dcc::STATUS -priority 3
 	bind dcc n stat ::tcldrop::irc::dcc::STATUS -priority 3
