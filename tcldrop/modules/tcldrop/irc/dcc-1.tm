@@ -93,7 +93,7 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 		putdcc $idx "Cannot act to ${chan}: I'm not on that channel."
 		return 0
 	# channel is moderated
-	} elseif {[string match *m* [getchanmode $chan]]}
+	} elseif {[string match *m* [getchanmode $chan]]} {
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		return 0
 	} else {
@@ -117,7 +117,7 @@ proc ::tcldrop::irc::dcc::SAY {handle idx text} {
 		putdcc $idx "Cannot say to ${chan}: I'm not on that channel."
 		return 0
 	# channel is moderated
-	} elseif {[string match *m* [getchanmode $chan]]}
+	} elseif {[string match *m* [getchanmode $chan]]} {
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		return 0
 	} else {
@@ -213,10 +213,10 @@ proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
 		putdcc $idx "$victim is an owner for ${chan}."
 		return 0
 	# if ((chan_master(victim) || glob_master(victim)) && !(chan_owner(user) || glob_owner(user)))
-	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n] $chan}  {
+	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n $chan]}  {
 		putdcc $idx "$victim is a master for ${chan}."
 		return 0
-	# if ((chan_op(victim) || (glob_op(victim) && !chan_deop(victim))) && !(chan_master(user) || glob_master(user))) {
+	# if ((chan_op(victim) || (glob_op(victim) && !chan_deop(victim))) && !(chan_master(user) || glob_master(user)))
 	} elseif {[matchattr [nick2hand $victim $chan] o|o $chan] && ![matchattr [nick2hand $victim $chan] d|d $chan] && ![matchattr $handle nm|nm $chan]} {
 		putdcc $idx "$victim has the op flag for ${chan}."
 		return 0
@@ -228,6 +228,7 @@ proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
 		pushmode $chan -o $victim
 		putdcc $idx "Took op from $victim on ${chan}."
 		return 1
+	}
 }
 # Usage: halfop <nickname> [channel]
 # FixMe: Add support for console channel once ::idxlist is a dict.
@@ -305,7 +306,7 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 	} elseif {[matchattr [nick2hand $victim $chan] m|m $chan] && ![matchattr $handle n|n $chan]}  {
 		putdcc $idx "$victim is a master for ${chan}."
 		return 0
-	# if ((chan_op(victim) || (glob_op(victim) && !chan_deop(victim))) && !(chan_master(user) || glob_master(user))) {
+	# if ((chan_op(victim) || (glob_op(victim) && !chan_deop(victim))) && !(chan_master(user) || glob_master(user)))
 	} elseif {[matchattr [nick2hand $victim $chan] o|o $chan] && ![matchattr [nick2hand $victim $chan] d|d $chan] && ![matchattr $handle nm|nm $chan]} {
 		putdcc $idx "$victim has the op flag for ${chan}."
 		return 0
@@ -409,9 +410,123 @@ proc ::tcldrop::irc::dcc::DEVOICE {handle idx text} {
 	}
 }
 
-
-
-
+# Usage: channel [channel-name]
+proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
+	global nicklen handlen botnick
+	set chan [lindex [split $text] 0]
+	if {$text eq {}} {
+		putdcc $idx "[lang 0x001]: channel \[channel-name\]"
+		return 0
+	}
+	putcmdlog "#$handle# ($chan) channel"
+	set topic [topic $chan]
+	set chanlist [chanlist $chan]
+	# FixMe: If handlen or nicklen are too long, truncate them
+	set format "%-[expr {$nicklen + 1}]s %-[expr {$handlen + 1}]s %-4s %-1.1s%-5s %s"
+	
+	putdcc $idx "Channel ${chan}, [llength $chanlist] members, mode [getchanmode $chan]"
+	if {$topic ne {}} {
+		putdcc $idx "Channel Topic: $topic"
+	} else {
+		putdcc $idx "Channel topic not set"
+	}
+	# FixMe: Add join time, idle time
+	putdcc $idx {(n = owner, m = master, o = op, d = deop, b = bot)}
+	putdcc $idx [format $format NICKNAME HANDLE JOIN {} IDLE USER@HOST]
+	foreach nick $chanlist {
+		# find nick prefix
+		set nickprefix {}
+		if {[isop $nick $chan]} {
+			set nickprefix {@}
+		} elseif {[ishalfop $nick $chan]} {
+			set nickprefix {%}
+		} elseif {[isvoice $nick $chan]} {
+			set nickprefix {+}
+		} else {
+			set nickprefix { }
+		}
+		# find uhost
+		if {[string equal -nocase $nick $botnick]} {
+			set uhost {<- it's me!}
+		} else {
+			set uhost [getchanhost $nick $chan]
+		}
+		# find handle
+		set nickhand [nick2hand $nick $chan]
+		# determine status char to use
+		if {[matchattr $nickhand b] && [matchattr $nickhand o|o]} {
+			set atrflag {B}
+		} elseif {[matchattr $nickhand b]} {
+			set atrflag {b}
+		} elseif {[matchattr $nickhand n]} {
+			set atrflag {N}
+		} elseif {[matchattr $nickhand |n $chan]} {
+			set atrflag {n}
+		} elseif {[matchattr $nickhand m]} {
+			set atrflag {M}
+		} elseif {[matchattr $nickhand |m $chan]} {
+			set atrflag {m}
+		} elseif {[matchattr $nickhand d]} {
+			set atrflag {D}
+		} elseif {[matchattr $nickhand |d $chan]} {
+			set atrflag {d}
+		} elseif {[matchattr $nickhand r]} {
+			set atrflag {R}
+		} elseif {[matchattr $nickhand |r $chan]} {
+			set atrflag {r}
+		} elseif {[matchattr $nickhand a]} {
+			set atrflag {A}
+		} elseif {[matchattr $nickhand |a $chan]} {
+			set atrflag {a}
+		} elseif {[matchattr $nickhand y]} {
+			set atrflag {Y}
+		} elseif {[matchattr $nickhand |y $chan]} {
+			set atrflag {y}
+		} elseif {[matchattr $nickhand o]} {
+			set atrflag {O}
+		} elseif {[matchattr $nickhand |o $chan]} {
+			set atrflag {o}
+		} elseif {[matchattr $nickhand l]} {
+			set atrflag {L}
+		} elseif {[matchattr $nickhand |l $chan]} {
+			set atrflag {l}
+		} elseif {[matchattr $nickhand q]} {
+			set atrflag {Q}
+		} elseif {[matchattr $nickhand |q $chan]} {
+			set atrflag {q}
+		} elseif {[matchattr $nickhand g]} {
+			set atrflag {G}
+		} elseif {[matchattr $nickhand |g $chan]} {
+			set atrflag {g}
+		} elseif {[matchattr $nickhand v]} {
+			set atrflag {V}
+		} elseif {[matchattr $nickhand |v $chan]} {
+			set atrflag {v}
+		} elseif {[matchattr $nickhand f]} {
+			set atrflag {F}
+		} elseif {[matchattr $nickhand |f $chan]} {
+			set atrflag {f}
+		} elseif {[matchattr $nickhand k]} {
+			set atrflag {K}
+		} elseif {[matchattr $nickhand |k $chan]} {
+			set atrflag {k}
+		} elseif {[matchattr $nickhand w]} {
+			set atrflag {W}
+		} elseif {[matchattr $nickhand |w $chan]} {
+			set atrflag {w}
+		} elseif {[matchattr $nickhand e]} {
+			set atrflag {E}
+		} elseif {[matchattr $nickhand |e $chan]} {
+			set atrflag {e}
+		} else {
+			set atrflag { }
+		}
+		# output
+		putdcc $idx [format $format ${nickprefix}${nick} $nickhand "---" $atrflag "" $uhost]
+	}
+	putdcc $idx "End of channel info."
+	return 0
+}
 
 bind load - irc::dcc ::tcldrop::irc::dcc::LOAD -priority 10
 proc ::tcldrop::irc::dcc::LOAD {module} {
@@ -425,6 +540,7 @@ proc ::tcldrop::irc::dcc::LOAD {module} {
 	bind dcc nmol|nmol dehalfop ::tcldrop::irc::dcc::DEHALFOP -priority 1000
 	bind dcc nmolv|nmolv voice ::tcldrop::irc::dcc::VOICE -priority 1000
 	bind dcc nmolv|nmolv devoice ::tcldrop::irc::dcc::DEVOICE -priority 1000
+	bind dcc o|o channel ::tcldrop::irc::dcc::CHANNEL -priority 1000
 	# FixMe: What's with these weird priorities?
 	bind dcc n status ::tcldrop::irc::dcc::STATUS -priority 3
 	bind dcc n stat ::tcldrop::irc::dcc::STATUS -priority 3
