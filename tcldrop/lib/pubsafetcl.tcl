@@ -247,13 +247,14 @@ namespace eval pubsafetcl {
 				}
 			}
 			# duration, based on http://wiki.tcl.tk/789, modified by fedex` to support years and weeks, added features from http://inferno.slug.org/wiki/Duration with speed tweaks by me (FireEgl).
-			proc duration {seconds args} {
+			proc duration2 {seconds args} {
 				# avoid OCTAL interpretation, deal with negatives, split floats, handle things like .3
 				foreach {seconds fraction} [split [string trimleft $seconds {-0}] {.}] {break}
 				if {![string length $seconds]} { set seconds 0 }
 				set timeatoms [list]
 				if {![catch {
-					foreach div {31449600 604800 86400 3600 60 1} mod {0 52 7 24 60 60} name {year week day hour minute second} {
+					# old value was 31449600 for years.
+					foreach div {31536000 604800 86400 3600 60 1} mod {0 52 7 24 60 60} name {year week day hour minute second} {
 						if {[lsearch -glob $args "-no${name}*"] != -1} { break }
 						set n [expr { $seconds / $div }]
 						if {$mod > 0} { set n [expr { $n % $mod }] }

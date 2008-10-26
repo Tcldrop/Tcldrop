@@ -40,6 +40,8 @@ namespace eval ::tcldrop::server {
 	variable author {Tcldrop-Dev}
 	variable description {IRC server support.}
 	variable rcsid {$Id$}
+	# The isupport ensemble:
+	namespace ensemble create -command isupport -subcommands [list get set] -map [dict create get isupport_get set isupport_set]
 	variable commands [list isbotnick jump putserv puthelp putquick queuesize clearqueue putqueue putnow server quit callraw isupport]
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
@@ -535,10 +537,6 @@ proc ::tcldrop::server::LOAD {module} {
 	variable QueueAliases
 	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99]
 	variable TimerID 0
-
-	# The isupport ensemble:
-	namespace ensemble create -command isupport -subcommands [list get set] -map [dict create get isupport_get set isupport_set]
-
 	# Default server related settings (These are here in case the user doesn't provide them in his/her config):
 	setdefault servers [list]
 	setdefault default-port {6667}
