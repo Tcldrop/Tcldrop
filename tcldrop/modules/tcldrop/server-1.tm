@@ -40,7 +40,7 @@ namespace eval ::tcldrop::server {
 	variable author {Tcldrop-Dev}
 	variable description {IRC server support.}
 	variable rcsid {$Id$}
-	variable commands [list isbotnick jump putserv puthelp putquick queuesize clearqueue putqueue putnow server quit callraw]
+	variable commands [list isbotnick jump putserv puthelp putquick queuesize clearqueue putqueue putnow server quit callraw isupport]
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 }
@@ -138,7 +138,7 @@ proc ::tcldrop::server::quit {{reason {}}} {
 
 proc ::tcldrop::server::server {args} { Server $args }
 proc ::tcldrop::server::Server {opts} {
-	global server serveraddress server-online server-idx server-cycle-wait
+	global server serveraddress network server-online server-idx server-cycle-wait
 	callevent connect-server
 	array set options [list -control ::tcldrop::server::callserver -errors ::tcldrop::server::Error -writable ::tcldrop::server::Write]
 	array set options $opts
@@ -147,9 +147,9 @@ proc ::tcldrop::server::Server {opts} {
 		unset options(-pass)
 	}
 	if {![catch { ::tcldrop::core::conn::Connect [array get options] } idx]} {
-		switch -- $::network {
+		switch -- $network {
 			{Unknown} - {I.didn't.edit.my.config.file.net} - {unknown-net} - {} { set handle {(server)} }
-			{default} { set handle $::network }
+			{default} { set handle $network }
 		}
 		setidxinfo $idx [list handle $handle remote $options(-address):$options(-port) hostname $options(-address) type {SERVER} other {serv} traffictype {irc} module {server} timestamp [clock seconds]]
 		# Eggdrop compatibility stuff:
@@ -175,7 +175,7 @@ proc ::tcldrop::server::Error {idx {reason {Error}}} {
 # options style: jump -proxychain <chain>
 proc ::tcldrop::server::jump {args} {
 	quit {Changing Servers...}
-	array set options [list -address {} -port {0} -pass {} -buffering line -blocking 0 -myaddr ${::my-ip} -async 1 -connect-timeout ${::server-timeout} -inactive-timeout ${::inactive-timeout} -ssl 0 -proxychain {} -proxyinfo [list]]
+	array set options [list -address {} -port {0} -pass {} -retry 0 -buffering line -blocking 0 -myaddr ${::my-ip} -async 1 -connect-timeout ${::server-timeout} -inactive-timeout ${::inactive-timeout} -ssl 0 -proxychain {} -proxyinfo [list]]
 	# There's 3 different ways to specify the address and port to connect to...
 	# Proxychain style: address:port or http://127.0.0.1:8080/address:port
 	# Option type style: -address <address> -port <port>
@@ -445,7 +445,7 @@ proc ::tcldrop::server::001 {from key arg} {
 	set ::botnick [lindex [split $arg] 0]
 	set ::server-online [clock seconds]
 	# Set isupport to user-defined defaults:
-	array set ::isupport [list NETWORK $::network MODES ${::modes-per-line} MAXBANS ${::max-bans} MAXEXEMPTS ${::max-exempts} MAXINVITES ${::max-invites} NICKLEN $::nicklen]
+	set ::isupport($::serveraddress) [dict create NETWORK $::network MODES ${::modes-per-line} MAXBANS ${::max-bans} MAXEXEMPTS ${::max-exempts} MAXINVITES ${::max-invites} NICKLEN $::nicklen]
 	# Eval $init-server (obsolete in Eggdrop):
 	if {[info exists ::init-server] && ${::init-server} != {}} { catch { eval ${::init-server} } }
 	# Call the init-server binds:
@@ -475,32 +475,46 @@ proc ::tcldrop::server::001 {from key arg} {
 #       The bot should then always look at the servers idxinfo instead of the
 #       global var for deciding how many modes-per-line to use (for example).
 #
-# http://www.ietf.org/internet-drafts/draft-brocklesby-irc-isupport-03.txt
-#
-proc ::tcldrop::server::005 {from key arg} { global isupport
-	foreach i [lrange [split [string map {{are supported by this server} {} {:are supported by this server} {} {are available on this server} {}} $arg]] 1 end] {
+# References:
+# http://www.irc.org/tech_docs/005.html
+# http://www.irc.org/tech_docs/draft-brocklesby-irc-isupport-03.txt
+# http://www.unrealircd.com/files/docs/unreal32docs.html#userchannelmodes
+proc ::tcldrop::server::005 {from key arg} { isupport set {*}[lrange [split $arg] 1 end] }
+
+# isupport set <key>=<value> key -key ...
+proc ::tcldrop::server::isupport_set {args} { global isupport serveraddress
+	# Yes, this is a string map on a list..But it doesn't hurt anything in this case:
+	foreach i [string map {{are supported by this server} {} {:are supported by this server} {} {are available on this server} {}} $args] {
 		set key [string range [string range $i 0 [set eq [string first = $i]]] 0 end-1]
 		set value [string range [string range $i $eq end] 1 end]
 		switch -glob -- $i {
-			{} {}
-			{ } {}
+			{} - { } {}
 			{-*} {
 				# "... used to negate a previously specified parameter; that is, revert to the behaviour that would occur if the parameter had not been specified."
 				switch -- $key {
-					{-NETWORK} { set isupport(NETWORK) $::network }
-					{-MODES} { set isupport(MODES) ${::modes-per-line} }
-					{-MAXBANS} { set isupport(MAXBANS) ${::max-bans} }
-					{-MAXEXEMPTS} { set isupport(MAXEXEMPTS) ${::max-exempts} }
-					{-MAXINVITES} { set isupport(MAXINVITES) ${::max-invites} }
-					{-NICKLEN} { set isupport(NICKLEN) $::nicklen }
+					{-NETWORK} { dict set isupport($serveraddress) NETWORK $::network }
+					{-MODES} { dict set isupport($serveraddress) MODES ${::modes-per-line} }
+					{-MAXBANS} { dict set isupport($serveraddress) MAXBANS ${::max-bans} }
+					{-MAXEXEMPTS} { dict set isupport($serveraddress) MAXEXEMPTS ${::max-exempts} }
+					{-MAXINVITES} { dict set isupport($serveraddress) MAXINVITES ${::max-invites} }
+					{-NICKLEN} { dict set isupport($serveraddress) NICKLEN $::nicklen }
 				}
 			}
 			{*=*} {
 				# If they don't need special treatment we deal with them here.
-				set isupport($key) $value
+				dict set isupport($serveraddress) $key $value
 			}
-			{default} { set isupport($i) {} }
+			{default} { dict set isupport($serveraddress) $i {} }
 		}
+	}
+}
+
+# This is just to compliment the "isupport set" command..
+# There's a reason isupport is a global variable..it's expected that people will at least read it directly, if not write to it directly as well.
+# isupport get <key>
+proc ::tcldrop::server::isupport_get {key} { global isupport serveraddress
+	if {[info exists isupport($serveraddress)] && [dict exists $isupport($serveraddress) $key]} {
+		dict get $isupport($serveraddress) $key
 	}
 }
 
@@ -521,6 +535,10 @@ proc ::tcldrop::server::LOAD {module} {
 	variable QueueAliases
 	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99]
 	variable TimerID 0
+
+	# The isupport ensemble:
+	namespace ensemble create -command isupport -subcommands [list get set] -map [dict create get isupport_get set isupport_set]
+
 	# Default server related settings (These are here in case the user doesn't provide them in his/her config):
 	setdefault servers [list]
 	setdefault default-port {6667}
