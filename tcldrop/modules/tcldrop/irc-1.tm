@@ -1264,7 +1264,6 @@ proc ::tcldrop::irc::getchanmode {channel} {
 #      the script finishes, or when 'flushmode' is called.
 #    Returns: nothing
 proc ::tcldrop::irc::pushmode {channel mode {arg {}}} {
-	# FixMe: Have this send the modes to the k loglevel, in a format the same or similar to Eggdrop.
 	if {[validchan $channel] && [botonchan $channel]} {
 		variable PushModes
 		if {[info exists PushModes([set channel [string tolower $channel]])] && [set pos [lsearch -glob $PushModes($channel) "?[string index $mode 1] $arg"]] != -1} {

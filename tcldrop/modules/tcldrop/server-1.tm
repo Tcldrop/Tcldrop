@@ -506,7 +506,10 @@ proc ::tcldrop::server::isupport_set {args} { global isupport serveraddress
 				# If they don't need special treatment we deal with them here.
 				dict set isupport($serveraddress) $key $value
 			}
-			{default} { dict set isupport($serveraddress) $i {} }
+			{default} {
+				# This should be set to boolean true, but not set to "1" so it doesn't get misinterpreted as an amount:
+				dict set isupport($serveraddress) $i {true}
+			}
 		}
 	}
 }
