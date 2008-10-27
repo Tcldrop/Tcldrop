@@ -1366,19 +1366,18 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule core::dcc
 	checkmodule encryption
 	#checkmodule encryption::null
-	# Note: This blowfish is NOT Eggdrop compatible, but if/when one (in pure-Tcl) becomes available that is compatible with Eggdrop we'll switch to it and it will replace this one..
 	checkmodule encryption::blowfish
 	#checkmodule encryption::sha1
-	# sha256 is used for encpass in Tcldrop, because it's better than md5 and sha1:
-	checkmodule encryption::sha256
+	#checkmodule encryption::sha256
 	# Loaded because is provides the Eggdrop-style [md5] command:
 	checkmodule encryption::md5
 	#::tcldrop::encryption::default encrypt tea
 	#::tcldrop::encryption::default decrypt tea
+	::tcldrop::encryption::default encpass md5
 	::tcldrop::encryption::default encrypt blowfish
 	::tcldrop::encryption::default decrypt blowfish
-	::tcldrop::encryption::default encpass md5
-	::tcldrop::encryption::default encpass sha256
+	::tcldrop::encryption::default encpass blowfish
+	#::tcldrop::encryption::default encpass sha256
 	checkmodule bots::oldbotnet
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party

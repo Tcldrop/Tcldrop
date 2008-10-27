@@ -80,6 +80,7 @@ proc ::tcldrop::encryption::default {command {type {}}} {
 	}
 }
 
+# FixMe: Make it so that encpass falls back to alternate encryptions when the default one gives a Tcl error (unless an encryption type is explicitly specified).
 proc ::tcldrop::encryption::encpass {password args} { Encpass $password $args }
 proc ::tcldrop::encryption::Encpass {password arguments} {
 	variable Defaults

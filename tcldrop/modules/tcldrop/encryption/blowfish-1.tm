@@ -1,11 +1,11 @@
 # blowfish.tcl --
 #	Handles:
-#		* Provides blowfish encryption via a pure-Tcl package.  (It is NOT Eggdrop compatible!)
+#		* Provides blowfish encryption (Eggdrop style).
 #	Depends: encryption.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -26,8 +26,10 @@
 # Or can be found on IRC (EFNet, OFTC, or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::encryption::blowfish {
-	variable version {0.1}
+	variable version {0.2}
 	variable name {encryption::blowfish}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name 1
 	package provide tcldrop::${name}::main 1
 	package provide tcldrop::blowfish 1
@@ -36,22 +38,41 @@ namespace eval ::tcldrop::encryption::blowfish {
 	variable author {Tcldrop-Dev}
 	variable description {Provides a pure-Tcl blowfish.}
 	variable commands [list blowfish]
-	variable script [info script]
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	::package require blowfish
-	::package require base64
 	# Pre-depends on the encryption module:
 	checkmodule encryption
-	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export {*}$commands
-	proc encrypt {key string} { ::base64::encode -maxlen 0 [::blowfish::blowfish -mode ecb -dir encrypt -key $key $string] }
-	proc decrypt {key string} { string trimright [::blowfish::blowfish -mode ecb -dir decrypt -key $key [::base64::decode $string]] "\0" }
-	proc encpass {password} { ::base64::encode -maxlen 0 [::blowfish::blowfish -mode ecb -dir encrypt -key $password $password] }
+	variable accel
+	set accel(cryptomod) 0
+	# FixMe: Consider making this check for pre-existing encrypt/decrypt/encpass commands (perhaps ones interp aliased here from Eggdrop).
+	if {![catch { package require Crypto } err] || ![catch {load [file join ${::mod-path} lib crypto[info sharedlibextension]]} err]} {
+		# Crypto.mod created by leprechau@EFNet is available from http://TclCryptography.SF.Net/
+		# He's said that he would see about converting them to work with Critcl though.
+		# (Using Critcl saves the end user from having to manually compile the encryption lib)
+		lappend ::protected(commands) bencrypt bdecrypt bencpass
+		#rename bencrypt ::tcldrop::encryption::blowfish::bencrypt
+		#rename bdecrypt ::tcldrop::encryption::blowfish::bdecrypt
+		#rename bencpass ::tcldrop::encryption::blowfish::bencpass
+		#proc encrypt {key string} { bencrypt $key $string }
+		#proc decrypt {key string} { bdecrypt $key $string }
+		#proc encpass {password} { bencpass $password }
+		interp alias {} ::tcldrop::encryption::blowfish::encrypt {} bencrypt
+		interp alias {} ::tcldrop::encryption::blowfish::decrypt {} bdecrypt
+		interp alias {} ::tcldrop::encryption::blowfish::encpass {} bencpass
+		set accel(cryptomod) 1
+	} elseif {![catch { ::package require blowfish } err] && ![catch { ::package require eggbase64 } err]} {
+		proc encrypt {key string} { ::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $key $string] }
+		proc decrypt {key string} { string trimright [::blowfish::blowfish -mode ecb -dir decrypt -key $key [::eggbase64::decode $string]] "\x00" }
+		proc encpass {password} { ::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $password $password] }
+	} else {
+		putlog "Error loading blowfish: $err"
+	}
 	namespace ensemble create -subcommands [list encrypt decrypt encpass]
 	namespace ensemble create -command ::tcldrop::blowfish -subcommands [list encrypt decrypt encpass]
-	namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass]
+	if {[info commands ::blowfish] eq {}} { namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass] }
+	# Export all the commands that should be available to 3rd-party scripters:
+	namespace export {*}$commands
 	#namespace unknown unknown
 }
 
@@ -64,7 +85,11 @@ proc ::tcldrop::encryption::blowfish::LOAD {module} {
 }
 
 proc ::tcldrop::encryption::blowfish::UNLD {module} {
-	catch { ::package forget blowfish }
-	catch { ::package forget base64 }
+	variable accel
+	if {$accel(cryptomod)} {
+		catch { ::package forget Crypto }
+	} else {
+		catch { ::package forget blowfish }
+	}
 	return 0
 }
