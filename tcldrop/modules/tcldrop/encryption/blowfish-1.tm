@@ -64,7 +64,11 @@ namespace eval ::tcldrop::encryption::blowfish {
 	} elseif {![catch { ::package require blowfish } err] && ![catch { ::package require eggbase64 } err]} {
 		proc encrypt {key string} { ::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $key $string] }
 		proc decrypt {key string} { string trimright [::blowfish::blowfish -mode ecb -dir decrypt -key $key [::eggbase64::decode $string]] "\x00" }
-		proc encpass {password} { ::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $password $password] }
+		# These are the SALT1 and SALT2 that Eggdrop uses in blowfish.c for its encpass:
+		variable SALT1SALT2 [binary format II {0xdeadd061} {0x23f6b095}]
+		proc encpass {password} { variable SALT1SALT2
+			return "+[::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $password $SALT1SALT2]]"
+		}
 	} else {
 		putlog "Error loading blowfish: $err"
 	}
