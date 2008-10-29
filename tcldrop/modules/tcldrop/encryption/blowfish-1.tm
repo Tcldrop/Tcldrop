@@ -74,7 +74,7 @@ namespace eval ::tcldrop::encryption::blowfish {
 	}
 	namespace ensemble create -subcommands [list encrypt decrypt encpass]
 	namespace ensemble create -command ::tcldrop::blowfish -subcommands [list encrypt decrypt encpass]
-	if {[info commands ::blowfish] eq {}} { namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass] }
+	#if {[info commands ::blowfish] eq {}} { namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass] }
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 	#namespace unknown unknown
@@ -84,6 +84,7 @@ bind load - encryption::blowfish ::tcldrop::encryption::blowfish::LOAD -priority
 bind load - blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0
 proc ::tcldrop::encryption::blowfish::LOAD {module} {
 	::tcldrop::encryption::register blowfish [list encrypt ::tcldrop::encryption::blowfish::encrypt decrypt ::tcldrop::encryption::blowfish::decrypt encpass ::tcldrop::encryption::blowfish::encpass]
+	#if {[info commands ::blowfish] eq {}} { namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass] }
 	bind unld - encryption::blowfish ::tcldrop::encryption::blowfish::UNLD
 	bind unld - blowfish ::tcldrop::encryption::blowfish::UNLD
 }
