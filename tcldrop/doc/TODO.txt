@@ -30,11 +30,8 @@ until they're removed from this list:
 
 modules
 help
-binds
-timers
 protected
 lang
-idxlist  (This one will probably be converted, I think.)
 console-levels
 help-files
 party_users

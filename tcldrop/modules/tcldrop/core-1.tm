@@ -64,7 +64,7 @@ namespace eval ::tcldrop {
 	namespace export Tcldrop tcldrop PutLogLev stdout stderr
 	if {![info exists ::tcldrop]} {
 		PutLogLev e * "Warning: The ::tcldrop array isn't set!\nPlease start Tcldrop using ./tcldrop or by source'ing tcldrop.tcl from within a Tcl-enabled application or by setting up the ::tcldrop array yourself before source'ing core.tcl.\nSetting up the ::tcldrop array with internal defaults for now...  =/"
-		array set ::tcldrop [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version $version numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}]
+		array set ::tcldrop [dict create botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version $version numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}]
 		namespace export {*}$::tcldrop(commands)
 	}
 	set ::modules(tcldrop) [array get ::tcldrop]
@@ -601,7 +601,7 @@ proc ::tcldrop::core::mergeflags {flags1 flags2} { set add 1
 }
 
 proc ::tcldrop::core::ip2decimal {ip} {
-	foreach {a b c d} [split $ip .] {}
+	lassign [split $ip .] a b c d
 	format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
 }
 proc ::tcldrop::core::decimal2ip {ip} {
@@ -638,14 +638,14 @@ proc ::tcldrop::core::stripcodes {strip-flags string} {
 # -priority <1-99>    This defines the order of priority. (lower gets processed first)
 #                     Default is 50.  Priorities <0 and >100 are reserved for Tcldrop internal use.
 proc ::tcldrop::core::bind {type flags mask proc args} {
-	array set options [list -priority 50 type $type flags $flags mask $mask proc $proc count 0]
-	catch { array set options $args }
+	set options [dict create -priority 50 type $type flags $flags mask $mask proc $proc count 0]
+	catch { set options [dict merge $options $args] }
 	# Note/FixMe: Eggdrop checks to make sure $type is a valid bind type before accepting it, but currently I don't see why that's such a great idea.
 	switch -- $flags {
-		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { array set options [list flags {+|+}] }
-		{default} { if {![string match {*|*} $flags]} { array set options [list flags "$flags|-"] } }
+		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { dict set options flags {+|+} }
+		{default} { if {![string match {*|*} $flags]} { dict set options flags "$flags|-" } }
 	}
-	set ::binds($type,$options(-priority),$proc,$mask) [array get options]
+	set ::binds($type,[dict get $options -priority],$proc,$mask) $options
 	set mask
 }
 
@@ -659,8 +659,7 @@ proc ::tcldrop::core::binds {{typemask {*}} {mask {*}}} {
 	global binds
 	# Search by type:
 	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] {
-		array set bind $binds($b)
-		lappend matchbinds [list $bind(type) $bind(flags) $bind(mask) $bind(count) $bind(proc)]
+		dict with binds($b) { lappend matchbinds [list $type $flags $mask $count $proc] }
 	}
 	# FixMe: Searching for masks this way is WAY too slow:
 	#if {[llength $matchbinds] == 0} {
@@ -683,8 +682,7 @@ proc ::tcldrop::core::bindlist {{typemask {*}} {mask {*}}} {
 	global binds
 	# Search by type:
 	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] {
-		array set bind $binds($b)
-		lappend matchbinds $bind(type) $bind(flags) $bind(mask) $bind(proc)
+		dict with binds($b) { lappend matchbinds $type $flags $mask $proc }
 	}
 	return $matchbinds
 }
@@ -702,10 +700,8 @@ proc ::tcldrop::core::countbind {type mask proc {priority {*}}} {
 	global binds lastbind
 	set lastbind $mask
 	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] {
-		array set bind $binds($name)
-		incr bind(count)
-		set binds($name) [array get bind]
-		return $bind(count)
+		dict incr binds($name) count
+		return 1
 	}
 	return 0
 }
@@ -760,7 +756,7 @@ proc ::tcldrop::core::callutimer {timerinfo} { calltimer $timerinfo }
 # if $repeat is 1 or higher then the command repeats that many MORE times, every $seconds seconds.
 # if $repeat is -1 then it repeats forever.
 proc ::tcldrop::core::utimer {seconds command {repeat {0}}} {
-	calltimer [set ::timers([set timerid [TimerID $seconds [lindex $command 0] $repeat]]) [list timerid $timerid interval [set interval [expr { $seconds * 1000 }]] afterid [after $interval [list ::tcldrop::core::DoTimer $timerid]] executetime [expr { [clock seconds] + $seconds }] repeat $repeat command [lindex $command 0] args [join [lrange $command 1 end]] fullcommand $command initcommands [list]]]
+	calltimer [set ::timers([set timerid [TimerID $seconds [lindex $command 0] $repeat]]) [dict create timerid $timerid interval [set interval [expr { $seconds * 1000 }]] afterid [after $interval [list ::tcldrop::core::DoTimer $timerid]] executetime [expr { [clock seconds] + $seconds }] repeat $repeat command [lindex $command 0] args [join [lrange $command 1 end]] fullcommand $command initcommands [list]]]
 	return $timerid
 }
 
@@ -771,9 +767,7 @@ proc ::tcldrop::core::timers {{timerid {*}}} {
 	global timers
 	set timerlist {}
 	foreach t [array names timers $timerid] {
-		array set timerinfo $timers($t)
-		set minutesleft [expr {($timerinfo(executetime) - [clock seconds]) / 60}]
-		lappend timerlist [list $minutesleft $timerinfo(command) $timerinfo(timerid)]
+		dict with timers($t) { lappend timerlist [list [expr {($executetime - [clock seconds]) / 60}] $command $timerid] }
 	}
 	return $timerlist
 }
@@ -783,9 +777,7 @@ proc ::tcldrop::core::utimers {{timerid {*}}} {
 	global timers
 	set utimerlist {}
 	foreach t [array names timers $timerid] {
-		array set timerinfo $timers($t)
-		set secondsleft [expr {$timerinfo(executetime) - [clock seconds]}]
-		lappend utimerlist [list $secondsleft $timerinfo(command) $timerinfo(timerid)]
+		dict with timers($t) { lappend utimerlist [list [expr {$executetime - [clock seconds]}] $command $timerid] }
 	}
 	return $utimerlist
 }
@@ -795,9 +787,7 @@ proc ::tcldrop::core::timerslist {{timerid {*}}} {
 	global timers
 	set timerlist {}
 	foreach t [array names timers $timerid] {
-		array set timerinfo $timers($t)
-		set minutesleft [expr {($timerinfo(executetime) - [clock seconds]) / 60}]
-		lappend timerlist $minutesleft $timerinfo(command) $timerinfo(timerid)
+		dict with timers($t) { lappend timerlist [expr {($executetime - [clock seconds]) / 60}] $command $timerid }
 	}
 	return $timerlist
 }
@@ -807,25 +797,23 @@ proc ::tcldrop::core::utimerslist {{timerid {*}}} {
 	global timers
 	set utimerlist {}
 	foreach t [array names timers $timerid] {
-		array set timerinfo $timers($t)
-		set secondsleft [expr {$timerinfo(executetime) - [clock seconds]}]
-		lappend utimerlist $secondsleft $timerinfo(command) $timerinfo(timerid)
+		dict with timers($t) { lappend utimerlist [expr {$executetime - [clock seconds]}] $command $timerid }
 	}
 	return $utimerlist
 }
 
 proc ::tcldrop::core::killtimer {timerid} {
 	if {[info exists ::timers($timerid)]} {
-		array set timerinfo $::timers($timerid)
+		after cancel [dict get $::timers($timerid) afterid]
 		unset ::timers($timerid)
-		after cancel $timerinfo(afterid)
 		return 1
 	} else {
 		return 0
 	}
 }
 
-proc ::tcldrop::core::killutimer {timerid} { killtimer $timerid }
+#proc ::tcldrop::core::killutimer {timerid} { killtimer $timerid }
+interp alias {} ::tcldrop::core::killutimer {} ::tcldrop::core::killtimer
 
 proc ::tcldrop::core::validtimer {timerid} { info exists ::timers($timerid) }
 
@@ -835,6 +823,7 @@ proc ::tcldrop::core::gettimerinfo {timerid} { timerinfo get $timerid }
 
 proc ::tcldrop::core::settimerinfo {timerid info} { timerinfo set $timerid $info }
 
+# FixMe: *yawn* make this use dict commands:
 proc ::tcldrop::core::timerinfo {command timerid args} {
 	if {[info exists ::timers($timerid)]} { array set timerinfo $::timers($timerid) }
 	switch -- $command {
@@ -987,6 +976,7 @@ proc ::tcldrop::core::ClearFlood {id} {
 # And because [namespace import] imports into the current namespace.
 # FixMe: We need to keep up with what modules are loaded, and their versions.
 proc ::tcldrop::core::loadmodule {module args} { LoadModule $module $args }
+# FixMe: Some parts of this may could be dicts:
 proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0}]
@@ -1128,13 +1118,11 @@ proc ::tcldrop::core::modules {{mask {*}}} {
 }
 
 proc ::tcldrop::core::moduledeps {module} {
-	putlog "ModuleDeps: $module"
+	#putlog "ModuleDeps: $module"
 	set deps [list]
 	global modules
 	foreach m [array names modules] {
-		set modinfo(depends) [list]
-		array set modinfo $modules($m)
-		if {[lsearch -exact $modinfo(depends) $module] != -1} { lappend deps $m }
+		if {[dict exists $modules($m) depends] && [lsearch -exact [dict get $modules($m) depends] $module] != -1} { lappend deps $m }
 	}
 	return $deps
 }
@@ -1508,8 +1496,7 @@ proc ::tcldrop::core::EVNT_prerestart {event} {
 	counter start exempt
 	global binds
 	foreach c [array names binds] {
-		array set bindinfo $binds($c)
-		if {[info commands $bindinfo(proc)] eq {}} {
+		if {[info commands [dict get $binds($c) proc]] eq {}} {
 			unset binds($c)
 			counter incr success
 		} else {
