@@ -52,6 +52,13 @@ namespace eval ::tcldrop::core::conn {
 	namespace ensemble create -command ::conn -subcommands $commands
 }
 
+proc ::tcldrop::core::conn::ip2decimal {ip} { lassign [split $ip .] a b c d
+	format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
+}
+proc ::tcldrop::core::conn::decimal2ip {ip} { set ip [format %08X $ip]
+	return "[format %u 0x[string range $ip 0 1]].[format %u 0x[string range $ip 2 3]].[format %u 0x[string range $ip 4 5]].[format %u 0x[string range $ip 6 7]]"
+}
+
 # Returns the bots IP in long form:
 proc ::tcldrop::core::conn::myip {} { if {${::my-ip} ne {}} { ip2decimal ${::my-ip} } else { ip2decimal ${::default-ip} } }
 

@@ -1,6 +1,6 @@
 # bots/oldbotnet --
 #	Handles:
-#		* Provides oldbotnet (Eggdrop v1.4) botnet support (it's compatible with Eggdrop v1.6).
+#		* Provides oldbotnet (Eggdrop v1.4 to v1.6) botnet support.
 #
 # $Id$
 #
@@ -26,16 +26,10 @@
 #
 #	bots::oldbotnet module for Tcldrop.  (optional, but loaded by default for Eggdrop compatibility reasons)
 #
-# This module provides the ability to talk to old eggdrop bots (1.6 and less).
-# It does NOT support Eggdrop 1.7 (1.9?) and higher bots.
-# Not even if they have their oldbotnet module loaded!
+# This module provides the ability to talk to eggdrop bots (v1.6 and less).
 #
-# The reason is because the eggdrop botnet protocol changed in the 1.6 series (I think)
-# and they started using shorter names for the bot commands and
-# also used a non-standard base64 encoding on some things.
-# Although eggdrop 1.6 is still able to talk to bots using the old (original) botnet protocol.
-#
-# This module only provides support for the ORIGINAL eggdrop botnet protocol.
+# We actually combine the original Eggdrop protocol (Eggdrop v1.4 and less),
+# with the newer protocol (Eggdrop v1.6) together.
 
 namespace eval ::tcldrop::bots::oldbotnet {
 	variable name {bots::oldbotnet}
@@ -79,6 +73,8 @@ proc ::tcldrop::bots::oldbotnet::Write_OUT {idx} {
 	putlog "Got Write"
 	setidxinfo $idx [list state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
 }
+
+# Note: This is the OLD botnet protocol (it uses full names for things like "zapf" where the new protocol uses only "z", there's some other minor differences as well)
 
 # Tcldrop> linking TO Eggdrop< (negotiates new password):
 # < Nickname.

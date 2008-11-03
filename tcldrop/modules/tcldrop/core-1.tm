@@ -64,7 +64,7 @@ namespace eval ::tcldrop {
 	namespace export Tcldrop tcldrop PutLogLev stdout stderr
 	if {![info exists ::tcldrop]} {
 		PutLogLev e * "Warning: The ::tcldrop array isn't set!\nPlease start Tcldrop using ./tcldrop or by source'ing tcldrop.tcl from within a Tcl-enabled application or by setting up the ::tcldrop array yourself before source'ing core.tcl.\nSetting up the ::tcldrop array with internal defaults for now...  =/"
-		array set ::tcldrop [dict create botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version $version numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}]
+		array set ::tcldrop [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version $version numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}]
 		namespace export {*}$::tcldrop(commands)
 	}
 	set ::modules(tcldrop) [array get ::tcldrop]
@@ -77,7 +77,7 @@ update idletasks
 
 # Here begins the "core" module:
 namespace eval ::tcldrop::core {
-	variable version {0.6.1}
+	variable version {0.6.2}
 	variable name {core}
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
