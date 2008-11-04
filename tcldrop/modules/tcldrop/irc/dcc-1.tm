@@ -121,10 +121,10 @@ proc ::tcldrop::irc::dcc::SAY {handle idx text} {
 	}
 	if {![validchan [lindex $args 0]]} {
 		set chan [dict get $idxlist($idx) console-channel]
-		set action $text
+		set message $text
 	} else {
 		set chan [lindex $args 0]
-		set action [lrange $args 1 end]
+		set message [lrange $args 1 end]
 	}
 	putcmdlog "#$handle# ($chan) say $message"
 	if {![validchan $chan]} {
@@ -370,7 +370,7 @@ proc ::tcldrop::irc::dcc::VOICE {handle idx text} {
 	lassign [split $text] victim chan
 	# no args were supplied, assume victim = handle
 	if {$text eq {}} {
-		set victim [hand2nick $hand]
+		set victim [hand2nick $handle]
 	}
 	if {![validchan $chan]} {
 		set chan [dict get $idxlist($idx) console-channel]
@@ -667,7 +667,7 @@ proc ::tcldrop::irc::dcc::TOPIC {handle idx text} {
 # Usage: kick [channel] <nickname> [reason]
 # FixMe: Add support for console channel
 proc ::tcldrop::irc::dcc::KICK {handle idx text} {
-	lassign [split $text] victim channel
+	lassign [split $text] victim chan
 	set reason [lrange [split $text] 2 end]
 	if {[llength [split $text]] < 2} {
 		putdcc $idx "[lang 0x001]: kick \[channel\] <nickname> \[reason\]"
