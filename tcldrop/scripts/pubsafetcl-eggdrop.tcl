@@ -90,6 +90,10 @@ namespace eval pubsafetcl::eggdrop {
 
 	variable partyLine 0
 
+	# List of bot handles running pubsafetcl:
+	# (put them in the order of preference)
+	variable safetclbots {Tcldrop SafeTcl UNSafeTcl}
+
 	variable extraCommands
 	# FEATURE DISABLED.  These are extra commands that will be available for people with certain flags..
 	array set extraCommands {
