@@ -496,15 +496,27 @@ proc ::tcldrop::irc::FLUD_ctcp {nick uhost handle dest key text} {
 
 # irc.choopa.net: 471 Fire_Egl #Tcldrop Cannot join channel (+l)
 bind raw - 471 ::tcldrop::irc::471 -priority 100
-proc ::tcldrop::irc::471 {from key arg} { callneed [lindex [split $arg] 1] limit }
+proc ::tcldrop::irc::471 {from key arg} {
+	if {[validchan [set chan [lindex [split $arg] 1]]]} {
+		callneed $chan limit
+	}
+}
 
 # irc.choopa.net: 473 Fire_Egl #Tcldrop Cannot join channel (+i)
 bind raw - 473 ::tcldrop::irc::473 -priority 100
-proc ::tcldrop::irc::473 {from key arg} { callneed [lindex [split $arg] 1] invite }
+proc ::tcldrop::irc::473 {from key arg} {
+	if {[validchan [set chan [lindex [split $arg] 1]]]} {
+		callneed $chan invite
+	}
+}
 
 # irc.choopa.net: 474 Fire_Egl #Tcldrop Cannot join channel (+b)
 bind raw - 474 ::tcldrop::irc::474 -priority 100
-proc ::tcldrop::irc::474 {from key arg} { callneed [lindex [split $arg] 1] unban }
+proc ::tcldrop::irc::474 {from key arg} {
+	if {[validchan [set chan [lindex [split $arg] 1]]]} {
+		callneed $chan unban
+	}
+}
 
 # irc.inter.net.il: 475 FireEgl #pgpnet Cannot join channel (+k)
 bind raw - 475 ::tcldrop::irc::475 -priority 100
@@ -790,8 +802,8 @@ proc ::tcldrop::irc::332 {from key arg} { set larg [split $arg]
 bind raw - 333 ::tcldrop::irc::333 -priority 1000
 proc ::tcldrop::irc::333 {from key arg} { set larg [split $arg]
 	set channel [string tolower [lindex $larg 1]]
-	dict set ::channels($element) topic-creator [lindex $larg 2]
-	dict set ::channels($element) topic-created [lindex $larg 3]
+	dict set ::channels($channel) topic-creator [lindex $larg 2]
+	dict set ::channels($channel) topic-created [lindex $larg 3]
 }
 
 # FireEgl!Proteus@adsl-17-148-104.bhm.bellsouth.net TOPIC #test :blah blah
