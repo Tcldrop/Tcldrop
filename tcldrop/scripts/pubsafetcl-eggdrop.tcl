@@ -437,7 +437,7 @@ namespace eval pubsafetcl::eggdrop {
 		}
 
 		proc IP2Decimal {ip} {
-			foreach {a b c d} [split $ip .] {}
+			lassign [split $ip .] a b c d
 			format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
 		}
 	}

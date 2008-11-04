@@ -249,7 +249,7 @@ namespace eval pubsafetcl {
 			# duration, based on http://wiki.tcl.tk/789, modified by fedex` to support years and weeks, added features from http://inferno.slug.org/wiki/Duration with speed tweaks by me (FireEgl).
 			proc duration2 {seconds args} {
 				# avoid OCTAL interpretation, deal with negatives, split floats, handle things like .3
-				foreach {seconds fraction} [split [string trimleft $seconds {-0}] {.}] {break}
+				lassign [split [string trimleft $seconds {-0}] {.}] seconds fraction
 				if {![string length $seconds]} { set seconds 0 }
 				set timeatoms [list]
 				if {![catch {
@@ -287,7 +287,7 @@ namespace eval pubsafetcl {
 				return $hex
 			}
 			proc ip2hex {ip} {
-				foreach {a b c d} [split $ip .] { break }
+				lassign [split $ip .] a b c d
 				format %02x%02x%02x%02x $a $b $c $d
 			}
 			proc hex2ip {hex} {
@@ -295,7 +295,7 @@ namespace eval pubsafetcl {
 				join $ip .
 			}
 			proc ip2decimal {ip} {
-				foreach {a b c d} [split $ip .] { break }
+				lassign [split $ip .] a b c d
 				format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
 			}
 			proc decimal2ip {ip} { return "[format %u 0x[string range [set ip [format %08X $ip]] 0 1]].[format %u 0x[string range $ip 2 3]].[format %u 0x[string range $ip 4 5]].[format %u 0x[string range $ip 6 7]]" }
@@ -364,7 +364,7 @@ namespace eval pubsafetcl {
 			}
 			proc lconcat {args} {
 				set result [list]
-				foreach list $args { eval [linsert $list 0 lappend result] }
+				foreach list $args { lappend result {*}$list }
 				set result
 			}
 			proc string2list {string} {

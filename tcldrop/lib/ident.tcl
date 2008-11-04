@@ -109,8 +109,8 @@ proc ::ident::ident {args} {
 			{-lport} - {-localport} - {-cport} - {-clientport} { set info(lport) $d }
 			{-rhost} - {-remotehost} - {-phost} - {-peerhost} - {-shost} - {-serverhost} { set info(rhost) $d }
 			{-rport} - {-remoteport} - {-pport} - {-peerport} - {-sport} - {-serverport} { set info(rport) $d }
-			{-remote} - {-server} - {-peer} { foreach {info(rhost) info(rport)} [split $d :] {} }
-			{-local} - {-client} { foreach {info(lhost) info(lport)} [split $d :] {} }
+			{-remote} - {-server} - {-peer} { lassign [split $d :] info(rhost) info(rport) }
+			{-local} - {-client} { lassign [split $d :] info(lhost) info(lport) }
 			{-command} { set info(command) $d }
 			{-timeout} { set info(timeout) $d }
 			{-authport} - {-identdport} - {-identport} { set info(authport) $d }
