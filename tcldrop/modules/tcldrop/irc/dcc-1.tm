@@ -80,13 +80,19 @@ proc ::tcldrop::irc::dcc::STATUS {handle idx text} {
 }
 
 # Usage: act [channel] <action>
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::ACT {handle idx text} {
-	set chan [lindex [split $text] 0]
-	set action [lrange [split $text] 1 end]
-	if {[llength [split $text]] < 2} {
+	global idxlist
+	set args [split $text]
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
 		return 0
+	}
+	if {![validchan [lindex $args 0]]} {
+		set chan [dict get $idxlist($idx) console-channel]
+		set action $text
+	} else {
+		set chan [lindex $args 0]
+		set action [lrange $args 1 end]
 	}
 	putcmdlog "#$handle# ($chan) act $action"
 	if {![validchan $chan]} {
@@ -95,9 +101,8 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 	} elseif {![botonchan $chan]} {
 		putdcc $idx "Cannot act to ${chan}: I'm not on that channel."
 		return 0
-	# channel is moderated
 	} elseif {[string match *m* [getchanmode $chan]]} {
-		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
+		putdcc $idx "Cannot act to ${chan}: It is moderated."
 		return 0
 	} else {
 		puthelp "PRIVMSG $chan :\001ACTION ${action}\001"
@@ -107,13 +112,19 @@ proc ::tcldrop::irc::dcc::ACT {handle idx text} {
 }
 
 # Usage: say [channel] <message>
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::SAY {handle idx text} {
-	set chan [lindex [split $text] 0]
-	set message [lrange [split $text] 1 end]
-	if {[llength [split $text]] < 2} {
+	global idxlist
+	set args [split $text]
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: say \[channel\] <message>"
 		return 0
+	}
+	if {![validchan [lindex $args 0]]} {
+		set chan [dict get $idxlist($idx) console-channel]
+		set action $text
+	} else {
+		set chan [lindex $args 0]
+		set action [lrange $args 1 end]
 	}
 	putcmdlog "#$handle# ($chan) say $message"
 	if {![validchan $chan]} {
@@ -124,7 +135,7 @@ proc ::tcldrop::irc::dcc::SAY {handle idx text} {
 		return 0
 	# channel is moderated
 	} elseif {[string match *m* [getchanmode $chan]]} {
-		putdcc $idx "[lang 0x001]: act \[channel\] <action>"
+		putdcc $idx "Cannot say to ${chan}: It is moderated."
 		return 0
 	} else {
 		puthelp "PRIVMSG $chan :$message"
@@ -150,13 +161,15 @@ proc ::tcldrop::irc::dcc::MSG {handle idx text} {
 }
 
 # Usage: op <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
-# FixMe: If all args are ommited, assume $victim = $handle
 proc ::tcldrop::irc::dcc::OP {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
-		putdcc $idx "[lang 0x001]: op <nickname> \[channel\]"
-		return 0
+	# no args were supplied, assume victim = handle
+	if {$text eq {}} {
+		set victim [hand2nick $handle]
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) op $victim"
 	if {![validchan $chan]} {
@@ -193,12 +206,15 @@ proc ::tcldrop::irc::dcc::OP {handle idx text} {
 }
 
 # Usage: deop <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: deop <nickname> \[channel\]"
 		return 0
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) deop $victim"
 	if {![validchan $chan]} {
@@ -243,13 +259,15 @@ proc ::tcldrop::irc::dcc::DEOP {handle idx text} {
 	}
 }
 # Usage: halfop <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
-# FixMe: If all args are ommited, assume $victim = $handle
 proc ::tcldrop::irc::dcc::HALFOP {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
-		putdcc $idx "[lang 0x001]: halfop <nickname> \[channel\]"
-		return 0
+	# no args were supplied, assume victim = handle
+	if {$text eq {}} {
+		set victim [hand2nick $handle]
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) halfop $victim"
 	if {![validchan $chan]} {
@@ -289,12 +307,15 @@ proc ::tcldrop::irc::dcc::HALFOP {handle idx text} {
 }
 
 # Usage: dehalfop <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: dehalfop <nickname> \[channel\]"
 		return 0
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) dehalfop $victim"
 	if {![validchan $chan]} {
@@ -344,12 +365,15 @@ proc ::tcldrop::irc::dcc::DEHALFOP {handle idx text} {
 }
 
 # Usage: voice <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::VOICE {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
-		putdcc $idx "[lang 0x001]: voice <nickname> \[channel\]"
-		return 0
+	# no args were supplied, assume victim = handle
+	if {$text eq {}} {
+		set victim [hand2nick $hand]
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) voice $victim"
 	if {![validchan $chan]} {
@@ -381,12 +405,15 @@ proc ::tcldrop::irc::dcc::VOICE {handle idx text} {
 }
 
 # Usage: devoice <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::DEVOICE {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: devoice <nickname> \[channel\]"
 		return 0
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) devoice $victim"
 	if {![validchan $chan]} {
@@ -435,17 +462,22 @@ proc ::tcldrop::irc::dcc::DEVOICE {handle idx text} {
 }
 
 # Usage: channel [channel-name]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
-	global nicklen handlen botnick
-	set chan [lindex [split $text] 0]
+	global idxlist nicklen handlen botnick
 	if {$text eq {}} {
-		putdcc $idx "[lang 0x001]: channel \[channel-name\]"
-		return 0
+		set chan [dict get $idxlist($idx) console-channel]
+	} else {
+		set chan [lindex [split $text] 0]
 	}
 	putcmdlog "#$handle# ($chan) channel"
+	if {![validchan $chan]} {
+		putdcc $idx "No such channel."
+		return 0
+	} elseif {![botonchan $chan]} {
+		putdcc $idx "I'm not on $chan right now!"
+		return 0
 	# user is trying to use the command for a channel where he doesn't have access
-	if {![matchattr $handle nmo|nmo $chan]} {
+	} elseif {![matchattr $handle nmo|nmo $chan]} {
 		putdcc $idx "You are not a channel op on $chan"
 		return 0
 	}
@@ -559,12 +591,15 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 }
 
 # Usage: invite <nickname> [channel]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::INVITE {handle idx text} {
+	global idxlist
 	lassign [split $text] victim chan
-	if {[llength [split $text]] < 2} {
+	if {$text eq {}} {
 		putdcc $idx "[lang 0x001]: invite <nickname> \[channel\]"
 		return 0
+	}
+	if {![validchan $chan]} {
+		set chan [dict get $idxlist($idx) console-channel]
 	}
 	putcmdlog "#$handle# ($chan) invite $victim"
 	if {![validchan $chan]} {
@@ -591,13 +626,13 @@ proc ::tcldrop::irc::dcc::INVITE {handle idx text} {
 }
 
 # Usage: topic [channel] [text]
-# FixMe: Add support for console channel once ::idxlist is a dict.
 proc ::tcldrop::irc::dcc::TOPIC {handle idx text} {
-	set chan [lindex [split $text] 0]
+	global idxlist
 	set UserTopic [lrange [split $text] 1 end]
 	if {$text eq {}} {
-		putdcc $idx "[lang 0x001]: topic \[channel\] \[text\]"
-		return 0
+		set chan [dict get $idxlist($idx) console-channel]
+	} else {
+		set chan [lindex [split $text] 0]
 	}
 	putcmdlog "#$handle# ($chan) topic $UserTopic"
 	if {![validchan $chan]} {
@@ -630,7 +665,7 @@ proc ::tcldrop::irc::dcc::TOPIC {handle idx text} {
 }
 
 # Usage: kick [channel] <nickname> [reason]
-# FixMe: Add support for console channel once ::idxlist is a dict.
+# FixMe: Add support for console channel
 proc ::tcldrop::irc::dcc::KICK {handle idx text} {
 	lassign [split $text] victim channel
 	set reason [lrange [split $text] 2 end]
