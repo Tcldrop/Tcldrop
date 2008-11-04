@@ -27,7 +27,7 @@
 
 package require Tcl 8.5
 namespace eval ::eggbase64 {
-	variable version 1.0
+	variable version 1.1
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide eggbase64 $version
@@ -64,7 +64,6 @@ proc ::eggbase64::fromint {input} {
 }
 
 proc ::eggbase64::decode {input} {
-	# FixMe: $input needs to be padded.
 	set k -1
 	variable EGGDROP_BASE64_SALT
 	set input [split $input {}]
@@ -85,15 +84,15 @@ proc ::eggbase64::decode {input} {
 			append output [format %c $z]
 		}
 	}
-	return $output
+	# Note: This trims the rightmost NUL characters, but binary data could have contained NULs at the end originally.
+	return [string trimright $output "\x00"]
 }
 
 proc ::eggbase64::encode {input} {
-	# FixMe: $input needs to be padded.
 	variable EGGDROP_BASE64_SALT
 	set left [set right 0]
 	set k -1
-	binary scan $input c* input
+	binary scan [Pad $input] c* input
 	while {$k < [llength $input] - 1} {
 		if {[set v [lindex $input [incr k]]] < 0 } { incr v 256 }
 		set left [expr { $v << 24 }]
@@ -121,6 +120,17 @@ proc ::eggbase64::encode {input} {
 		}
 	}
 	return $output
+}
+
+# Returns $input with NUL padding:
+proc ::eggbase64::Pad {input} {
+	if {[set len [string length $input]] == 0} {
+		string repeat "\x00" 8
+	} elseif {($len % 8) != 0} {
+		append input [string repeat "\x00" [expr {8 - ($len % 8)}]]
+	} else {
+		return $input
+	}
 }
 
 # Before FireEgl's changes:
