@@ -109,22 +109,22 @@ if {![catch { package require dns }]} {
 			}
 		}
 		::dns::cleanup $token
-		eval {$proc} {$ip} {$hostname} {$status} $args
+		after idle [list $proc $ip $hostname $status {*}$args]
 	}
 } elseif {![catch { package require Tclx }] && [info commands host_info] != {}} {
 	putlog {Using TclX for [dnslookup].  (non-asynchronous.)}
 	proc ::tcldrop::dns::dnslookup {address proc args} {
 		if {[testip $address]} {
 			if {[catch { host_info official_name $address } official_name]} {
-				eval {$proc} {$address} {$address} {0} $args
+				after idle [list $proc $address $address 0 {*}$args]
 			} else {
-				eval {$proc} {$address} {$official_name} {1} $args
+				after idle [list $proc $address $official_name 1 {*}$args]
 			}
 		} else {
 			if {[catch { host_info addresses $address } addresses]} {
-				eval {$proc} {0.0.0.0} {$address} {0} $args
+				after idle [list $proc {0.0.0.0} $address 0 {*}$args]
 			} else {
-				eval {$proc} {[lindex $addresses 0]} {$address} {1} $args
+				after idle [list $proc [lindex $addresses 0] $address 1 {*}$args]
 			}
 		}
 	}
@@ -139,9 +139,9 @@ if {![catch { package require dns }]} {
 			fileevent $id readable [list ::tcldrop::dns::hostRead $id $wanthostname $address $proc $args]
 		} else {
 			if {$wanthostname} {
-				eval {$proc} {$address} {$address} {0} $arg
+				after idle [list $proc $address $address 0 {*}$arg]
 			} else {
-				eval {$proc} {0.0.0.0} {$address} {0} $arg
+				after idle [list $proc {0.0.0.0} $address 0 {*}$arg]
 			}
 		}
 	}
@@ -149,23 +149,23 @@ if {![catch { package require dns }]} {
 		if {[gets $id line] < 1} {
 			close $id
 			if {$wanthostname} {
-				eval {$proc} {$address} {$address} {0} $arg
+				after idle [list $proc $address $address 0 {*}$arg]
 			} else {
-				eval {$proc} {0.0.0.0} {$address} {0} $arg
+				after idle [list $proc {0.0.0.0} $address 0 {*}$arg]
 			}
 		} else {
 			close $id
 			if {!$wanthostname} {
 				if {[testip [set ip [lindex [split $line] end]]]} {
-					eval {$proc} {$ip} {$address} {1} $arg
+					after idle [list $proc $ip $address 1 {*}$arg]
 				} else {
-					eval {$proc} {0.0.0.0} {$address} {0} $arg
+					after idle [list $proc {0.0.0.0} $address 0 {*}$arg]
 				}
 			} else {
 				if {![string match {* not found*} $line]} {
-					eval {$proc} {$address} {[string trimright [lindex [split $line] end] .]} {1} $arg
+					after idle [list $proc $address [string trimright [lindex [split $line] end] .] 1 {*}$arg]
 				} else {
-					eval {$proc} {$address} {$address} {0} $arg
+					after idle [list $proc $address $address 0 {*}$arg]
 				}
 			}
 		}
@@ -177,6 +177,6 @@ if {![catch { package require dns }]} {
 			set ip {0.0.0.0}
 			set hostname $address
 		}
-		eval {$proc} {$ip} {$hostname} {0} $args
+		after idle [list $proc $ip $hostname 0 {*}$args]
 	}
 }

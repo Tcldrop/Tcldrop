@@ -304,7 +304,7 @@ proc ::tcldrop::core::addlang {{language {english}}} {
 # FixMe: Turn this into a namespace ensemble command:
 proc ::tcldrop::core::language {command args} {
 	switch -- $language {
-		{lang} - {-lang} - {getlang} - {-getlang} - {addlang} - {-addlang} - {relang} - {-relang} - {dellang} - {-dellang} - {langloaded} - {-langloaded} - {addlangsection} - {-addlangsection} - {dellangsection} - {-dellangsection} - {defaultlang} - {-defaultlang} - {langsection} - {-langsection} { eval [linsert $args 0 [string trimleft $command {-}]] }
+		{lang} - {-lang} - {getlang} - {-getlang} - {addlang} - {-addlang} - {relang} - {-relang} - {dellang} - {-dellang} - {langloaded} - {-langloaded} - {addlangsection} - {-addlangsection} - {dellangsection} - {-dellangsection} - {defaultlang} - {-defaultlang} - {langsection} - {-langsection} { [string trimleft $command {-}] {*}$args }
 		{isloaded} - {-isloaded} - {loaded} - {-loaded} { langloaded [lindex $args 0] }
 		{languages} - {-languages} - {all} - {-all} { return $::languages }
 		{language} - {-language} - {-default} - {} { return $::language }

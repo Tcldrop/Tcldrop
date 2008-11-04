@@ -249,7 +249,7 @@ proc ::tcldrop::party::irc::ircparty {command args} {
 			variable IRCParty_chanusers
 			return [info exists IRCParty_chanusers([string tolower [lindex $args 1]],[lindex $args 0])]
 		}
-		{handonchan} { eval {ircparty} {onchan} $args handle }
+		{handonchan} { ircparty onchan {*}$args handle }
 		{validchan} {
 			return [info exists IRCParty_chans([string tolower [lindex $args 0]])]
 		}

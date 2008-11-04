@@ -60,7 +60,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 			SetUdefDefaults
 			after idle [list callchannel $command $channel $options]
 			# Call ourself again to set the options:
-			after idle [list eval [linsert $options 0 channel set $channel]]
+			after idle [list channel set $channel {*}$options]
 			return {}
 		}
 		{set} {
@@ -142,8 +142,8 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 		}
 		{get} {
 			if {[dict exists $database(channels) $lowerchannel]} {
-				if {[eval [linsert $args 0 dict exists $database(channels) $lowerchannel]]} {
-					eval [linsert $args 0 dict get $database(channels) $lowerchannel]
+				if {[dict exists $database(channels) $lowerchannel {*}$args]} {
+					dict get $database(channels) $lowerchannel {*}$args
 				} else {
 					return -code error "Unknown channel setting: $args"
 				}
@@ -191,7 +191,7 @@ proc ::tcldrop::channels::channels {args} {
 		dict for {key value} $::database(channels) { lappend list [dict get $value name] }
 		return $list
 	} else {
-		eval {Channels} $args
+		Channels {*}$args
 	}
 }
 
@@ -244,12 +244,7 @@ proc ::tcldrop::channels::setudef {type name {default {}}} {
 	variable UdefDefaults
 	set name [string tolower $name]
 	switch -- $type {
-		{flag} {
-			switch -- $default {
-				{1} - {+} - {y} - {Y} { set UdefDefaults($name) 1 }
-				{0} - {-} - {n} - {N} - {default} { set UdefDefaults($name) 0 }
-			}
-		}
+		{flag} { set UdefDefaults($name) [string is true -strict $default] }
 		{int} { if {$default != {}} { set UdefDefaults($name) $default } else { set UdefDefaults($name) 0 } }
 		{str} - {list} { set UdefDefaults($name) $default }
 		{default} { return -code error "Invalid udef type: $type" }
@@ -269,10 +264,7 @@ proc ::tcldrop::channels::renudef {type oldname newname} {
 	variable Udefs
 	if {[info exists Udefs($oldname)] && [string equal -nocase $Udefs($oldname) $type]} {
 		dict for {key value} $::database(channels) {
-			if {[dict exists $value $oldname]} {
-				# FixMe: The database module doesn't support this, yet:
-				database channels rename $key $oldname $key $newname
-			}
+			if {[dict exists $value $oldname]} { database channels rename $key $oldname $key $newname }
 		}
 		set Udefs($newname) $Udefs($oldname)
 		unset Udefs($oldname)
@@ -289,7 +281,7 @@ proc ::tcldrop::channels::renudef {type oldname newname} {
 #    Returns: nothing
 #    Module: channels
 # Proc written by Papillon@EFNet.
-# FixMe: This proc is untested and unmodified from what he sent me.
+# FixMe: This proc is untested and unmodified from what he sent me.  Looks broken. =P
 proc ::tcldrop::channels::deludef {type name} {
 	variable Udefs
 	if {[info exists Udefs($oldname)] && [string equal -nocase $Udefs($oldname) $type]} {
@@ -414,7 +406,7 @@ proc ::tcldrop::channels::ischanbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::ispermbei {bei mask {channel {-}}} {
-	if {[dict exists $::database(${bei}s)s [string tolower $channel] [string tolower $mask] lifetime]} {
+	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask] lifetime]} {
 		if {[dict get $::database(${bei}s) [string tolower $channel] [string tolower $mask] lifetime] == {0}} {
 			return 1
 		} else {

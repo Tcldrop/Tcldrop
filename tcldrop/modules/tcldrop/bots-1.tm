@@ -249,7 +249,7 @@ proc ::tcldrop::bots::bots {args} {
 			}
 			lsort -unique $bots
 		}
-		{default} { eval {Bots} $args }
+		{default} { Bots {*}$args }
 	}
 }
 

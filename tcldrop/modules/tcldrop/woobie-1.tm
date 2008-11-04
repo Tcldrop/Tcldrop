@@ -59,7 +59,7 @@ namespace eval ::tcldrop::woobie {
 	# Set the unknown command to be unqualified (default is ::unknown):
 	namespace unknown unknown
 	# Set the ::modules($name) variable so that information on this module will be known:
-	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace $namespace]
+	set ::modules($name) [dict create name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace $namespace]
 	# This sets the version variable to the same as the version in the filename (This is necessary for package require on Tcl Modules to work):
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	# This provides the module so that [package require] on it will work:

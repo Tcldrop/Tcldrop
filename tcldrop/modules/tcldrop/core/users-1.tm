@@ -152,14 +152,14 @@ proc ::tcldrop::core::users::getuser {handle args} {
 		switch -- [string tolower [lindex $args 0]] {
 			{xtra} - {flags} - {console} - {hosts} - {pass} - {comment} {
 				# These fields are special, because Eggdrop doesn't return an error if you try to get a non-existant one.
-				if {[catch { eval [linsert [string tolower $args] 0 dict get $::database(users) $lowerhandle] } return ]} {
+				if {[catch { dict get $::database(users) $lowerhandle {*}[string tolower $args] } return ]} {
 					return {}
 				} else {
 					return $return
 				}
 			}
 			{default} {
-				if {[catch { eval [linsert [string tolower $args] 0 dict get $::database(users) $lowerhandle] } return]} {
+				if {[catch { dict get $::database(users) $lowerhandle {*}[string tolower $args] } return]} {
 					return -code error "No such info type: $args"
 				} else {
 					return $return
@@ -286,7 +286,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			} else {
 				# Set $type to $setting:
 				if {[llength $args]} {
-					eval [linsert $args 0 database users set $lowerhandle $type [string tolower $setting]]
+					::tcldrop::core::database::Database users set $lowerhandle $type [string tolower $setting] $args
 				} else {
 					database users set $lowerhandle $type $setting
 				}
