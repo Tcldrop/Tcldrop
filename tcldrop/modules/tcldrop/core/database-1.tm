@@ -74,20 +74,12 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 		set arguments [$proc $database $command $arguments [array get options]]
 		# Note: This is sensitive to $proc returning -code "return" and "break" and "continue" and "error".  ;)
 	}
-	# I realize making heavy use of eval like this slows things down, but I don't see any other way..
 	switch -- $command {
 		{set} {
 			# Description: This sets or replaces the value of a key.
 			# Usage: database dbName set key ?key ...? value
 			# Returns: Whatever dict returns.
-			foreach key [lrange $arguments 0 end-1] {
-				lappend keys $key
-				# This creates all the keys leading up to the value.
-				if {![dict exists $::database($database) $key]} {
-					eval {dict} {$command} {::database($database)} $keys {[dict create]}
-				}
-			}
-			eval [linsert $arguments 0 dict $command ::database($database)]
+			dict set ::database($database) {*}$arguments
 			calldatabase $database $command $arguments [array get options]
 			lindex $arguments end
 		}
@@ -95,7 +87,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This unsets a key (and all it's sub-keys).
 			# Usage: database dbName unset key ?key ...?
 			# Returns: Whatever dict returns.
-			if {![set error [catch { eval [linsert $arguments 0 dict $command ::database($database)] } return]]} {
+			if {![set error [catch { dict $command ::database($database) {*}$arguments] } return]]} {
 				calldatabase $database $command $arguments [array get options]
 			}
 			return -code $error $return
@@ -104,9 +96,9 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This lappends/appends to the value of a key.
 			# Usage: database dbName lappend/append key ?key ...? value
 			# Returns: Whatever dict returns.
-			# Note: lappend and append in the current implementation of [dict] doesn't support (l)append'ing to a value located in a sub-dictionary.  (May 2004)
-			if {[catch { set value [eval [linsert [lrange $arguments 0 end-1] 0 dict get $::database($database)]] }]} { set value {} }
-			set error [catch { eval {dict} {set} {::database($database)} [lrange $arguments 0 end-1] {[$command value [lindex $arguments end]]} } return]
+			# Note: lappend and append in the current implementation of [dict] doesn't support (l)append'ing to a value located in a sub-dictionary.  (November 2008)
+			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-1]] }]} { set value {} }
+			set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-1] [$command value [lindex $arguments end]] } return]
 			if {!$error} { calldatabase $database $command $arguments [array get options] }
 			return -code $error $return
 		}
@@ -115,8 +107,8 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName lreplace key ?key ...? first last value
 			# Returns: Whatever dict returns.
 			# Note: There is no lreplace in the current implementation of [dict].  (May 2004)
-			if {[catch { set value [eval [linsert [lrange $arguments 0 end-3] 0 dict get $::database($database)]] }]} { set value {} }
-			set error [catch { eval {dict} {set} {::database($database)} [lrange $arguments 0 end-3] {[$command $value [lindex $arguments end-2] [lindex $arguments end-1] [lindex $arguments end]]} } return]
+			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-3]] }]} { set value {} }
+			set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-3] [$command $value [lindex $arguments end-2] [lindex $arguments end-1] [lindex $arguments end]] } return]
 			if {!$error} { calldatabase $database $command $arguments [array get options] }
 			return -code $error $return
 		}
@@ -125,9 +117,10 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName lremove key ?key ...? first last
 			# Returns: Whatever dict returns.
 			# Note: There is no lremove in the current implementation of [dict].  (May 2004)
-			if {[catch { set value [eval [linsert [lrange $arguments 0 end-2] 0 dict get $::database($database)]] }]} { set value {} }
-			set error [catch { eval {dict} {set} {::database($database)} [lrange $arguments 0 end-2] {[lreplace $value [lindex $arguments end-1] [lindex $arguments end]]} } return]
-			if {!$error} { calldatabase $database $command $arguments [array get options] }
+			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-2]] }]} { set value {} }
+			if {![set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-2] [lreplace $value [lindex $arguments end-1] [lindex $arguments end]] } return]]} {
+				calldatabase $database $command $arguments [array get options]
+			}
 			return -code $error $return
 		}
 		{incr} - {increment} {
@@ -135,10 +128,9 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName incr key ?key ...? increment
 			#        The amount to increment MUST be specified!
 			# Returns: The new value after the increment.
-			# Note: incr in the current implementation of [dict] doesn't support incr'ing a value located in a sub-dictionary.  (May 2004)
-			if {[catch { set value [eval [linsert [lrange $arguments 0 end-1] 0 dict get $::database($database)]] }]} { set value {0} }
-			set error [catch { eval {dict} {set} {::database($database)} [lrange $arguments 0 end-1] {[set incr [$command value [lindex $arguments end]]} } return]
-			if {!$error} {
+			# Note: incr in the current implementation of [dict] doesn't support incr'ing a value located in a sub-dictionary.  (November 2008)
+			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-1]] }]} { set value {0} }
+			if {![set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-1] [set incr [$command value [lindex $arguments end]]] } return]]} {
 				calldatabase $database $command $arguments [array get options]
 				return $incr
 			} else {
@@ -152,9 +144,10 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Note: There's no ability to rename a key in the current implementation of [dict].. Is there?  (May 2004)
 			# FixMe: This needs to be changed so that keys in sub-dictionaries can be renamed.
 			if {![dict exists $::database($database) [lindex $arguments 1]]} {
-				eval [linsert [dict get $::database(users) [lindex $arguments 0]] 0 dict set ::database($database) [lindex $arguments 1]]
-				set error [catch { dict unset ::database($database) [lindex $arguments 0] } return]
-				if {!$error} { calldatabase $database $command $arguments [array get options] }
+				dict set ::database($database) [lindex $arguments 1] {*}[dict get $::database($database) [lindex $arguments 0]]
+				if {![set error [catch { dict unset ::database($database) {*}[lindex $arguments 0] } return]]} {
+					calldatabase $database $command $arguments [array get options]
+				}
 				return -code $error $return
 			} else {
 				return -code error "database ${command}: A key named \"[lindex $arguments 1]\" already exists."
@@ -164,8 +157,9 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This creates a new database using the key/value pairs in $arguments.
 			# Usage: database dbName create ?key value ...?
 			# Returns: Whatever dict returns.
-			set error [catch { set ::database($database) [eval [linsert $arguments 0 dict $command]] } return]
-			if {!$error} { calldatabase $database $command $arguments [array get options] }
+			if {![set error [catch { set ::database($database) [dict create {*}$arguments] } return]]} {
+				calldatabase $database $command $arguments [array get options]
+			}
 			return -code $error $return
 		}
 		{init} - {initialize} {
@@ -174,12 +168,14 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName init ?key value ...?
 			# Returns: Whatever dict returns.
 			if {![info exists ::database($database)]} {
-				set error [catch { set ::database($database) [eval [linsert $arguments 0 dict create]] } return]
-				if {!$error} { calldatabase $database create $arguments [array get options] }
+				if {![set error [catch { set ::database($database) [dict create {*}$arguments] } return]]} {
+					calldatabase $database create $arguments [array get options]
+				}
 				return -code $error $return
 			} elseif {$arguments ne {}} {
-				set error [catch { eval [linsert $arguments 0 dict set ::database($database)] } return]
-				if {!$error} { calldatabase $database init $arguments [array get options] }
+				if {![set error [catch { dict set ::database($database) {*}$arguments } return]]} {
+					calldatabase $database init $arguments [array get options]
+				}
 				return -code $error $return
 			}
 		}
@@ -187,31 +183,31 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: These commands work much the same as in dict's.
 			# Usage: database dbName exists/get/keys/values/size/info/remove/replace ?arguments?
 			# Returns: Whatever dict returns.
-			eval [linsert $arguments 0 dict $command $::database($database)]
+			dict $command $::database($database) {*}$arguments
 		}
 		{for} - {foreach} {
 			# Description: This works basically like the dict "for" command.
 			# Usage: database dbName for {keyVar valueVar} body
 			# Returns: Whatever dict returns.
-			eval [linsert [lrange $arguments 1 end] 0 dict for [lindex $arguments 0] $::database($database)]
+			dict for [lindex $arguments 0] $::database($database) [lrange $arguments 1 end]
 		}
 		{filter} {
 			# Description: This works basically like the dict "filter" command.
 			# Usage: database dbName filter key/value/script ?args?
 			# Returns: Whatever dict returns.
-			eval [linsert [lrange $arguments 1 end] 0 dict $command $::database($database) [lindex $arguments 0]]
+			dict filter $::database($database) [lindex $arguments 0] {*}[lrange $arguments 1 end]
 		}
 		{length} {
 			# Description: This returns the string length of a value.
 			# Usage: database dbName length key ?key ...?
 			# Returns: The string length of a value.
-			string length [eval [linsert $arguments 0 dict get $::database($database)]]
+			string length [dict get $::database($database) {*}$arguments]
 		}
 		{llength} {
 			# Description: This returns the llength of a value.
 			# Usage: database dbName llength key ?key ...?
 			# Returns: The llength of a value.
-			llength [eval [linsert $arguments 0 dict get $::database($database)]]
+			llength [dict get $::database($database) {*}$arguments]
 		}
 		{options} {
 			# Description: This is to set options used when saving and loading a database from a file.
