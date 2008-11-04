@@ -62,8 +62,8 @@ proc ::tcldrop::core::database::database {database command args} { Database $dat
 proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 	if {[set pos [lsearch -exact $arguments {--}]] == -1} {
 		# If they didn't use -- then we assume there were no options.
-		array set options {}
-	} elseif {[catch { array set options [lrange $arguments 0 [incr pos -1]] } error]} {
+		set options [dict create]
+	} elseif {[catch { set options [dict create {*}[lrange $arguments 0 [incr pos -1]]] } error]} {
 		return -code error "database options: $error"
 	} else {
 		set arguments [lrange $arguments [incr pos 2] end]
@@ -71,7 +71,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 	foreach {type flags mask proc} [bindlist filter-database $database] {
 		countbind $type $mask $proc
 		# This calls all of the database binds (which act as filters on $arguments).
-		set arguments [$proc $database $command $arguments [array get options]]
+		set arguments [$proc $database $command $arguments $options]
 		# Note: This is sensitive to $proc returning -code "return" and "break" and "continue" and "error".  ;)
 	}
 	switch -- $command {
@@ -80,7 +80,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName set key ?key ...? value
 			# Returns: Whatever dict returns.
 			dict set ::database($database) {*}$arguments
-			calldatabase $database $command $arguments [array get options]
+			calldatabase $database $command $arguments $options
 			lindex $arguments end
 		}
 		{unset} {
@@ -88,7 +88,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName unset key ?key ...?
 			# Returns: Whatever dict returns.
 			if {![set error [catch { dict $command ::database($database) {*}$arguments] } return]]} {
-				calldatabase $database $command $arguments [array get options]
+				calldatabase $database $command $arguments $options
 			}
 			return -code $error $return
 		}
@@ -99,7 +99,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Note: lappend and append in the current implementation of [dict] doesn't support (l)append'ing to a value located in a sub-dictionary.  (November 2008)
 			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-1]] }]} { set value {} }
 			set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-1] [$command value [lindex $arguments end]] } return]
-			if {!$error} { calldatabase $database $command $arguments [array get options] }
+			if {!$error} { calldatabase $database $command $arguments $options }
 			return -code $error $return
 		}
 		{lreplace} {
@@ -109,7 +109,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Note: There is no lreplace in the current implementation of [dict].  (May 2004)
 			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-3]] }]} { set value {} }
 			set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-3] [$command $value [lindex $arguments end-2] [lindex $arguments end-1] [lindex $arguments end]] } return]
-			if {!$error} { calldatabase $database $command $arguments [array get options] }
+			if {!$error} { calldatabase $database $command $arguments $options }
 			return -code $error $return
 		}
 		{lremove} {
@@ -119,7 +119,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Note: There is no lremove in the current implementation of [dict].  (May 2004)
 			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-2]] }]} { set value {} }
 			if {![set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-2] [lreplace $value [lindex $arguments end-1] [lindex $arguments end]] } return]]} {
-				calldatabase $database $command $arguments [array get options]
+				calldatabase $database $command $arguments $options
 			}
 			return -code $error $return
 		}
@@ -131,7 +131,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Note: incr in the current implementation of [dict] doesn't support incr'ing a value located in a sub-dictionary.  (November 2008)
 			if {[catch { set value [dict get $::database($database) {*}[lrange $arguments 0 end-1]] }]} { set value {0} }
 			if {![set error [catch { dict set ::database($database) {*}[lrange $arguments 0 end-1] [set incr [$command value [lindex $arguments end]]] } return]]} {
-				calldatabase $database $command $arguments [array get options]
+				calldatabase $database $command $arguments $options
 				return $incr
 			} else {
 				return -code $error $return
@@ -146,7 +146,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			if {![dict exists $::database($database) [lindex $arguments 1]]} {
 				dict set ::database($database) [lindex $arguments 1] {*}[dict get $::database($database) [lindex $arguments 0]]
 				if {![set error [catch { dict unset ::database($database) {*}[lindex $arguments 0] } return]]} {
-					calldatabase $database $command $arguments [array get options]
+					calldatabase $database $command $arguments $options
 				}
 				return -code $error $return
 			} else {
@@ -158,7 +158,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Usage: database dbName create ?key value ...?
 			# Returns: Whatever dict returns.
 			if {![set error [catch { set ::database($database) [dict create {*}$arguments] } return]]} {
-				calldatabase $database $command $arguments [array get options]
+				calldatabase $database $command $arguments $options
 			}
 			return -code $error $return
 		}
@@ -169,12 +169,12 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Returns: Whatever dict returns.
 			if {![info exists ::database($database)]} {
 				if {![set error [catch { set ::database($database) [dict create {*}$arguments] } return]]} {
-					calldatabase $database create $arguments [array get options]
+					calldatabase $database create $arguments $options
 				}
 				return -code $error $return
 			} elseif {$arguments ne {}} {
 				if {![set error [catch { dict set ::database($database) {*}$arguments } return]]} {
-					calldatabase $database init $arguments [array get options]
+					calldatabase $database init $arguments $options
 				}
 				return -code $error $return
 			}
