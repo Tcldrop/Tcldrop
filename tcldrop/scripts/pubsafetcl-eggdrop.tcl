@@ -110,6 +110,8 @@ namespace eval pubsafetcl::eggdrop {
 	::pubsafetcl::create safetcl -timelimit $timeLimit
 	package provide pubsafetcl::eggdrop 2.2.1
 
+	proc isbotnetnick {nick} { string equal -nocase $nick ${::botnet-nick} }
+
 	# This is used in places where we only get one line at a time, like on IRC or telnet.
 	# When it's complete, it will return the total stored code.
 	proc completeGet {{id {default}} {delete 1}} {
