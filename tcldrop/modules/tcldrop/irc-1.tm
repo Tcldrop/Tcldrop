@@ -253,7 +253,8 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 }
 
 proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
-	set ::channelnicks([string tolower $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
+	channickinfo $channel $nick idletime [clock seconds] jointime 0 nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0
+	#set ::channelnicks([string tolower $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join] {
 		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
