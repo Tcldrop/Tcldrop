@@ -70,7 +70,7 @@ proc ::tcldrop::console::console {idx args} {
 		if {![validchan $whatever]} {
 			switch -- [string index $whatever 0] {
 				{ } {}
-				{#} - {&} - {!} - {@} - {$} - {%} - {^} { return -code error "Invalid channel: $whatever" }
+				{#} - {&} - {!} - {@} - {$} - {%} - {^} - {[} - {]} - {:} - "\"" - "\{" - "\}" { return -code error "Invalid channel/flag: $whatever" }
 				{default} {
 					# Assuming that we're dealing with levels.
 					set levels {}
@@ -83,7 +83,8 @@ proc ::tcldrop::console::console {idx args} {
 					setconsole $idx levels $levels
 				}
 			}
-		} elseif {$whatever == {*} || $whatever == {-} || [haschanrec [idx2hand $idx] $whatever]} {
+		#} elseif {$whatever == {*} || $whatever == {-} || [validchan $whatever] || [haschanrec [idx2hand $idx] $whatever]} {
+		} else {
 			# Note: * means all channels, - means no channels.
 			# They want to change their IRC console channel..
 			setconsole $idx channel $whatever
@@ -97,16 +98,16 @@ proc ::tcldrop::console::console {idx args} {
 proc ::tcldrop::console::initconsole {idx} {
 	# Note: console-chan = partyline channel
 	#    console-channel = irc channel
-	array set console [list console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0]
-	catch { array set console [getuser [set handle [idx2hand $idx]] console] }
+	set console [dict create console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0]
+	catch { set console [dict merge $console [getuser [set handle [idx2hand $idx]] console]] }
 	set levels {}
-	foreach c [split $console(console-levels) {}] {
+	foreach c [split [dict get $console console-levels] {}] {
 		if {[info exists ::console-levels($c)] && [matchattr $handle [set ::console-levels($c)]]} {
 			append levels $c
 		}
 	}
-	set console(console-levels) $levels
-	setidxinfo $idx [array get console]
+	dict set console console-levels  $levels
+	setidxinfo $idx $console
 }
 
 #  getchan <idx>
@@ -182,7 +183,7 @@ proc ::tcldrop::console::LOAD {module} {
 	setdefault force-channel 0
 	variable Levels
 	# Define the log levels, and the user-flags that are required to see logs sent to that level.
-	# if new log levls are added, they need to be added to the .console dcc command as well.
+	# if new log levels are added, they need to be added to the .console dcc command as well.
 	array set Levels {
 		c n
 		o mnt

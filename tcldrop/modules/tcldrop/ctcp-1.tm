@@ -95,10 +95,10 @@ proc ::tcldrop::ctcp::ctcp_VERSION {nick uhost handle dest keyword text} { ctcp_
 proc ::tcldrop::ctcp::ctcp_FINGER {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text finger }
 proc ::tcldrop::ctcp::ctcp_USERINFO {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text userinfo }
 
-proc ::tcldrop::ctcp::ctcp_CHAT {nick uhost handle dest keywork text} {
-	# FixMe: Add support for DCC CHAT here.
-	putlog "ctcp CHAT: FixMe: Need support for DCC CHAT"
-}
+#proc ::tcldrop::ctcp::ctcp_CHAT {nick uhost handle dest keywork text} {
+#	# FixMe: Add support for DCC CHAT here.
+#	putlog "ctcp CHAT: FixMe: Need support for DCC CHAT"
+#}
 
 proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} { puthelp "NOTICE $nick :\001TIME [ctime [clock seconds]]\001" }
 
@@ -120,7 +120,7 @@ proc ::tcldrop::ctcp::LOAD {module} {
 	# FixMe: Add support for these settings:
 	setdefault answer-ctcp 3
 	setdefault global-flood-ctcp 9:99
-	bind ctcp p CHAT ::tcldrop::ctcp::ctcp_CHAT -priority 10000
+	#bind ctcp p CHAT ::tcldrop::ctcp::ctcp_CHAT -priority 10000
 	bind ctcp - PING ::tcldrop::ctcp::ctcp_PING -priority 10000
 	bind ctcp - TIME ::tcldrop::ctcp::ctcp_TIME -priority 10000
 	bind ctcp - VERSION ::tcldrop::ctcp::ctcp_VERSION -priority 10000

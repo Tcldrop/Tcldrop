@@ -66,29 +66,30 @@ proc ::tcldrop::core::conn::myip {} { if {${::my-ip} ne {}} { ip2decimal ${::my-
 proc ::tcldrop::core::conn::traffic {{type {}} {direction {}} {bytes {0}}} {
 	variable Traffic
 	if {$type ne {}} {
-		if {[info exists Traffic($type)]} {
-			# Set the info array to the current counts.
-			array set info $Traffic($type)
-		} else {
+		if {![info exists Traffic($type)]} {
 			# Initialize the counts.
-			array set info [list total-in 0 total-out 0 daily-in 0 daily-out 0 restart [clock seconds]]
+			set Traffic($type) [dict create total-in 0 total-out 0 daily-in 0 daily-out 0 restart [clock seconds]]
 		}
 		# Increase the counters:
 		if {$bytes} {
-			incr info(total-$direction) $bytes
-			incr info(daily-$direction) $bytes
+			dict incr Traffic($type) total-$direction $bytes
+			dict incr Traffic($type) daily-$direction $bytes
 		}
 		# See if 24 hours have elapsed, and if it has then clear the daily counts.
 		# FixMe: Put this next line in a bind that executes only once a day:
-		if {[clock seconds] - $info(restart) > 86400} { array set info [list daily-in 0 daily-out 0 restart [clock seconds]] }
-		# Write the new counts back to the Traffic variable:
-		set Traffic($type) [array get info]
+		if {[clock seconds] - [dict get $Traffic($type) restart] > 86400} {
+			dict set Traffic($type) daily-in 0
+			dict set Traffic($type) daily-out 0
+			dict set Traffic($type) restat [clock seconds]
+		}
 		if {$direction ne {}} {
 			# Return either in or out for $type:
-			list $info(daily-$direction) $info(total-$direction)
+			list [dict get $Traffic($type) daily-$direction] [dict get $Traffic($type) total-$direction]
 		} else {
 			# Return both directions for $type:
-			list $info(daily-in) $info(total-in) $info(daily-out) $info(total-out)
+			dict with Traffic($type) {
+				return [list ${daily-in} ${total-in} ${daily-out} ${total-out}]
+			}
 		}
 	} else {
 		# Show them all the traffic stats.
@@ -134,7 +135,7 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		set options(-ssl) 1
 	}
 	# Note/FixMe: I don't know how SSL connections work, so I don't know what happens when you try to use SSL and proxies together. (I haven't tested it)
-	if {$options(-ssl)} { if {![catch { package require tls }]} { set options(-socket-command) [list ::tls::socket] } else { return -code error {SSL not supported, because the "tls" package is not installed.} } }
+	if {$options(-ssl)} { if {[info commands {::tls::socket}] ne {} || ![catch { package require tls }]} { set options(-socket-command) [list ::tls::socket] } else { return -code error {SSL not supported, because the "tls" package is not installed.} } }
 	# We have to pass $options(-proxychain) to the ::proxy::connect command, so make sure it's set to something useful:
 	if {$options(-proxychain) eq {}} { set options(-proxychain) "$options(-address):$options(-port)" }
 	# Prepend the $::proxy chain to the chain we already have:
@@ -425,21 +426,21 @@ proc ::tcldrop::core::conn::listen {port type args} {
 	}
 	switch -- [set type [string tolower $type]] {
 		{all} { return -code error {Tcldrop doesn't support "listen <port> all"; please use a separate port for bots and users.} }
-		{script} { array set options [concat [list traffictype unknown type $type ident 0 dns 0 ssl $ssl connect [lindex $args 0]] [lrange $args 1 end]] }
+		{script} { set options [dict create traffictype unknown type $type ident ${::ident-timeout} dns 0 ssl $ssl connect [lindex $args 0] {*}[lrange $args 1 end]] }
 		{off} { return 0 }
 		{default} {
 			# Support for types that modules may provide goes here.
 			variable ListenTypes
 			if {[info exists ListenTypes($type)]} {
 				if {${::my-ip} ne {}} { set myaddr ${::my-ip} } else { set myaddr ${::default-ip} }
-				array set options [concat [list traffictype unknown type $type ident 0 dns 0 ssl $ssl connect {} myaddr $myaddr] $ListenTypes($type) $args]
+				set options [dict create traffictype unknown type $type ident ${::ident-timeout} dns 0 ssl $ssl connect {} myaddr $myaddr {*}$ListenTypes($type) {*}$args]
 			} else {
 				return -code error "No such listen type: $type"
 			}
 		}
 	}
-	if {$options(ssl)} {
-		if {![catch { package require tls }]} {
+	if {[dict get $options ssl]} {
+		if {[info commands {::tls::socket}] ne {} || ![catch { package require tls }]} {
 			set socket {::tls::socket}
 		} else {
 			return -code error {SSL not supported, because the "tls" package is not installed.}
@@ -449,10 +450,10 @@ proc ::tcldrop::core::conn::listen {port type args} {
 	}
 	switch -- $myaddr {
 		{} - {*} - {0.0.0.0} - {-} - {INADDR_ANY} - {ANY} - {ALL} {
-			set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect [array get options]] $port } sock]
+			set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect $options] $port } sock]
 			set myaddr {0.0.0.0}
 		}
-		{default} { set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect [array get options]] -myaddr $myaddr $port } sock] }
+		{default} { set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect $options] -myaddr $myaddr $port } sock] }
 	}
 	if {!$fail} {
 		fconfigure $sock -buffering line -blocking 0
@@ -482,6 +483,7 @@ proc ::tcldrop::core::conn::Ident {idx options id status response} {
 		if {$status eq {ok}} {
 			setidxinfo $idx [list ident $response]
 		} else {
+			# Must be "-telnet" for Eggdrop compatibilty:
 			setidxinfo $idx [list ident -telnet]
 		}
 	}
@@ -686,13 +688,11 @@ proc ::tcldrop::core::conn::idxinfo {idx {info {}} {value {}}} {
 		switch -- $info {
 			{} { return $::idxlist($idx) }
 			{default} {
-				array set idxinfo $::idxlist($idx)
 				if {$value ne {}} {
-					set idxinfo($info) $value
-					set ::idxlist($idx) [array get idxinfo]
+					dict set ::idxlist($idx) $info $value
 					return $value
-				} elseif {[info exists idxinfo($info)]} {
-					return $idxinfo($info)
+				} elseif {[dict exists $::idxlist($idx) $info]} {
+					return [dict get $::idxlist($idx) $info]
 				} else {
 					return -code error "no such type: $info"
 				}
@@ -705,21 +705,21 @@ proc ::tcldrop::core::conn::idxinfo {idx {info {}} {value {}}} {
 
 # Adds to or replaces info about an existing idx:
 proc ::tcldrop::core::conn::setidxinfo {idx {info {}}} {
-	if {[info exists ::idxlist($idx)]} { array set idxinfo $::idxlist($idx) }
-	array set idxinfo $info
-	set ::idxlist($idx) [array get idxinfo]
+	if {[info exists ::idxlist($idx)]} {
+		set ::idxlist($idx) [dict merge $::idxlist($idx) $info]
+	} else {
+		set ::idxlist($idx) [dict create {*}$info]
+	}
 }
 
 # Companion to setidxinfo:
-proc ::tcldrop::core::conn::getidxinfo {idx} { if {[info exists ::idxlist($idx)]} { set ::idxlist($idx) } }
+proc ::tcldrop::core::conn::getidxinfo {idx} { if {[info exists ::idxlist($idx)]} { return $::idxlist($idx) } }
 
 # Deletes a piece of info about the idx (to save a tad of memory):
 proc ::tcldrop::core::conn::delidxinfo {idx info} {
 	if {[info exists ::idxlist($idx)]} {
-		array set idxinfo $::idxlist($idx)
-		if {[info exists $idxinfo($info)]} {
-			unset idxinfo($info)
-			set ::idxlist($idx) [array get idxinfo]
+		if {[dict exists $::idxlist($idx) $info]} {
+			dict unset ::idxlist($idx) $info
 			return 1
 		} else {
 			return 0

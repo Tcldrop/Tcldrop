@@ -86,19 +86,17 @@ proc ::tcldrop::party::dcc::CHAT {nick uhost handle dest key text} {
 }
 
 # Note: This proc is only used when people do a /ctcp <bot> CHAT
-proc ::tcldrop::party::dcc::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::dcc::Write -errors ::tcldrop::party::telnet::Error module party::dcc] }
+proc ::tcldrop::party::dcc::Connect {idx} { setidxinfo $idx [dict create -control ::tcldrop::party::telnet::Read -writable ::tcldrop::party::dcc::Write -errors ::tcldrop::party::telnet::Error module party::dcc] }
 
 # Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::party::telnet::Error proc.
 proc ::tcldrop::party::dcc::Error {idx {error {}}} { ::tcldrop::party::telnet::Error $idx $error }
 
 proc ::tcldrop::party::dcc::Write {idx} {
-	array set chatinfo $::idxlist($idx)
-	if {![info exists chatinfo(handle)] || $chatinfo(handle) == {*}} {
+	if {![dict exists $::idxlist($idx) handle] || [dict get $::idxlist($idx) handle] eq {*}} {
 		# Note: We share code with the telnetparty module.
 		::tcldrop::party::telnet::Write $idx
 	} else {
-		array set chatinfo [list state CHAT_PASS other pass timestamp [clock seconds] traffictype partyline]
-		set ::idxlist($idx) [array get chatinfo]
+		set ::idxlist($idx) [dict merge $::idxlist($idx) [dict create state CHAT_PASS other pass timestamp [clock seconds] traffictype partyline]]
 	}
 }
 

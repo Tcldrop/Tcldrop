@@ -154,7 +154,7 @@ proc ::tcldrop::core::know {what} {
 	if {![info complete $what]} {
 		return -code error "Incomplete command(s): $what"
 	} else {
-		proc ::unknown {args} "$what\n[info body ::unknown]"
+		proc unknown {args} "$what\n[info body unknown]"
 	}
 }
 # Command: v: info patchlevel
@@ -461,6 +461,7 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 	}
 }
 
+# FixMe: Finish writing this.
 proc ::tcldrop::core::LOG {levels channel text} {
 	variable Logfiles
 	foreach a [array names Logfiles $levels,[string tolower $channel]] {
@@ -510,7 +511,7 @@ proc ::tcldrop::core::putloglev {levels channel text} {
 		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
 			if {[catch { $proc $levels $channel $text } err]} {
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				catch { PutLogLev eo $channel "LOG ERROR $proc $levels $channel: $err\n$::errorInfo" }
+				catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel: $err\n$::errorInfo" }
 				# put*log errors are considered fatal errors, so we really should exit:
 				if {![catch { exit 1 }]} { update idletasks }
 				catch { ::tcldrop::core::Exit 1 }
@@ -591,7 +592,6 @@ proc ::tcldrop::core::mergeflags {flags1 flags2} { set add 1
 					if {![string match "*$f*" $flags2]} { append flags2 $f }
 				} else {
 					# Remove $f from $flags2 if it is there.
-					#while {[set place [string first $f $flags2]] != -1} { set flags2 [string replace $flags2 $place $place] }
 					set flags2 [string map [list $f {}] $flags2]
 				}
 			}
@@ -638,13 +638,12 @@ proc ::tcldrop::core::stripcodes {strip-flags string} {
 # -priority <1-99>    This defines the order of priority. (lower gets processed first)
 #                     Default is 50.  Priorities <0 and >100 are reserved for Tcldrop internal use.
 proc ::tcldrop::core::bind {type flags mask proc args} {
-	set options [dict create -priority 50 type $type flags $flags mask $mask proc $proc count 0]
-	catch { set options [dict merge $options $args] }
 	# Note/FixMe: Eggdrop checks to make sure $type is a valid bind type before accepting it, but currently I don't see why that's such a great idea.
 	switch -- $flags {
-		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { dict set options flags {+|+} }
-		{default} { if {![string match {*|*} $flags]} { dict set options flags "$flags|-" } }
+		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { set flags {+|+} }
+		{default} { if {![string match {*|*} $flags]} { set flags "$flags|-" } }
 	}
+	set options [dict create -priority 50 type $type flags $flags mask $mask proc $proc count 0 {*}$args]
 	set ::binds($type,[dict get $options -priority],$proc,$mask) $options
 	set mask
 }
@@ -715,26 +714,24 @@ proc ::tcldrop::core::TimerID {args} { variable TimerIDCount
 # Also, if the -repeat option was given to timer/utimer, then we start another timer for it.
 proc ::tcldrop::core::DoTimer {timerid} {
 	if {[info exists ::timers($timerid)]} {
-		array set timerinfo $::timers($timerid)
-		foreach initcmd $timerinfo(initcommands) {
+		foreach initcmd [dict get $::timers($timerid) initcommands] {
 			if {[catch { uplevel #0 $initcmd } err]} {
 				putlog "Tcl error while running initcmd for '$timerid': $err"
 				puterrlog $::errorInfo
 			}
 		}
-		if {[catch { uplevel #0 $timerinfo(fullcommand) } err]} {
+		if {[catch { uplevel #0 [dict get $::timers($timerid) fullcommand] } err]} {
 			putlog "Tcl error in script for '$timerid':\n$err"
 			puterrlog $::errorInfo
 			killtimer $timerid
 		} else {
-			if {$timerinfo(repeat) == 0} {
+			if {[dict get $::timers($timerid) repeat] == 0} {
 				# It's not set to repeat, so remove the timers data:
 				killtimer $timerid
 			} else {
-				if {$timerinfo(repeat) > 0} { incr timerinfo(repeat) -1 }
-				set timerinfo(executetime) [expr {[clock seconds] + ($timerinfo(interval) / 1000)}]
-				set timerinfo(afterid) [after $timerinfo(interval) [list ::tcldrop::core::DoTimer $timerid]]
-				set ::timers($timerid) [array get timerinfo]
+				if {[dict get $::timers($timerid) repeat] > 0} { dict incr ::timers($timerid) repeat -1 }
+				dict set ::timers($timerid) executetime [expr {[clock seconds] + ([dict get $::timers($timerid) interval] / 1000)}]
+				dict set ::timers($timerid) afterid [after [dict get $::timers($timerid) interval] [list ::tcldrop::core::DoTimer $timerid]]
 			}
 		}
 	}

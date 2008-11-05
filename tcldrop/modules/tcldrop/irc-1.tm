@@ -280,10 +280,12 @@ proc ::tcldrop::irc::callmode {nick uhost handle channel mode {victim {}}} {
 }
 
 proc ::tcldrop::irc::calltopc {nick uhost handle channel topic} {
-	set element [string tolower $channel]
-	if {[info exists ::channels($element)]} { array set chaninfo $::channels($element) }
-	array set chaninfo [list topic $topic topic-creator $nick!$uhost topic-created [clock seconds]]
-	set ::channels($element) [array get chaninfo]
+	set chaninfo [dict create topic $topic topic-creator $nick!$uhost topic-created [clock seconds]]
+	if {[info exists ::channels([set element [string tolower $channel]])]} {
+		set ::channels($element) [dict merge $::channels($element) $chaninfo]
+	} else {
+		set ::channels($element) $chaninfo
+	}
 	foreach {type flags mask proc} [bindlist topc] {
 		if {[string match -nocase $mask "$channel $topic"]} {
 			if {[catch { $proc $nick $uhost $handle $channel $topic } err]} {
