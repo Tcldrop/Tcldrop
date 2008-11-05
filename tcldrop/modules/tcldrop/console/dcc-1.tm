@@ -104,14 +104,14 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 			6 { lappend ConsoleModes {level 6} }
 			7 { lappend ConsoleModes {level 7} }
 			8 { lappend ConsoleModes {level 8} }
-			default { putdebuglog "Error in ::tcldrop::console::dcc::CONSOLE\; Unhandled console mode: $level" }
+			default { lappend ConsoleModes "$level (custom flag)" }
 		}
 	}
 	if {$text eq {}} {
-		putdcc $idx "Your console is $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {,}])"
+		putdcc $idx "Your console is $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {, }])"
 		return 0
 	} else {
-		putdcc $idx "Set your console to $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {,}])"
+		putdcc $idx "Set your console to $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {, }])"
 		return 0
 	}
 }

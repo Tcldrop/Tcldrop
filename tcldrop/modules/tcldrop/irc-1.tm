@@ -901,7 +901,7 @@ proc ::tcldrop::irc::352 {from key arg} {
 			{default} { if {[string first $f $::opchars] != -1} { set op 1 } }
 		}
 	}
-	channickinfo $channel $nick handle $handle idletime [clock seconds] jointime [clock seconds] nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
+	channickinfo $channel $nick handle $handle idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
 	return 0
 }
 

@@ -483,7 +483,7 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 	}
 	set topic [topic $chan]
 	set chanlist [chanlist $chan]
-	# FixMe: If handlen or nicklen are too long, truncate them
+	# FixMe: If handlen or nicklen are too long, truncate them. If they're too short, assume a length of 9
 	set format "%-[expr {$nicklen + 1}]s %-[expr {$handlen + 1}]s %-4s %-1.1s%-5s %s"
 	
 	putdcc $idx "Channel ${chan}, [llength $chanlist] members, mode [getchanmode $chan]"
@@ -492,12 +492,11 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 	} else {
 		putdcc $idx "Channel topic not set"
 	}
-	# FixMe: Add join time, idle time
+	# FixMe: Add netsplit info
 	putdcc $idx {(n = owner, m = master, o = op, d = deop, b = bot)}
 	putdcc $idx [format $format NICKNAME HANDLE JOIN {} IDLE USER@HOST]
 	foreach nick $chanlist {
 		# find nick prefix
-		set nickprefix {}
 		if {[isop $nick $chan]} {
 			set nickprefix {@}
 		} elseif {[ishalfop $nick $chan]} {
@@ -515,6 +514,17 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 		}
 		# find handle
 		set nickhand [nick2hand $nick $chan]
+		# find join time
+		set Joined [expr {[clock seconds] - [getchanjoin $nick $chan]}]
+		if {$Joined > 0} {
+			if {$Joined > 86400} {
+				set JoinTime [strftime {%d%b} $Joined]
+			} else {
+				set JoinTime [strftime {%H:%M} $Joined]
+			}
+		} else {
+			set JoinTime "---"
+		}
 		# determine status char to use
 		if {[matchattr $nickhand b] && [matchattr $nickhand o|o]} {
 			set atrflag {B}
@@ -583,8 +593,19 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 		} else {
 			set atrflag { }
 		}
+		# find idle time
+		set Idle [expr {[clock seconds] - [getchanidle $nick $chan]}]
+		if {$Idle > 86400} {
+			set IdleTime [format {%2lud} [expr {$Idle / 86400}]]
+		} elseif {$Idle > 3600} {
+			set IdleTime [format {%2luh} [expr {$Idle / 3600}]]
+		} elseif {$Idle > 180} {
+			set IdleTime [format {%2lum} [expr {$Idle / 60}]]
+		} else {
+			set IdleTime "   "
+		}
 		# output
-		putdcc $idx [format $format ${nickprefix}${nick} $nickhand "---" $atrflag "" $uhost]
+		putdcc $idx [format $format ${nickprefix}${nick} $nickhand $JoinTime $atrflag $IdleTime $uhost]
 	}
 	putdcc $idx "End of channel info."
 	return 0
