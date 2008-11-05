@@ -484,7 +484,7 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 	set topic [topic $chan]
 	set chanlist [chanlist $chan]
 	# FixMe: If handlen or nicklen are too long, truncate them. If they're too short, assume a length of 9
-	set format "%-[expr {$nicklen + 1}]s %-[expr {$handlen + 1}]s %-4s %-1.1s%-5s %s"
+	set format "%-[expr {$nicklen + 1}]s %-[expr {$handlen + 1}]s %-5s %-1s %-5s %s"
 	
 	putdcc $idx "Channel ${chan}, [llength $chanlist] members, mode [getchanmode $chan]"
 	if {$topic ne {}} {
