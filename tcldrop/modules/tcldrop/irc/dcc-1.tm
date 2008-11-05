@@ -515,8 +515,8 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 		# find handle
 		set nickhand [nick2hand $nick $chan]
 		# find join time
-		set Joined [expr {[clock seconds] - [getchanjoin $nick $chan]}]
-		if {$Joined > 0} {
+		set Joined [expr {[clock seconds] - [set ChanJoin [getchanjoin $nick $chan]]}]
+		if {$ChanJoin > 0} {
 			if {$Joined > 86400} {
 				set JoinTime [strftime {%d%b} $Joined]
 			} else {
@@ -594,8 +594,10 @@ proc ::tcldrop::irc::dcc::CHANNEL {handle idx text} {
 			set atrflag { }
 		}
 		# find idle time
-		set Idle [expr {[clock seconds] - [getchanidle $nick $chan]}]
-		if {$Idle > 86400} {
+		set Idle [expr {[clock seconds] - [set ChanIdle [getchanidle $nick $chan]]}]
+		if {$ChanIdle == 0} {
+			set IdleTime "   "
+		} elseif {$Idle > 86400} {
 			set IdleTime [format {%2lud} [expr {$Idle / 86400}]]
 		} elseif {$Idle > 3600} {
 			set IdleTime [format {%2luh} [expr {$Idle / 3600}]]
