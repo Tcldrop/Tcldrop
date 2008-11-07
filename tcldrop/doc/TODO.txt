@@ -1,4 +1,37 @@
-Right now I'm just keeping notes on where to find the packages I'll need later.
+TODO --
+
+Listed in order of priority:
+
+* Eggdrop botnet support.
+
+* partyline support.
+
+* file sharing support (user/channel/etc.)
+
+* Remove support for Eggdrop's .help files.
+  (Find some other way of displaying help.)
+
+* More DCC commands.
+
+* MSG commands.
+
+* IRC channel enforcements (+bitch / +autoop / +autovoice / etc.)
+
+* filesys module (needs major work or a rewrite).
+
+* notes module (needs work or a rewrite).
+
+
+--
+
+These are arrays that _might_ should be converted into dicts,
+please don't write any more code that uses them directly
+until they're removed from this list:
+
+help-files
+party_users
+
+--
 
 Provide SSL support, using TLS:
 http://SF.Net/projects/tls
@@ -20,16 +53,11 @@ http://9MM.Com/~ogl/tclyahoo/
 http://www.xdobry.de/mysqltcl/
 
 http://www.schnoggo.com/figlet.html
+http://www.network-science.de/ascii/
 
 http://code.google.com/p/tclsysdns/
 
 X-Chat Tcl plugin commands:
 http://www.scriptkitties.com/tclplugin/tclplugin.shtml
 
-These are arrays that _might_ should be converted into dicts,
-please don't write any more code that uses them directly
-until they're removed from this list:
-
-modules
-help-files
-party_users
+--
