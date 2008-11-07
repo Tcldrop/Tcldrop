@@ -299,7 +299,7 @@ proc ::tcldrop::core::dcc::SET {handle idx text} {
 proc ::tcldrop::core::dcc::HELP {handle idx text} {
 	putcmdlog "#$handle# help $text"
 	if {$text eq {}} { set text {help} }
-	foreach {f l} [help dcc $text] { if {$f eq {-} || [matchattr $handle $f]} { putdcc $idx $l } }
+	foreach {f l} [help dcc $text] { if {$f eq {-} || [matchattr $handle $f]} { putdcc $idx $l -subst 1 } }
 	return 0
 }
 
