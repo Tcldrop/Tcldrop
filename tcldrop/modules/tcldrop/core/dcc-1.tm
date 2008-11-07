@@ -73,12 +73,16 @@ namespace eval ::tcldrop::core::dcc {
 proc ::tcldrop::core::dcc::putdcc {idx text args} {
 	if {[info exists ::idxlist($idx)]} {
 		# FixMe: This should support all the %-variables listed in doc/text-substitutions.txt
+		# Unhandled: %E, %U, flags ie %{-} or %{n}, %{cols=N}, %{cols=N/W}, %{end}, %{center}
 		array set idxinfo {handle *}
 		array set idxinfo $::idxlist($idx)
 		array set options [list -subst 0 -substmap [list]]
 		array set options $args
 		if {$options(-subst)} {
 			array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) version $::tcldrop(version)"]
+			array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
+			# FixMe: These should be handled differently for telnet
+			array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
 			array set map $options(-substmap)
 			set text [string map [array get map] $text]
 		}
