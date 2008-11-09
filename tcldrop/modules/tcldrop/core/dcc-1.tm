@@ -79,7 +79,7 @@ proc ::tcldrop::core::dcc::putdcc {idx text args} {
 		array set options [list -subst 0 -substmap [list]]
 		array set options $args
 		if {$options(-subst)} {
-			array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) version $::tcldrop(version)" {%U} "${::tcl_platform(os)} ${tcl_platform(osVersion)}"]
+			array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) version $::tcldrop(version)" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
 			array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
 			# FixMe: These should be handled differently for telnet
 			array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
