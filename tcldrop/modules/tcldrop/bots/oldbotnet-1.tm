@@ -44,7 +44,7 @@ namespace eval ::tcldrop::bots::oldbotnet {
 	namespace unknown unknown
 	namespace path [list ::tcldrop::bots ::tcldrop]
 	variable script [info script]
-	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
+	set ::modules($name) [dict create name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	if {![info exists ::tcldrop]} { return }
@@ -53,14 +53,14 @@ namespace eval ::tcldrop::bots::oldbotnet {
 # This is for INCOMING bot connections only:
 proc ::tcldrop::bots::oldbotnet::Connect {idx} {
 	putloglev d * "in oldbotnet::Connect $idx"
-	setidxinfo $idx [list -control ::tcldrop::bots::oldbotnet::Read -writable ::tcldrop::bots::oldbotnet::Write_IN module oldbotnet state BOT_IN other {b-in  } timestamp [unixtime] traffictype botnet]
+	setidxinfo $idx [dict create -control ::tcldrop::bots::oldbotnet::Read -writable ::tcldrop::bots::oldbotnet::Write_IN module oldbotnet state BOT_IN other {b-in  } timestamp [unixtime] traffictype botnet]
 }
 
 # This is for INCOMING bot connections only:
 proc ::tcldrop::bots::oldbotnet::Write_IN {idx {line {}}} {
 	putloglev d * "in oldbotnet::Write_IN $idx $line"
 	putidx $idx {Nickname.}
-	setidxinfo $idx [list state BOT_ID other {b-id  } traffictype {botnet} timestamp [clock seconds] direction {in} handlen 9 numversion 0]
+	setidxinfo $idx [dict create state BOT_ID other {b-id  } traffictype {botnet} timestamp [clock seconds] direction {in} handlen 9 numversion 0]
 }
 
 proc ::tcldrop::bots::oldbotnet::Errors {idx error} {
@@ -71,7 +71,7 @@ proc ::tcldrop::bots::oldbotnet::Errors {idx error} {
 # This is for OUTGOING bot connections only:
 proc ::tcldrop::bots::oldbotnet::Write_OUT {idx} {
 	putlog "Got Write"
-	setidxinfo $idx [list state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
+	setidxinfo $idx [dict create state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
 }
 
 # Note: This is the OLD botnet protocol (it uses full names for things like "zapf" where the new protocol uses only "z", there's some other minor differences as well)

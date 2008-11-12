@@ -1583,6 +1583,7 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 				}
 			}
 			{sigint} {
+				# This is generally a CTRL+C.
 				if {[info exists ::die-on-sigint] && ${::die-on-sigint}} {
 					shutdown {Caught Signal: SIGINT}
 					variable Signal {SIGINT}
@@ -1636,11 +1637,16 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
-	global restart tcldrop env tcl_interactive
+	global restart tcldrop env tcl_interactive tcl_precision
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
 	if {![info exists restart]} {
-		## Set the highest precision that the system supports:
-		#while {$::tcl_precision < 15 && ![catch { incr ::tcl_precision }]} {}
+		# This works around a bug in Tcl v8.5+ that gives the wrong results:
+		if {[expr {2.55 + 0.9}] != {3.45}} {
+			# First set it as high as is allowed by Tcl:
+			while {$tcl_precision < 15 && ![catch { incr tcl_precision }]} {}
+			# Now back down until it gives the right results:
+			while {$tcl_precision >= 3 && [expr {2.55 + 0.9}] != {3.45} && ![catch { incr tcl_precision -1 }]} {}
+		}
 		# Import the Tcldrop core commands to the ::tcldrop namespace:
 		namespace eval ::tcldrop { namespace import -force {::tcldrop::core::*} }
 		namespace eval :: {

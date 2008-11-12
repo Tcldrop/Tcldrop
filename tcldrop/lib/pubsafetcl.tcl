@@ -859,9 +859,9 @@ namespace eval pubsafetcl {
 					}
 				}
 				if {$error} {
-					interp eval $interp { return -code error {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead! } }
+					interp eval $interp { return -code error {The following commands have extra overhead in pubsafetcl that makes their times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead! } }
 				} elseif {$notice} {
-					interp eval $interp { puts NOTICE {The following commands have extra overhead in pubsafetcl that makes thier times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead!} }
+					interp eval $interp { puts NOTICE {The following commands have extra overhead in pubsafetcl that makes their times inaccurate: file, for, info, interp, namespace, proc, puts, rename, binary, string, time, while.  You should time these commands from your own tclsh instead!} }
 				}
 				eval [linsert $args 0 interp invokehidden $interp time]
 			}
