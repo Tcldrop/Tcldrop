@@ -221,6 +221,7 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 			# Reset the timeout to the starting amount..
 			if {[info exists Timeout($id)]} {
 				array set idinfo $Timeout($id)
+				array set idinfo $arg
 				after cancel $idinfo(afterid)
 				set idinfo(afterid) [after $idinfo(-timeout) $idinfo(timeout)]
 				set Timeout($id) [array get idinfo]
@@ -293,7 +294,7 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 			putloglev d * $error
 			# Tell the errors proc about the error, if they have one defined.
 			if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev e * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
-			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
+			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc (This is the Eggdrop way)..
 			if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev e * "Error in $idxinfo(-control): $error" }
 			Timeout cancel $idx
 			killidx $idx
