@@ -281,7 +281,7 @@ proc ::tcldrop::bots::link {viabot {bothandle {}} {type {}}} {
 		set viabot {}
 	}
 	if {[matchattr $bothandle b]} {
-		if {[set bottype [getuser $bothandle BOTTYPE]] == {}} { set bottype {oldbotnet} }
+		if {[set bottype [getuser $bothandle BOTTYPE]] == {}} { set bottype {eggdrop} }
 		variable BotTypes
 		if {[info exists BotTypes($bottype)]} {
 			array set typeinfo $BotTypes($bottype)
