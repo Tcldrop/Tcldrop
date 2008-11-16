@@ -34,7 +34,7 @@ namespace eval ::tcldrop::bots::eggdrop {
 	variable predepends {bots}
 	variable depends {bots core::conn core::users core}
 	variable author {Tcldrop-Dev}
-	variable description {Eggdrop botnet support.}
+	variable description {Eggdrop (v1.6) botnet support.}
 	variable rcsid {$Id$}
 	namespace export puteggdrop
 	variable commands [namespace export]
@@ -50,7 +50,7 @@ namespace eval ::tcldrop::bots::eggdrop {
 # This is for INCOMING bot connections only:
 proc ::tcldrop::bots::eggdrop::Connect {idx} {
 	putloglev d * "in eggdrop::Connect $idx"
-	setidxinfo $idx [dict create -control ::tcldrop::bots::eggdrop::Read -writable ::tcldrop::bots::eggdrop::Write_IN module eggdrop state BOT_IN other {b-in  } timestamp [unixtime] traffictype botnet]
+	setidxinfo $idx [dict create -control ::tcldrop::bots::eggdrop::Read -writable ::tcldrop::bots::eggdrop::Write_IN module eggdrop state BOT_IN other {b-in  } timestamp [clock seconds] traffictype botnet]
 }
 
 # This is for INCOMING bot connections only:
@@ -219,7 +219,8 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 
 proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	array set idxinfo $::idxlist($idx)
-	# We send 1029899 instead of $::numversion because we need to make it use the old (original) botnet protocol with us:
+	# No longer used (for "oldbotnet"): We send 1029899 instead of $::numversion because we need to make it use the old (original) botnet protocol with us.
+	# For Eggdrop v1.6 we send 1062099 instead of $::numversion to make the other end think it's talking to a Eggdrop v1.6 bot:
 	putidx $idx "*hello!\nversion 1029899 $idxinfo(handlen) tcldrop $::tcldrop(version) <${::network}>"
 	if {$idxinfo(direction) == {in} && [passwdok $idxinfo(handle) -]} {
 		# Tell them the password to use for future connections:

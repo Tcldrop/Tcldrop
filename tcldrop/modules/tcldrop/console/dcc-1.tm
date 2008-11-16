@@ -92,6 +92,7 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 			x { lappend ConsoleModes {files} }
 			s { lappend ConsoleModes {server} }
 			d { lappend ConsoleModes {debug} }
+			e { lappend ConsoleModes {errors} }
 			w { lappend ConsoleModes {wallops} }
 			v { lappend ConsoleModes {server output} }
 			t { lappend ConsoleModes {botnet traffic} }

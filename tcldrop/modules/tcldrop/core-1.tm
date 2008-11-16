@@ -1384,7 +1384,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 		proc ::tcldrop::core::DailyUpdates {minute hour day month year} { callevent daily-updates }
 		bind time - "* ${::daily-updates} * * *" ::tcldrop::core::DailyUpdates
 		# Start the one-minute loop needed by scripts that use "bind time":
-		afteridle [list timer 1 [list {::tcldrop::core::calltime}] -1]
+		afteridle timer 1 [list {::tcldrop::core::calltime}] -1
 	}
 	# Don't allow the core module to be unloaded:
 	proc ::tcldrop::core::UNLD {module} { return 1 }
@@ -1689,7 +1689,7 @@ proc ::tcldrop::core::start {} {
 		# Tell restart that it's the "start" (first time to start).
 		restart start
 		# init events are only called after a "start" is complete, and after we've hit the event-loop:
-		afteridle [list callevent init]
+		afteridle callevent init
 		if {$tcldrop(background-mode)} {
 			# Disable showing logs to the "screen":
 			unbind log - * ::tcldrop::PutLogLev
