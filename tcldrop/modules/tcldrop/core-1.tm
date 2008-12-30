@@ -445,13 +445,21 @@ proc ::tcldrop::core::langsection {args} { foreach a $args { addlangsection $arg
 proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 	variable Logfiles
 	if {$filename != {}} {
+		# See if we're already logging to this file:
+		foreach a [array names Logfiles *,*,$filename] {
+			dict set Logfiles($a) levels $levels
+			dict set Logfiles($a) channel $channel
+			return $filename
+		}
 		if {[array size Logfiles] >= ${::max-logs}} {
 			return -code error "Maximum number of logs are already open (${::max-logs})."
 		} else {
-			set Logfiles($levels,[string tolower $channel],$filename) [list levels $levels channel $channel filename $filename fileid [open $filename a]]
+			set Logfiles($levels,[string tolower $channel],$filename) [dict create levels $levels channel $channel filename $filename fileid [open $filename a]]
 			bind log $levels $channel ::tcldrop::core::LOG
+			return $filename
 		}
 	} else {
+		# Return a list of
 		lappend loglist
 		foreach a [array names Logfiles $levels,[string tolower $channel]] {
 			array set loginfo $Logfiles($a)
@@ -459,18 +467,19 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 		}
 		set loglist
 	}
+	# Returns: filename of logfile created, or, if no logfile is specified,
+	# a list of logfiles such as: {mco * eggdrop.log} {jp #lame lame.log}
 }
 
 # FixMe: Finish writing this.
 proc ::tcldrop::core::LOG {levels channel text} {
 	variable Logfiles
-	foreach a [array names Logfiles $levels,[string tolower $channel]] {
-		array set loginfo $Logfiles($a)
-		puts $loginfo($fileid) $text
-		if {!${::quick-logs}} { flush $loginfo($fileid) }
-		if {!${::keep-all-logs} && [expr { [file size $loginfo(filename)] / 1024 }] >= ${::max-logsize}} {
-			# FixMe
-		}
+	foreach a [array names Logfiles $levels,[string tolower $channel],*] {
+		puts [set fileid [dict get $Logfiles($a) fileid]] $text
+		if {!${::quick-logs}} { flush $fileid }
+#		if {!${::keep-all-logs} && [file size [dict get $Logfiles($a) filename]] / 1024 >= ${::max-logsize}} {
+#			# FixMe.
+#		}
 	}
 }
 

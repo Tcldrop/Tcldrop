@@ -523,7 +523,7 @@ proc ::tcldrop::server::isupport_get {key} { global isupport serveraddress
 	}
 }
 
-proc ::tcldrop::server::EVNT_exit {event} { if {[info exists ::die]} { putnow "QUIT :$::die" } else { nownow "QUIT :$event" } }
+proc ::tcldrop::server::EVNT_exit {event} { if {[info exists ::die]} { putnow "QUIT :$::die" } else { putnow "QUIT :$event" } }
 
 proc ::tcldrop::server::DIE {reason} { quit $reason }
 

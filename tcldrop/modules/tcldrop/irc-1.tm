@@ -967,6 +967,7 @@ proc ::tcldrop::irc::PRIVMSG {from key arg} {
 				# If callpub returned 0, do the PUBM binds:
 				::tcldrop::irc::callpubm $nick $uhost $handle $dest $text
 			}
+			putloglev p $dest "<${nick}> $text"
 		}
 	}
 }
