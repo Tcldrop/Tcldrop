@@ -442,13 +442,17 @@ proc ::tcldrop::core::getlang {section id {language {*}} args} {
 # (Taken from http://www.racbot.org/docs/tclcmds/scripting_tcl_commands.html)
 proc ::tcldrop::core::langsection {args} { foreach a $args { addlangsection $args } }
 
+# FixMe: Allow format codes to be part of the filename..That way logfile rotation could happen anytime the result of the format changes..
 proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 	variable Logfiles
 	if {$filename != {}} {
 		# See if we're already logging to this file:
 		foreach a [array names Logfiles *,*,$filename] {
+			# If we're already logging to this filename, just update the levels and channel to match what's specified:
+			unbind log [dict get $Logfiles($a) levels] [dict get $Logfiles($a) channel] ::tcldrop::core::LOG
 			dict set Logfiles($a) levels $levels
 			dict set Logfiles($a) channel $channel
+			bind log $levels $channel ::tcldrop::core::LOG
 			return $filename
 		}
 		if {[array size Logfiles] >= ${::max-logs}} {
@@ -477,9 +481,10 @@ proc ::tcldrop::core::LOG {levels channel text} {
 	foreach a [array names Logfiles $levels,[string tolower $channel],*] {
 		puts [set fileid [dict get $Logfiles($a) fileid]] $text
 		if {!${::quick-logs}} { flush $fileid }
-#		if {!${::keep-all-logs} && [file size [dict get $Logfiles($a) filename]] / 1024 >= ${::max-logsize}} {
-#			# FixMe.
-#		}
+		# FixMe: Should this check the file size every damn time we log something?  Perhaps making this an hourly or even daily event would be good enough..
+		# if {!${::keep-all-logs} && [file size [dict get $Logfiles($a) filename]] / 1024 >= ${::max-logsize}} {
+			# FixMe.
+		# }
 	}
 }
 

@@ -592,6 +592,7 @@ proc ::tcldrop::irc::MODE {from key arg} {
 	set channel [lindex [set arg [split $arg]] 0]
 	set modes [string trimleft [lindex $arg 1] :]
 	set victims [lrange $arg 2 end]
+	putloglev k $channel "${channel}: mode change '$modes ${victims}' by $nick!$uhost"
 	# First we process all the modes..
 	# For example, this takes a mode like:
 	# "+o-o FireEgl FireEgl"
@@ -743,6 +744,7 @@ proc ::tcldrop::irc::JOIN {from key arg} {
 			nickinfo $nick nick $nick uhost $uhost ident [lindex [split $uhost @] 0] address [lindex [split $uhost @] end]
 			calljoin $nick $uhost [finduser $from] $channel
 		}
+		putloglev j $channel "$nick (${uhost}) joined ${channel}."
 	} else {
 		#puthelp "PART $channel :Why did I join here?"
 	}
@@ -854,15 +856,21 @@ bind raw - QUIT ::tcldrop::irc::SIGN -priority 1000
 proc ::tcldrop::irc::SIGN {from key arg} {
 	if {[string match -nocase {*?.*[a-z][a-z] *?.*[a-z][a-z]} [set msg [string range $arg 1 end]]]} {
 		callsplt [lindex [split $from !] 0] [lindex [split $from !] 1] [finduser $from] * $msg
+		# FixMe: Make sure this is the same format as Eggdrops:
+		putloglev j * "Net-Split: [lindex [split $from !] 0] [lindex [split $from !] 1] * $msg"
 	} else {
 		callsign [lindex [split $from !] 0] [lindex [split $from !] 1] [finduser $from] * $msg
+		# FixMe: Make sure this is the same format as Eggdrops:
+		putloglev j * "Quit: [lindex [split $from !] 0] [lindex [split $from !] 1] * $msg"
 	}
 }
 
 bind raw - KICK ::tcldrop::irc::KICK -priority 1000
 proc ::tcldrop::irc::KICK {from key arg} {
 	# Call all the kick binds:
-	callkick [lindex [split $from !] 0] [lindex [split $from !] end] [finduser $from] [lindex [set larg [split $arg]] 0] [lindex $larg 1] [string range [join [lrange $larg 2 end]] 1 end]
+	lassign [list [lindex [split $from !] 0]	[lindex [split $from !] end] [finduser $from] [lindex [set larg [split $arg]] 0] [lindex $larg 1] [string range [join [lrange $larg 2 end]] 1 end]] nick uhost handle channel target reason
+	callkick $nick $uhost $handle $channel $target $reason
+	putloglev k $channel "$target kicked from $channel by ${nick}: $reason"
 }
 
 # irc.choopa.net: 433 FireEgl NewNick Nickname is already in use.
@@ -919,6 +927,7 @@ proc ::tcldrop::irc::PART {from key arg} {
 		set msg [string range [join [lrange $larg 1 end]] 1 end]
 		# Call all the part binds:
 		callpart $nick $uhost $handle $channel $msg
+		putloglev j $channel "$nick (${uhost}) left ${channel}."
 	}
 }
 
@@ -937,6 +946,7 @@ proc ::tcldrop::irc::NOTICE {from key arg} {
 	} else {
 		# Call all the notc binds:
 		callnotc $nick $uhost $handle $text $dest
+		putloglev m - "-$nick (${uhost}- $text"
 	}
 }
 
@@ -950,6 +960,8 @@ proc ::tcldrop::irc::PRIVMSG {from key arg} {
 	if {[string equal [string index [lindex $larg 1] 1] \001]} {
 		# All CTCP binds are called:
 		callctcp $nick $uhost $handle $dest [string trimright [string range [lindex $larg 1] 2 end] "\001"] [string trimright [join [lrange $larg 2 end]] "\001"]
+		if {[isbotnetnick $dest]} { set dest {-} }
+		putloglev m $dest "CTCP [string trimright [string range [lindex $larg 1] 2 end] "\001"] [string trimright [join [lrange $larg 2 end]] "\001"] from $nick (${uhost})"
 	} else {
 		set text [string range [join [lrange $larg 1 end]] 1 end]
 		set ltext [split [string trim $text]]
@@ -961,6 +973,7 @@ proc ::tcldrop::irc::PRIVMSG {from key arg} {
 				# If callmsg returned 0, do the MSGM binds:
 				::tcldrop::irc::callmsgm $nick $uhost $handle $text
 			}
+			putloglev m - "\[$nick!$uhost\] $text"
 		} elseif {[validchan $dest]} {
 			# All PUB binds are called:
 			if {![::tcldrop::irc::callpub $nick $uhost $handle $dest $command $args]} {
