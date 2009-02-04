@@ -94,6 +94,12 @@ namespace eval pubsafetcl::eggdrop {
 	# (put them in the order of preference)
 	variable safetclbots {Tcldrop SafeTcl UNSafeTcl}
 
+	# Provide the public commands:
+	variable EggdropPubBinds [list !tcl .tcl ,tcl .safetcl ,safetcl .eval ,eval]
+
+	# Use a pubm bind?  This allows Tcl commands starting with ; to be used, and also most Tcl commands that don't have a prefix at all.
+	variable UsePubm 1
+
 	variable extraCommands
 	# FEATURE DISABLED.  These are extra commands that will be available for people with certain flags..
 	array set extraCommands {
@@ -208,8 +214,6 @@ namespace eval pubsafetcl::eggdrop {
 		}
 	}
 
-	## Provide the public commands:
-	variable EggdropPubBinds [list !tcl .tcl ,tcl .safetcl ,safetcl .eval ,eval]
 	foreach EggdropPubBind $EggdropPubBinds { bind pub - $EggdropPubBind [namespace current]::EggdropPub }
 	catch { unset EggdropPubBind }
 	proc EggdropPub {nick host hand chan arg {errors {1}}} {
@@ -272,7 +276,7 @@ namespace eval pubsafetcl::eggdrop {
 			}
 		}
 	}
-	bind pubm - * [namespace current]::EggdropPubm
+	if {$UsePubm} { bind pubm - * [namespace current]::EggdropPubm }
 	proc EggdropPubm {nick host hand chan arg} {
 		if {[channel get $chan safetcl] && [preferredbot $chan]} {
 			set errors 0
