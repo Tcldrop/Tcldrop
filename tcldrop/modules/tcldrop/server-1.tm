@@ -403,6 +403,9 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 #       But if they really want to flood the server, there should be no stopping them from their stupidity.
 proc ::tcldrop::server::putnow {text} { if {![putidx ${::server-idx} $text]} { clearqueue all } }
 
+proc ::tcldrop::server::TraceNick {name1 name2 op} { puthelp "NICK $::nick" }
+trace add variable ::nick write [list ::tcldrop::server::TraceNick]
+
 # Adds $text to a queue..
 # $queue must be mode, serv, help, or a integer from 1-99.
 # $option can be -normal or -next (Like in Eggdrop).
