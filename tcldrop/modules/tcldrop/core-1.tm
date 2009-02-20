@@ -479,12 +479,29 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 proc ::tcldrop::core::LOG {levels channel text} {
 	variable Logfiles
 	foreach a [array names Logfiles $levels,[string tolower $channel],*] {
-		puts [set fileid [dict get $Logfiles($a) fileid]] $text
-		if {!${::quick-logs}} { flush $fileid }
-		# FixMe: Should this check the file size every damn time we log something?  Perhaps making this an hourly or even daily event would be good enough..
-		# if {!${::keep-all-logs} && [file size [dict get $Logfiles($a) filename]] / 1024 >= ${::max-logsize}} {
-			# FixMe.
-		# }
+		switch -glob -- $filename {
+			{log://*} {
+				# Note: This will be my (FireEgl) new log protocol.. It will likely be UDP based for reduced overhead.
+			}
+			{ftp://*} {
+				# Note: This will log directly to a remote file via FTP.
+			}
+			{http://*} {
+				# Note: This will be a standard HTTP POST.
+			}
+			{https://*} {
+				# Note: This will use https instead of http.
+			}
+			{default} {
+				# Note: This is for local files.
+				puts [set fileid [dict get $Logfiles($a) fileid]] $text
+				if {!${::quick-logs}} { flush $fileid }
+				# FixMe: Should this check the file size every damn time we log something?  Perhaps making this an hourly or even daily event would be good enough..
+				# if {!${::keep-all-logs} && [file size [dict get $Logfiles($a) filename]] / 1024 >= ${::max-logsize}} {
+					# FixMe.
+				# }
+			}
+		}
 	}
 }
 
@@ -899,28 +916,55 @@ proc ::tcldrop::core::afteridle {args} { after idle [list after 0 $args] }
 #  maskhost <nick!user@host>
 #    Returns: masked hostmask for the string given ("n!u@1.2.3.4" -> "*!u@1.2.3.*",
 #      "n!u@lame.com" -> "*!u@lame.com", "n!u@a.b.edu" -> "*!u@*.b.edu")
-# This proc is from Papillon@EFNet
-# (Papillon) -> I've enabeled this to apply to ipv6 hosts aswell, it does not mask them yet, but I'll look into it
-# Note: This is untested and unmodified.
-if {![llength [info commands maskhost]]} {
-	proc ::tcldrop::core::maskhost {x} {
-		if {[string match "*\**" [lindex [split $x @] 1]]} { return $x }
-		if {![regexp -- ".*@.*" $x]} { set x "*@${x}" }
-		if {[set mask1 [lindex [split $x @] 0]] != {*}} {
-			set mask1 [string trimleft $mask1 {~*!}]
+if {![llength [info commands maskhost]] || [llength [info procs maskhost]]} {
+	package require ip
+	proc ::tcldrop::core::maskhost {nickuserhost} {
+		switch -glob -- $nickuserhost {
+			{*!*@*} {
+				# Includes the nick.
+				set nick {*}
+				set user [lindex [split $nickuserhost !@] 1]
+				set host [lindex [split $nickuserhost @] end]
+			}
+			{*@*} {
+				set nick {*}
+				set user [lindex [split $nickuserhost @] 0]
+				set host [lindex [split $nickuserhost @] end]
+			}
+			{*.*} - {*:*} - {default} {
+				set nick {*}
+				set user {*}
+				set host $nickuserhost
+			}
 		}
-		if {[regexp -- {@([0-9]+\.){3}[0-9]+} $x mask2]} {
-			set mask2 [join "[lrange [split $mask2 \.] 0 end-1] *" \.]
-			set host "*!${mask1}${mask2}"
-		} elseif {[regexp -- {@([a-zA-Z]+\.)+[a-zA-Z]+} $x mask2]} {
-			set host "*!${mask1}${mask2}"
-		} elseif {[regexp -- {([0-9a-zA-Z]+(:)+){3,}[0-9a-zA-Z]+} $x mask2]} {
-			set host "*!${mask1}${mask2}"
-		} else {
-			regexp -- {([a-zA-Z]+\.)+[a-zA-Z]+} $x mask2
-			set host "*!${mask1}@.*${mask2}"
+		switch -- [::ip::version $host] {
+			{4} {
+				# It's an IPv4 IP.
+				if {[string match {*.*.*.*} $host]} {
+					lassign [split $host .] a b c
+					set host "$a.$b.$c.*"
+				}
+			}
+			{6} {
+				# It's an IPv6 IP.
+				# Note: I don't think it's appropriate to mask an IPv6 IP, since they're almost always static.
+			}
+			{-1} {
+				# It's probably a hostname.
+				# Note/FixMe: This doesn't mask long hosts the same as Eggdrop, although it's just as dumb as Eggdrop.
+				# Rather than make it exactly like Eggdrop, it should be fixed to be SMARTER than Eggdrop.
+				# Like, Eggdrop will mask example.co.uk to *.co.uk
+				# But we shouldn't do that!
+				if {[string match {*.*.*} $host]} {
+					# Only mask those hostnames with at least 2 .'s
+					set host "*[string range $host [string first . $host] end]"
+				}
+			}
+			{default} {
+				# Unknown response from ::ip::version.
+			}
 		}
-		return $host
+		return "$nick!$user@$host"
 	}
 }
 
