@@ -80,7 +80,7 @@ proc ::tcldrop::core::conn::traffic {{type {}} {direction {}} {bytes {0}}} {
 		if {[clock seconds] - [dict get $Traffic($type) restart] > 86400} {
 			dict set Traffic($type) daily-in 0
 			dict set Traffic($type) daily-out 0
-			dict set Traffic($type) restat [clock seconds]
+			dict set Traffic($type) restart [clock seconds]
 		}
 		if {$direction ne {}} {
 			# Return either in or out for $type:
