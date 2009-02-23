@@ -855,9 +855,8 @@ proc ::tcldrop::irc::FLUD_nick {nick uhost handle channel newnick} { if {[detect
 bind raw - QUIT ::tcldrop::irc::SIGN -priority 1000
 proc ::tcldrop::irc::SIGN {from key arg} {
 	if {[string match -nocase {*?.*[a-z][a-z] *?.*[a-z][a-z]} [set msg [string range $arg 1 end]]]} {
-		callsplt [lindex [split $from !] 0] [lindex [split $from !] 1] [finduser $from] * $msg
-		# FixMe: Make sure this is the same format as Eggdrops:
-		putloglev j * "Net-Split: [lindex [split $from !] 0] [lindex [split $from !] 1] * $msg"
+		callsplt [lindex [split $from !] 0] [lindex [split $from !] 1] [set handle [finduser $from]] * $msg
+		putloglev j * "[lindex [split $from !] 0] ([lindex [split $from !] 1]) got netsplit: $msg"
 	} else {
 		callsign [lindex [split $from !] 0] [lindex [split $from !] 1] [finduser $from] * $msg
 		# FixMe: Make sure this is the same format as Eggdrops:
@@ -868,7 +867,7 @@ proc ::tcldrop::irc::SIGN {from key arg} {
 bind raw - KICK ::tcldrop::irc::KICK -priority 1000
 proc ::tcldrop::irc::KICK {from key arg} {
 	# Call all the kick binds:
-	lassign [list [lindex [split $from !] 0]	[lindex [split $from !] end] [finduser $from] [lindex [set larg [split $arg]] 0] [lindex $larg 1] [string range [join [lrange $larg 2 end]] 1 end]] nick uhost handle channel target reason
+	lassign [list [lindex [split $from !] 0] [lindex [split $from !] end] [finduser $from] [lindex [set larg [split $arg]] 0] [lindex $larg 1] [string range [join [lrange $larg 2 end]] 1 end]] nick uhost handle channel target reason
 	callkick $nick $uhost $handle $channel $target $reason
 	putloglev k $channel "$target kicked from $channel by ${nick}: $reason"
 }

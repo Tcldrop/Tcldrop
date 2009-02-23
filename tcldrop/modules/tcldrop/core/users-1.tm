@@ -205,7 +205,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			}
 		}
 		{hosts} {
-			putlog "handle $handle type $type setting $setting xtra $xtra args $args"
+			#putlog "handle $handle type $type setting $setting xtra $xtra args $args"
 			if {$setting != {}} {
 				# Add a new host to their list of hostmasks:
 				# FixMe: Don't add a duplicate.

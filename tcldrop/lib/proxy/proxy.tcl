@@ -124,6 +124,7 @@ proc ::proxy::splitchain {chain} {
 		if {![info exists address]} { set address {} }
 		if {![info exists port]} { set port {} }
 	}
+	# The last one in the chain is the final destination, so we set the info about it:
 	array set info [list count $count address $address port $port extra $extra chain $chain]
 	array get info
 }

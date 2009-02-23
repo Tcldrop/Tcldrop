@@ -11,6 +11,10 @@ Listed in order of priority:
 * Remove support for Eggdrop's .help files.
   (Find some other way of displaying help.)
 
+* Convert the lang code to use msgcat for locales.
+  http://www.tcl.tk/man/tcl8.6/TclCmd/msgcat.htm
+  We should still support Eggdrop-style .lang files though.
+
 * More DCC commands.
 
 * MSG commands.
@@ -21,8 +25,12 @@ Listed in order of priority:
 
 * notes module (needs work or a rewrite).
 
+* Consider using TDBC for the databases.
+  http://tdbc.tcl.tk/
 
 --
+
+Array to Dict transition:
 
 These are arrays that _might_ should be converted into dicts,
 please don't write any more code that uses them directly
@@ -32,6 +40,22 @@ help-files
 party_users
 
 --
+
+Issues where I've (FireEgl) have painted myself into a corner design-wise:
+
+Issue 1:
+   When a hostmask is added for a user, commands like [nick2hand] and [hand2nick] won't see any changes.
+      This is because the user database is separate from the list of nicks currently on IRC.
+      Specifically, the ::database(users) dict is separate from ::nicks array.
+   Solutions?
+      * We can basically do a [finduser] on every nick!user@host on every single channel the bot is on and update the ::nicks array with the handles we've collected.  This must happen every time a hostmask is added for any user.
+         This seems VERY expensive though.  [finduser] in Tcldrop has a much higher overhead than it does in Eggdrop, so it should be avoided when possible (or find a way to reduce its overhead..which is unlikely).
+      * ? =(
+
+
+--
+
+Other things to note:
 
 Provide SSL support, using TLS:
 http://SF.Net/projects/tls
