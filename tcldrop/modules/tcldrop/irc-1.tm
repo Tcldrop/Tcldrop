@@ -820,33 +820,41 @@ proc ::tcldrop::irc::TOPIC {from key arg} {
 }
 
 bind raw - NICK ::tcldrop::irc::NICK -priority 1000
-# Proc by Papillon@EFNet
 proc ::tcldrop::irc::NICK {from key arg} {
+	global nick altnick botnick botname nicks channelnicks
 	set oldnick [lindex [split $from !] 0]
-	if {![string equal $::botnick $::nick] && [string equal -nocase $oldnick $::nick]} {
-		putserv "NICK $::nick"
-		set ::botnick $::nick
+	set newnick [string range $arg 1 end]
+	if {![string equal -nocase $botnick $nick] && [string equal -nocase $oldnick $nick]} {
+		# Try to get our preferred nick back:
+		putserv "NICK $nick"
+	} elseif {![string equal -nocase $botnick $nick] && ![string equal -nocase $botnick $altnick] && [string equal -nocase $oldnick $altnick]} {
+		# Or try to get our altnick:
+		putserv "NICK $altnick"
+	} elseif {[string equal -nocase $oldnick $botnick]} {
+		# Make sure ::botnick and ::botname are up-to-date:
+		set botnick $newnick
+		set botname "$newnick![lindex [split $from {! }] 1]"
 	}
-	# Call all the nick binds:
-	callnick $oldnick [lindex [split $from !] end] [finduser $from] * [string range $arg 1 end]
-}
 
-# FixMe: redo this.
-bind nick - * ::tcldrop::irc::nick -priority -1000
-proc ::tcldrop::irc::nick {nick uhost handle channel newnick} {
-	set lowernick [string tolower $nick]
+	set loweroldnick [string tolower $oldnick]
 	set lowernewnick [string tolower $newnick]
-	if {[info exists ::nicks($lowernick)]} {
-		set ::nicks($lowernewnick) $::nicks($lowernick)
-		dict set ::nicks($lowernewnick) nick $newnick
-		unset ::nicks($lowernick)
+	if {[info exists nicks($loweroldnick)]} {
+		set nicks($lowernewnick) $nicks($loweroldnick)
+		dict set nicks($lowernewnick) nick $newnick
+		unset nicks($loweroldnick)
 	}
-	set lowerchannel [string tolower $channel]
-	if {[info exists ::channelnicks($lowerchannel,$lowernick)]} {
-		set ::channelnicks($lowerchannel,$lowernewnick) $::channelnicks($lowerchannel,$lowernick)
-		dict set ::channelnicks($lowerchannel,$lowernewnick) nick $newnick
-		unset ::channelnicks($lowerchannel,$lowernick)
+	# Update the channelnick info with the new nick:
+	foreach m [array names ::channelnicks *,$loweroldnick] {
+		set lowerchannel [string tolower [dict get $channelnicks($m) channel]]
+		set channelnicks($lowerchannel,$lowernewnick) $channelnicks($m)
+		dict set channelnicks($lowerchannel,$lowernewnick) nick $newnick
+		unset channelnicks($m)
 	}
+
+	# Call all the nick binds:
+	# FixMe: Is this supposed to use * or should it trigger a nick bind for every channel?
+	#        (This should take the Eggdrop behaviour, no matter how stupid it is)
+	callnick $oldnick [lindex [split $from !] end] [finduser $from] * $newnick
 }
 
 bind nick - * ::tcldrop::irc::FLUD_nick -priority 1000
@@ -911,7 +919,7 @@ proc ::tcldrop::irc::352 {from key arg} {
 			{default} { if {[string first $f $::opchars] != -1} { set op 1 } }
 		}
 	}
-	channickinfo $channel $nick handle $handle idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
+	channickinfo $channel $nick handle $handle channel $channel idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
 	return 0
 }
 
@@ -1156,7 +1164,6 @@ proc ::tcldrop::irc::resetexempts {channel} {
 proc ::tcldrop::irc::resetinvites {channel} {
 	global invites
 }
-
 
 #  onchan <nickname> [channel]
 #    Returns: 1 if someone by that nickname is on the specified channel (or
