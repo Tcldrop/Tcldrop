@@ -68,7 +68,7 @@ namespace eval ::tcldrop::core::dcc {
 #         putdcc 7:FireEgl@Atlantica "Hello there."
 #         That will send the text to a remote user.
 #         And although putdcc is capable of sending to local users as well,
-#         putidx is the preffered command for all local connections.
+#         putidx is the preferred command for all local connections.
 
 proc ::tcldrop::core::dcc::putdcc {idx text args} {
 	if {[info exists ::idxlist($idx)]} {
