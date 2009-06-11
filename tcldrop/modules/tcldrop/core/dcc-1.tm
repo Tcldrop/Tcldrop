@@ -275,6 +275,8 @@ proc ::tcldrop::core::dcc::callchof {handle idx {reason {}}} {
 
 # Here goes all the DCC binds:
 # These are the CORE dcc commands only!  Any module related dcc commands should be put in their module directory.
+
+# Usage: tcl <command>
 proc ::tcldrop::core::dcc::TCL {handle idx text} {
 	putcmdlog "#$handle# tcl $text"
 	if {[catch { uplevel #0 $text } out]} {
@@ -285,6 +287,7 @@ proc ::tcldrop::core::dcc::TCL {handle idx text} {
 	return 0
 }
 
+# Usage: set <variable> [value]
 proc ::tcldrop::core::dcc::SET {handle idx text} {
 	putcmdlog "#$handle# set $text"
 	if {[catch { uplevel \#0 [list eval set $text] } out]} {
@@ -296,6 +299,9 @@ proc ::tcldrop::core::dcc::SET {handle idx text} {
 	return 0
 }
 
+# Usage: help [command]
+#        help all
+#        help <module> module
 proc ::tcldrop::core::dcc::HELP {handle idx text} {
 	putcmdlog "#$handle# help $text"
 	if {$text eq {}} { set text {help} }
@@ -303,6 +309,7 @@ proc ::tcldrop::core::dcc::HELP {handle idx text} {
 	return 0
 }
 
+# Usage: quit [comment]
 proc ::tcldrop::core::dcc::QUIT {handle idx text} {
 	putcmdlog "#$handle# quit $text"
 	putdcc $idx {Bu-Bye!}
@@ -314,12 +321,14 @@ proc ::tcldrop::core::dcc::QUIT {handle idx text} {
 	return 0
 }
 
+# Usage: whoami
 proc ::tcldrop::core::dcc::WHOAMI {handle idx text} {
 	putcmdlog "#$handle# whoami $text"
 	putdcc $idx "You are $handle@${::botnet-nick} on idx $idx"
 	return 0
 }
 
+# Usage: -host [handle] <hostmask>
 proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set host [::tcldrop::core::slindex $text 1]
@@ -342,6 +351,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	return 0
 }
 
+# Usage: newpass <password>
 proc ::tcldrop::core::dcc::NEWPASS {handle idx text} {
 	chpass $handle $text
 	putcmdlog "#$handle# newpass..."
@@ -349,6 +359,7 @@ proc ::tcldrop::core::dcc::NEWPASS {handle idx text} {
 	return 0
 }
 
+# Usage: +user <handle> [hostmask]
 proc ::tcldrop::core::dcc::+USER {handle idx text} {
 	set user [::tcldrop::core::slindex $text 0]
 	set hostmask [::tcldrop::core::slindex $text 1]
@@ -358,6 +369,7 @@ proc ::tcldrop::core::dcc::+USER {handle idx text} {
 	return 0
 }
 
+# Usage: -user <handle>
 proc ::tcldrop::core::dcc::-USER {handle idx text} {
 	if {[deluser $text]} {
 		putcmdlog "#$handle# -bot $text"
@@ -366,6 +378,7 @@ proc ::tcldrop::core::dcc::-USER {handle idx text} {
 	return 0
 }
 
+# Usage: whois <handle>
 proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 	if {[validuser $text]} {
 		putcmdlog "#$handle# whois $text"
@@ -390,6 +403,7 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 	return 0
 }
 
+# Usage: chaddr <bot> <address[:bot port[/user port]]>
 proc ::tcldrop::core::dcc::CHADDR {handle idx text} {
 	set bot [slindex $text 0]
 	if {[matchattr $bot b]} {
@@ -405,6 +419,7 @@ proc ::tcldrop::core::dcc::CHADDR {handle idx text} {
 	return 0
 }
 
+# Usage: chpass <handle> [newpassword]
 # FixMe: Allow non-owners to use this securely:
 proc ::tcldrop::core::dcc::CHPASS {handle idx text} {
 	set who [slindex $text 0]
@@ -415,6 +430,7 @@ proc ::tcldrop::core::dcc::CHPASS {handle idx text} {
 	return 0
 }
 
+# Usage: +host [handle] <newhostmask>
 proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set host [::tcldrop::core::slindex $text 1]
@@ -435,6 +451,7 @@ proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	return 0
 }
 
+# Usage chattr <handle> [flags] [channel]
 proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set changes [::tcldrop::core::slindex $text 1]
@@ -451,6 +468,7 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 	return 0
 }
 
+# Usage: save
 proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 	putcmdlog "#$handle# save $text"
 	putdcc $idx {Saving...}
@@ -458,6 +476,8 @@ proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 	return 0
 }
 
+# Usage: uptime
+# FixMe: add botnet support for this?
 proc ::tcldrop::core::dcc::UPTIME {handle idx text} {
 	putcmdlog "#$handle# uptime $text"
 	# FixMe: Add an [uptime] proc that returns the seconds that the bot has been running.
@@ -465,6 +485,7 @@ proc ::tcldrop::core::dcc::UPTIME {handle idx text} {
 	return 0
 }
 
+# Usage: backup
 proc ::tcldrop::core::dcc::BACKUP {handle idx text} {
 	putcmdlog "#$handle# backup $text"
 	putdcc $idx {Backing up data files...}
@@ -473,6 +494,7 @@ proc ::tcldrop::core::dcc::BACKUP {handle idx text} {
 	return 0
 }
 
+# Usage: comment <user> <comment>
 proc ::tcldrop::core::dcc::COMMENT {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set comment [::tcldrop::core::slindex $text 1]
@@ -482,6 +504,7 @@ proc ::tcldrop::core::dcc::COMMENT {handle idx text} {
 	return 0
 }
 
+# Usage: reload
 proc ::tcldrop::core::dcc::RELOAD {handle idx text} {
 	putcmdlog "#$handle# reload $text"
 	putdcc $idx {Reloading user file...}
@@ -489,6 +512,7 @@ proc ::tcldrop::core::dcc::RELOAD {handle idx text} {
 	return 0
 }
 
+# Usage: rehash
 proc ::tcldrop::core::dcc::REHASH {handle idx text} {
 	putcmdlog "#$handle# rehash $text"
 	putdcc $idx {Rehashing..}
@@ -496,6 +520,7 @@ proc ::tcldrop::core::dcc::REHASH {handle idx text} {
 	return 0
 }
 
+# Usage: restart
 proc ::tcldrop::core::dcc::RESTART {handle idx text} {
 	putcmdlog "#$handle# restart $text"
 	putdcc $idx {Restarting..}
@@ -503,6 +528,7 @@ proc ::tcldrop::core::dcc::RESTART {handle idx text} {
 	return 0
 }
 
+# Usage: shutdown [reason]
 proc ::tcldrop::core::dcc::SHUTDOWN {handle idx text} {
 	putcmdlog "#$handle# shutdown $text"
 	putdcc $idx {Shutting Down...}
@@ -510,6 +536,7 @@ proc ::tcldrop::core::dcc::SHUTDOWN {handle idx text} {
 	after idle [list after 0 [list shutdown $text]]
 }
 
+# Usage: loadmod <module>
 proc ::tcldrop::core::dcc::LOADMOD {handle idx text} {
 	loadmodule $text
 	putcmdlog "#$handle# loadmod $text"
@@ -517,6 +544,7 @@ proc ::tcldrop::core::dcc::LOADMOD {handle idx text} {
 	return 0
 }
 
+# Usage: unloadmod <module>
 proc ::tcldrop::core::dcc::UNLOADMOD {handle idx text} {
 	unloadmodule $text
 	putcmdlog "#$handle# unloadmod $text"
@@ -524,6 +552,7 @@ proc ::tcldrop::core::dcc::UNLOADMOD {handle idx text} {
 	return 0
 }
 
+# Usage: dccstat
 proc ::tcldrop::core::dcc::DCCSTAT {handle idx text} {
 	putcmdlog "#$handle# dccstat $text"
 	putdcc $idx {IDX SOCKET NAME       INFORMATION                            TYPE MODULE}
@@ -538,6 +567,8 @@ proc ::tcldrop::core::dcc::DCCSTAT {handle idx text} {
 	return 0
 }
 
+# Usage: traffic
+# FixMe: add botnet support for this? Eggdrop doesn't have that but seems good to me
 proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 	putcmdlog "#$handle# traffic $text"
 	putdcc $idx {Traffic since last restart}
@@ -569,6 +600,8 @@ proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 	return 0
 }
 
+# Usage: modules [botname]
+# FixMe: fix botnet part
 proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 	putcmdlog "#$handle# modules $text"
 	putdcc $idx {Modules loaded:}
@@ -577,6 +610,8 @@ proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 	return 0
 }
 
+# Usage: status [all]
+# FixMe: Add stuff for the 'all' arg
 proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	putcmdlog "#$handle# status $text"
 	putdcc $idx "I am ${::botnet-nick}, running Tcldrop v$::tcldrop(version): [countusers] users."
@@ -590,10 +625,29 @@ proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	return 0
 }
 
+# Usage: motd [botname]
+# FixMe: fix botnet part
 proc ::tcldrop::core::dcc::MOTD {handle idx text} {
-	# FixMe: add support for requesting motd from other bots
 	putcmdlog "#$handle# motd $text"
 	if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx {Welcome!} }
+	return 0
+}
+
+# Usage: binds [type/match] [all]
+# FixMe: needs more formatting love, add support for matching
+proc ::tcldrop::core::dcc::BINDS {handle idx text} {
+	putcmdlog "#$handle# binds $text"
+	putdcc $idx [lang 0x50b]; # Command bindings:
+	putdcc $idx [format {%6s %4s %11s %17s %s}  {TYPE} {FLGS} {COMMAND} {HITS} {BINDING (TCL)}]
+	set matches [binds]
+	set format {%7s %-8s %-19s %5s %s}
+	foreach bind $matches {
+		lassign $bind type flags command hits binding
+		putdcc $idx [format $format $type $flags $command $hits $binding]
+	}
+	if {[llength $matches] == 0} {
+		putdcc $idx "No command bindings found that match $text"
+	}
 	return 0
 }
 
@@ -647,6 +701,8 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	bind dcc n stat ::tcldrop::core::dcc::STATUS -priority 1
 	bind dcc - mot ::tcldrop::core::dcc::MOTD
 	bind dcc - motd ::tcldrop::core::dcc::MOTD
+	bind dcc nm bind ::tcldrop::core::dcc::BINDS
+	bind dcc nm binds ::tcldrop::core::dcc::BINDS
 	loadhelp core.help
 	loadhelp cmds1.help
 	loadhelp cmds2.help
