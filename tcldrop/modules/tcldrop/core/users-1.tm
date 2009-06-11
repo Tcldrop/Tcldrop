@@ -393,7 +393,9 @@ proc ::tcldrop::core::users::delhost {handle {hostmask {}}} {
 		setuser $handle hosts {}
 	} else {
 		# Based this on the Users array and added the use of the maskhost command (gotta love it eh ;) --- Papillon
-		if {[set position [lsearch -glob [dict get $::database(users) [set lowerhandle [string tolower $handle]] hosts] $hostmask]] != -1 && [database users lremove $lowerhandle hosts $position $position]} {
+		if {[set position [lsearch -glob [dict get $::database(users) [set lowerhandle [string tolower $handle]] hosts] $hostmask]] != -1} {
+			# FixMe: verify that it was removed?
+			database users lremove $lowerhandle hosts $position $position
 			return 1
 		} else {
 			return 0

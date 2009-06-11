@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -323,10 +323,21 @@ proc ::tcldrop::core::dcc::WHOAMI {handle idx text} {
 proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set host [::tcldrop::core::slindex $text 1]
+	if {$text eq {}} {
+		# Usage:
+		putdcc $idx "[lang 0x001]: -host \[handle\] <hostmask>"
+		return 0
+	} elseif {[::tcldrop::core::sllength $text] == 1} {
+		set who $handle
+		set host [::tcldrop::core::slindex $text 0]
+	}
 	# FixMe: This should let anyone with higher flags that the person they want to -host remove their host, I think..
 	if {(([string equal -nocase $handle $who]) || ([matchattr $handle n])) && ([delhost $who $host])} {
 		putcmdlog "#$handle# -host $who $host"
 		putdcc $idx "Removed '$host' from $who"
+	} else {
+		# Failed.
+		putdcc $idx [lang 0x002]
 	}
 	return 0
 }
@@ -407,6 +418,14 @@ proc ::tcldrop::core::dcc::CHPASS {handle idx text} {
 proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set host [::tcldrop::core::slindex $text 1]
+	if {$text eq {}} {
+		# Usage:
+		putdcc $idx "[lang 0x001]: +host \[handle\] <newhostmask>"
+		return 0
+	} elseif {[::tcldrop::core::sllength $text] == 1} {
+		set who $handle
+		set host [::tcldrop::core::slindex $text 0]
+	}
 	# FixMe: This shouldn't be restricted to owners:
 	if {[string equal -nocase $who $handle] || [matchattr $handle n]} {
 		addhost $who $host
@@ -521,11 +540,29 @@ proc ::tcldrop::core::dcc::DCCSTAT {handle idx text} {
 
 proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 	putcmdlog "#$handle# traffic $text"
-	putdcc $idx {Traffic Since Last Restart}
+	putdcc $idx {Traffic since last restart}
 	putdcc $idx {==========================}
-	foreach info [traffic $text] {
-		putdcc $idx "[lindex $info 0]:"
+	foreach info [lsort [traffic]] {
+		switch -nocase -- [lindex $info 0] {
+			irc {
+				putdcc $idx {IRC:}
+			}
+			partyline {
+				putdcc $idx {Partyline:}
+			}
+			misc {
+				putdcc $idx {Misc:}
+			}
+			total {
+				putdcc $idx {---}
+				putdcc $idx {Total:}
+			}
+			default {
+				putdcc $idx "[lindex $info 0]:"
+			}
+		}
 		# FixMe: Convert bytes to kbytes or mbytes (to make it look like Eggdrop does).
+		# use this? http://wiki.tcl.tk/1676
 		putdcc $idx "  out: [lindex $info 4] bytes ([lindex $info 3] bytes since last daily reset)"
 		putdcc $idx "   in: [lindex $info 2] bytes ([lindex $info 1] bytes since last daily reset)"
 	}
