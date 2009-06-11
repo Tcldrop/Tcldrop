@@ -1424,6 +1424,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule bots::eggdrop
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
+	checkmodule party::dcc
 	checkmodule party::telnet
 	checkmodule party::terminal
 	# The IRC party module shouldn't be loaded by default in v1.0, should it?
