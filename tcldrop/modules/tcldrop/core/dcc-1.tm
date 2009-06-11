@@ -553,6 +553,13 @@ proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	return 0
 }
 
+proc ::tcldrop::core::dcc::MOTD {handle idx text} {
+	# FixMe: add support for requesting motd from other bots
+	putcmdlog "#$handle# motd $text"
+	if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx {Welcome!} }
+	return 0
+}
+
 if {[info exists ::tcl::proc_counter]} {
 	bind dcc n proc_counter ::tcldrop::core::dcc::PROC_COUNTS
 	bind dcc n proc_counts ::tcldrop::core::dcc::PROC_COUNTS
@@ -601,6 +608,8 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	bind dcc n modules ::tcldrop::core::dcc::MODULES
 	bind dcc n status ::tcldrop::core::dcc::STATUS -priority 1
 	bind dcc n stat ::tcldrop::core::dcc::STATUS -priority 1
+	bind dcc - mot ::tcldrop::core::dcc::MOTD
+	bind dcc - motd ::tcldrop::core::dcc::MOTD
 	loadhelp core.help
 	loadhelp cmds1.help
 	loadhelp cmds2.help
