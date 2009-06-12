@@ -1450,8 +1450,8 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	bind unld - core ::tcldrop::core::UNLD
 	if {$type eq {restart}} {
 		putlog "Restart Completed in [expr { [clock clicks -milliseconds] - $StartTime } ]ms."
+		if {(![info exists ::botnet-nick] || ${::botnet-nick} eq {}) && [info exists ::nick]} { set ::botnet-nick $::nick }
 	} else {
-		if {(![info exists ::botnet-nick] || ${::botnet-nick} eq {}) && [info exists ::nick]} { set ::botnet-nick $::nick } else { set ::botnet-nick {} }
 		# We wanna display how many channels and users there are (like Eggdrop):
 		if {[catch { PutLogLev o - "=== ${::botnet-nick}: [countchannels] channels, [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }]} { PutLogLev o - "=== ${::botnet-nick}: [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }
 	}
