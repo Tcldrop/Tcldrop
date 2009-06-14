@@ -60,7 +60,7 @@ namespace eval ::tcldrop {
 	variable version {0.6.1}
 	variable numversion {00060100}
 	variable script [info script]
-	variable name {tcldrop}
+	variable name {Tcldrop}
 	variable depends {Tcl}
 	variable author {Tcldrop-Dev}
 	variable description {Initializes Tcldrop from within a Tcl environment.}
@@ -111,7 +111,7 @@ namespace eval ::tcldrop {
 								}
 								{h} - {?} {
 									variable Exit 0
-									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007 Tcldrop-Dev
+									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev
 
 			Command line arguments:
 			  -h   help
