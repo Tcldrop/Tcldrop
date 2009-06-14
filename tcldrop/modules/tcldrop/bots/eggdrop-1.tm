@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -66,9 +66,11 @@ proc ::tcldrop::bots::eggdrop::Errors {idx error} {
 }
 
 # This is for OUTGOING bot connections only:
-proc ::tcldrop::bots::eggdrop::Write_OUT {idx args} {
-	putlog "Got Write $idx"
-	setidxinfo $idx [dict create state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
+proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
+	if {[dict get $::idxlist($idx) state] eq {FORK_BOT}} {
+		putloglev d * "Got Write $idx"
+		setidxinfo $idx [dict create state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
+	}
 }
 
 # Note: This is the OLD botnet protocol (it uses full names for things like "zapf" where the new protocol uses only "z", there's some other minor differences as well)
@@ -126,6 +128,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 	array set idxinfo $::idxlist($idx)
 	putloglev d * "idxinfo(state): $idxinfo(state)"
 	switch -- $idxinfo(state) {
+		{FORK_BOT} { Write_OUT $idx }
 		{BOT_IN} { Write_IN $idx $line }
 		{BOT_ID} {
 			# This is for INCOMING bot connections only; $line should contain the remotes response to our "Nickname." prompt.
@@ -171,22 +174,27 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 			}
 		}
 		{BOT_PASS} {
+			# Notes: passreq <6fb4a348bb1@SafeTcl>
+			#        How to respond to that?
 			# This is for OUTGOING bot connections only; This is when the remote bot is asking what our password is "passreq ",
 			#                                            or if no password is set on the other end, they send "*hello!".
-			if {[string equal {*hello!} $line]} {
+			if {$line eq {*hello!}} {
 				# The other end will send "*hello!" when they've accepted the link.
 				setidxinfo $idx [list state BOT_HELLO other {bot_hello}]
 			} elseif {[string match {passreq*} $line]} {
 				if {[set pass [getuser $idxinfo(handle) PASS]] != {}} {
 					# They're asking for our password, so send it:
+					putloglev d * "BOT_PASS: $idx $pass"
 					putidx $idx $pass
 				} else {
 					# They're asking for our password, but we don't know it! Abort!
 					putlog "$idxinfo(handle) is asking for a password, but I don't know it!  Closing IDX $idx ..."
 					return 1
 				}
+			} elseif {$line eq {badpass}} {
+				putlog "$idxinfo(handle) says we sent the wrong password."
 			} else {
-				putlog "$idxinfo(handle) sent junk during link.  Closing IDX $idx ..."
+				putlog "$idxinfo(handle) sent junk during link.  Closing IDX $idx ... Sent: $line"
 				return 1
 			}
 		}
@@ -232,7 +240,7 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	variable Bots
 	if {[info exists Bots([set lowerbot [string tolower $idxinfo(handle)]])]} { array set botinfo $Bots($lowerbot) }
 	if {[info exists botinfo(numversion)]} { set numversion $botinfo(numversion) } else { set numversion $botinfo(numversion) }
-	array set botinfo [list handle $botinfo(handle) numversion $numversion icon - uplink ${::botnet-nick} peeridx $idx peer $botinfo(handle) tracepath [list ${::botnet-nick}]]
+	array set botinfo [list handle $idxinfo(handle) numversion $numversion icon - uplink ${::botnet-nick} peeridx $idx peer $idxinfo(handle) tracepath [list ${::botnet-nick}]]
 	set Bots($lowerbot) [array get botinfo]
 	variable Linked
 	set Linked($lowerbot) [list $botinfo(handle)]

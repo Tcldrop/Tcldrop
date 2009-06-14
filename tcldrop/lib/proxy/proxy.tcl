@@ -90,9 +90,9 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 
 proc ::proxy::Finish {id status {reason {}}} {
 	upvar #0 $id info
+	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) }
 	catch { fileevent $info(socket) writable $info(-writable) }
 	catch { fileevent $info(socket) readable $info(-readable) }
-	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) }
 	switch -- $status {
 		{ok} {
 			after 0 [list eval $info(-command) $info(socket) $status $id]
