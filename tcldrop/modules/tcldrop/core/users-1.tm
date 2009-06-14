@@ -101,7 +101,7 @@ proc ::tcldrop::core::users::matchattr {handle flags {channel {}}} {
 		{default} {
 			if {![validuser $handle]} {
 				return 0
-			} elseif {[checkflags [lindex [split $flags {|}] 0] [getuser $handle flags]] == 1} {
+			} elseif {[set globalflags [lindex [split $flags {|}] 0]] ne {} && [checkflags $globalflags [getuser $handle flags]] == 1} {
 				# Return 1 since we matched one of their global flags.
 				return 1
 			} elseif {$channel != {} && [string match {*\|*} $flags]} {
