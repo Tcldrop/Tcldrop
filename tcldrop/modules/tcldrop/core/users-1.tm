@@ -94,9 +94,15 @@ proc ::tcldrop::core::users::finduser {nuhost} {
 # Checks $handle for $flags, $channel is optional.
 proc ::tcldrop::core::users::matchattr {handle flags {channel {}}} {
 	switch -exact -- $flags {
-		{*} - {+} - {*|*} - {+|+} - {} {
-			# * or + means anybody, return 1.
+		{+|+} {
+			# Tcldrop treats +|+ the same as Eggdrop does with - as the flag in the bind command.  (- is stored internally as +|+ in Tcldrop)
+			# This allows us to trigger binds for people without a handle on the bot.
+			# Note: This breaks compatibility with Eggdrop, because Eggdrop would return 0 if you tried matching +|+ against a non-existant handle.
 			return 1
+		}
+		{*} - {+} - {*|*} - {} {
+			# At least check to see if they're a valid user:
+			validuser $handle
 		}
 		{default} {
 			if {![validuser $handle]} {
