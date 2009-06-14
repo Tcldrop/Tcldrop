@@ -84,7 +84,7 @@ proc ::tcldrop::core::dcc::putdcc {idx text args} {
 				set text {-}
 			} else {
 				# FixMe: it might be helpful to have the copyright notice in a global var somewhere
-				array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) v${::tcldrop(version)}" {%E} "$::tcldrop(name) v${::tcldrop(version)} (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <${tcldrop(author)}>" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
+				array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) v${::tcldrop(version)}" {%E} "$::tcldrop(name) v${::tcldrop(version)} (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <${::tcldrop(author)}>" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
 				array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
 				# FixMe: These should be handled differently for telnet
 				array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
