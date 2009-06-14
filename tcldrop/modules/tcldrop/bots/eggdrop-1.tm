@@ -66,8 +66,8 @@ proc ::tcldrop::bots::eggdrop::Errors {idx error} {
 }
 
 # This is for OUTGOING bot connections only:
-proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
-	putlog "Got Write"
+proc ::tcldrop::bots::eggdrop::Write_OUT {idx args} {
+	putlog "Got Write $idx"
 	setidxinfo $idx [dict create state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
 }
 

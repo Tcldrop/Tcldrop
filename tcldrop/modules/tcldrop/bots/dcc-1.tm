@@ -56,7 +56,7 @@ proc ::tcldrop::bots::dcc::+BOT {handle idx text} {
 	addbot $bot $address
 	addhost $bot $host
 	putcmdlog "#$handle# +bot $text"
-	putdcc "Added bot '$bot' with address '$address' and hostmask '$host'"
+	putdcc $idx "Added bot '$bot' with address '$address' and hostmask '$host'"
 	return 0
 }
 

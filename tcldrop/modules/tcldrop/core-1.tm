@@ -1422,6 +1422,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	::tcldrop::encryption::default encpass blowfish
 	#::tcldrop::encryption::default encpass sha256
 	checkmodule bots::eggdrop
+	checkmodule bots::dcc
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
 	checkmodule party::dcc

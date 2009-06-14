@@ -340,11 +340,12 @@ proc ::tcldrop::core::users::botattr {handle {flags {}} {channel {}}} { if {[mat
 # Adds a user to the user database, with the optional hostmask:
 # Returns 1 for success, 0 for failure.
 proc ::tcldrop::core::users::adduser {handle {hostmask {}}} {
-	if {![validuser $handle]} {
+	if {$handle ne {} && ![validuser $handle]} {
 		setuser $handle
 		setuser $handle hosts $hostmask
 		setuser $handle console {}
 		setuser $handle flags ${::default-flags}
+		setlaston $handle 0 {never}
 		# Call all of the ADDUSER binds:
 		foreach {type flags mask proc} [bindlist adduser] {
 			if {[string match -nocase $mask $handle]} {
@@ -365,12 +366,13 @@ proc ::tcldrop::core::users::adduser {handle {hostmask {}}} {
 # Adds a bot to the user database, with the optional address and hostmask:
 # Returns 1 for success, 0 for failure.
 proc ::tcldrop::core::users::addbot {handle {address {}} {hostmask {}} args} {
-	if {![validuser $handle]} {
+	if {$handle ne {} && ![validuser $handle]} {
 		setuser $handle
 		setuser $handle hosts $hostmask
 		setuser $handle flags {b}
 		setuser $handle console {}
 		setuser $handle botaddr [list [lindex [split $address :] 0] [lindex [split $address :/] 1] [lindex [split $address /] end]]
+		setlaston $handle 0 {never}
 		return 1
 	} else {
 		return 0
