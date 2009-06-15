@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit
+	namespace export addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1274,6 +1274,67 @@ proc ::tcldrop::core::help {{type {dcc}} {command {help}} {filename {*}}} {
 		}
 	}
 	return $helpinfo
+}
+
+# textsubst <handle> <text> [substmap]
+# FixMe: handle %{cols=N}, %{cols=N/W}, %{end} (for cols) and %{center}
+# FixMe: fix %N
+proc ::tcldrop::core::textsubst {handle text {substmap {}}} {
+	# FixMe: it might be helpful to have the copyright notice in a global var somewhere
+	array set map [list {%B} ${::botnet-nick} {%N} $handle {%V} "$::tcldrop(name) v${::tcldrop(version)}" {%E} "$::tcldrop(name) v${::tcldrop(version)} (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <${::tcldrop(author)}>" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
+	array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
+	# FixMe: These should be handled differently for telnet
+	array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
+	array set map $substmap
+	# Handle %{+flag}, %{-}, %{end} (for flags)
+	set pos 0
+	set append 1
+	putdebuglog "textsubst: starting"
+	foreach {start end} [join [regexp -indices -inline -all -nocase -- {%\{(?:[+-][^\}]*|end)\}} $text]] {
+		putdebuglog "textsubst: found [string range $text $start $end], start: $start, end, $end"
+		set flags [string range $text [expr {$start+2}] [expr {$end-1}]]
+		set substStart [expr {$start-1}]
+		set substEnd [expr {$end+1}]
+		if {$append} {
+			append out [string range $text $pos $substStart]
+			putdebuglog "textsubst: appending [string length [string range $text $pos $substStart]] bytes"
+		}
+		if {[string equal -nocase $flags end] || $flags eq {-}} {
+			set pos $substEnd
+			set append 1
+			putdebuglog "textsubst: pos: $pos, append: $append"
+			continue
+		} else {
+			foreach {channel} [channels] {
+				if {[matchattr $handle $flags $channel]} {
+					putdebuglog "textsubst: matchattr match, $handle $flags $channel"
+					set match 1
+					break
+				}
+			}
+			if {$match} {
+				set append 1
+			} else {
+				set append 0
+			}
+			set pos $substEnd
+			putdebuglog "textsubst :pos: $pos, append: $append"
+		}
+	}
+	if {$append} {
+		append out [string range $text $pos end]
+		putdebuglog "textsubst end: appending [string length [string range $text $pos end]] bytes"
+	}
+	set out [string map [array get map] $out]
+	# replace blank lines with "-"
+	foreach {line} [split $out \n] {
+		if {$line eq {}} {
+			lappend retval {-}
+		} else {
+			lappend retval $line
+		}
+	}
+	return [join $retval "\n"]
 }
 
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
