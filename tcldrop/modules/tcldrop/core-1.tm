@@ -1034,11 +1034,18 @@ proc ::tcldrop::core::loadmodule {module args} { LoadModule $module $args }
 # FixMe: Some parts of this may could be dicts:
 proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
-	array set opts [list -version {0} -force {0}]
+	array set opts [list -version {0} -force {0} -required {0}]
 	array set opts $options
-	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err] && [catch { ::package require "tcldrop::${module}::main" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err] && [catch { ::package require "tcldrop::${module}::main" } err])} {
+	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err])} {
 		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
-		puterrlog "ERROR: $::errorInfo"
+		puterrlog "ERROR:\n$::errorInfo"
+		if {$opts(-required)} {
+			# If -required is true it means this module is required for basic Tcldrop functions, so failure to load it means the bot will be useless and should [exit] after showing the related $::errorInfo.
+			# Try to report the error to the proper place, exit after the FIRST successful one:
+			if {![catch { putloglev d * [set errorinfo "ERROR: $::errorInfo"] }] || ![catch { PutLogLev d - $errorinfo }] || ![catch { puts stderr $errorinfo }] || ![catch { puts stdout $errorinfo }] || ![catch { die $errorinfo }]} {
+				exit 1
+			}
+		}
 		return 0
 	} else {
 		# Defaults for modinfo:
@@ -1402,13 +1409,14 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault hourly-updates "[rand 6][rand 10]"
 	setdefault daily-updates "[format %02s [rand 25]]"
 	# Load the required modules:
-	checkmodule core
-	checkmodule core::database
-	checkmodule core::users
-	checkmodule core::conn
+	checkmodule core -required 1
+	checkmodule core::database -required 1
+	checkmodule core::users -required 1
+	checkmodule core::conn -required 1
 	checkmodule core::dcc
-	checkmodule encryption
-	#checkmodule encryption::null
+	checkmodule encryption -required 1
+	# null encryption is used for bots (+b in the userlist):
+	checkmodule encryption::null
 	checkmodule encryption::blowfish
 	#checkmodule encryption::sha1
 	#checkmodule encryption::sha256

@@ -60,7 +60,8 @@ namespace eval ::tcldrop {
 	variable version {0.6.1}
 	variable numversion {00060100}
 	variable script [info script]
-	variable name {Tcldrop}
+	# This is lowercase becase eggdrop is lowercase in the .modules list on Eggdrop, and because the tcldrop namespace is lowercase:
+	variable name {tcldrop}
 	variable depends {Tcl}
 	variable author {Tcldrop-Dev}
 	variable description {Initializes Tcldrop from within a Tcl environment.}
@@ -190,12 +191,15 @@ namespace eval ::tcldrop {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
 					return 1
 				} else {
-					if {![catch {
-						PutLogLev $name o - "Problem Starting: $error"
-					}]} {
-						catch { PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]" }
+					# If $interpname calls [exit] from within itself it will delete its own interpreter, which means it closed gracefully and would have done its own putlog's (hopefully) explaining why it when down to fast, so we won't need to do any PutLogLev's here in that case:
+					if {[interp exists $interpname]} {
+						if {![catch {
+							PutLogLev $name e - "Problem Starting: $error"
+						}]} {
+							catch { PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]" }
+						}
+						catch { interp delete $interpname }
 					}
-					catch { interp delete $interpname }
 					if {![array size Tcldrop]} { set ::tcldrop::Exit 1 }
 					return 0
 				}
