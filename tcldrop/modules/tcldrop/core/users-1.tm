@@ -204,7 +204,11 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 	switch -- [set type [string tolower $type]] {
 		{pass} {
 			if {$setting != {}} {
-				database users set $lowerhandle $type [encpass $setting]
+				if {$xtra eq {-type}} {
+					database users set $lowerhandle $type [encpass $setting -type $args]
+				} else {
+					database users set $lowerhandle $type [encpass $setting]
+				}
 			} else {
 				# Clear (unset) their password:
 				database users unset $lowerhandle $type
@@ -301,7 +305,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 	}
 }
 
-proc ::tcldrop::core::users::setpass {handle password {option {}} {type {}}} { setuser $handle pass $password $option $type }
+proc ::tcldrop::core::users::chpass {handle password {option {}} {type {}}} { setuser $handle pass $password $option $type }
 
 # This is an eggdrop v1.7.0 command:
 proc ::tcldrop::core::users::setlaston {handle when {where {}}} { setuser $handle laston $when $where }
