@@ -334,7 +334,7 @@ proc ::tcldrop::core::dcc::WHOAMI {handle idx text} {
 	return 0
 }
 
-# Usage: -host [handle] <hostmask>
+# Usage: -host [handle] <hostmask>
 proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set host [::tcldrop::core::slindex $text 1]
@@ -357,7 +357,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	return 0
 }
 
-# Usage: newpass <password>
+# Usage: newpass <password>
 proc ::tcldrop::core::dcc::NEWPASS {handle idx text} {
 	chpass $handle $text
 	putcmdlog "#$handle# newpass..."
@@ -365,7 +365,7 @@ proc ::tcldrop::core::dcc::NEWPASS {handle idx text} {
 	return 0
 }
 
-# Usage: +user <handle> [hostmask]
+# Usage: +user <handle> [hostmask]
 proc ::tcldrop::core::dcc::+USER {handle idx text} {
 	set user [::tcldrop::core::slindex $text 0]
 	set hostmask [::tcldrop::core::slindex $text 1]
@@ -409,7 +409,7 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 	return 0
 }
 
-# Usage: chaddr <bot> <address[:bot port[/user port]]>
+# Usage: chaddr <bot> <address[:bot port[/user port]]>
 proc ::tcldrop::core::dcc::CHADDR {handle idx text} {
 	set bot [slindex $text 0]
 	if {[matchattr $bot b]} {
@@ -457,7 +457,7 @@ proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	return 0
 }
 
-# Usage chattr <handle> [flags] [channel]
+# Usage chattr <handle> [flags] [channel]
 proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 	set who [::tcldrop::core::slindex $text 0]
 	set changes [::tcldrop::core::slindex $text 1]
@@ -631,7 +631,7 @@ proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	return 0
 }
 
-# Usage: motd [botname]
+# Usage: motd [botname]
 # FixMe: fix botnet part
 proc ::tcldrop::core::dcc::MOTD {handle idx text} {
 	putcmdlog "#$handle# motd $text"
@@ -639,7 +639,7 @@ proc ::tcldrop::core::dcc::MOTD {handle idx text} {
 	return 0
 }
 
-# Usage: binds [type/match] [all]
+# Usage: binds [type/match] [all]
 # FixMe: needs more formatting love, add support for matching
 proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 	putcmdlog "#$handle# binds $text"
@@ -652,7 +652,7 @@ proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 		putdcc $idx [format $format $type $flags $command $hits $binding]
 	}
 	if {[llength $matches] == 0} {
-		putdcc $idx "No command bindings found that match $text"
+		putdcc $idx "No command bindings found that match $text"
 	}
 	return 0
 }
