@@ -1,7 +1,7 @@
 # filesys.romanian.lang
 #   language messages for filesys module
 #
-# $Id: filesys.romanian.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Convertim imaginea fisierului de system in %s ...
 0x301,filedb-update: nu pot deschide directorul!

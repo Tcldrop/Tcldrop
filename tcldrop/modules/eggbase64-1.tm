@@ -5,6 +5,8 @@
 # This script provides four different functions that deal with
 # Eggdrop's funky implementations of base64.
 #
+# $Id$
+#
 # ::eggbase64::toint <string>
 # Converts encoded channel strings used in eggdrop botnet
 # protocol back to their corresponding integer values

@@ -9,7 +9,7 @@
 #           - BrasIRC.NET - http://www.brasirc.net                   #
 ######################################################################
 
-# $Id: filesys.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Convertento a imagem do sitema de arquivos em %s ...
 0x301,filedb-update: o diretório não pode ser aberto!

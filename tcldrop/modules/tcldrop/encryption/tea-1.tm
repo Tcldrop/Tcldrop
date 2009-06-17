@@ -3,7 +3,7 @@
 #		* Provides TEA (Tiny Encryption Algorithm) encryption.
 #	Depends: encryption.
 #
-# $Id: tea.tcl,v 1.3 2006/04/15 04:21:08 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -34,7 +34,7 @@ namespace eval ::tcldrop::encryption::tea {
 	variable description {Provides tea encryption via the tea package.}
 	variable commands [list]
 	variable script [info script]
-	variable rcsid {$Id: tea.tcl,v 1.3 2006/04/15 04:21:08 fireegl Exp $}
+	variable rcsid {$Id$}
 	package provide tcldrop::$name $version
 	package provide tcldrop::tea $version
 	# This makes sure we're loading from a tcldrop environment:

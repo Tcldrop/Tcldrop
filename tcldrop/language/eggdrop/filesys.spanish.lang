@@ -1,7 +1,7 @@
 # filesys.english.lang
 #   Mensajes de lenguaje del modulo filesys
 #
-# $Id: filesys.spanish.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Convirtiendo la imagen del archivo filesystem en %s ...
 0x301,filedb-update: No puedo abrir directorio!

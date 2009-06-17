@@ -1,7 +1,7 @@
 # assoc.german.lang
 #   language messages for the assoc module
 #
-# $Id: assoc.german.lang,v 1.1.1.1 2005/04/25 07:44:35 fireegl Exp $
+# $Id$
 
 0xb000,Keine Channel-Namen
 0xb001,Channel

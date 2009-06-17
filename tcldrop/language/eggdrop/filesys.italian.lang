@@ -2,7 +2,7 @@
 #   messaggi del nucleo di eggdrop
 #   by |olio|
 #
-# $Id: filesys.italian.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Conversione dell'immagine filesystem in %s ...
 0x301,filedb-aggiornamento: non posso aprire la diretory!

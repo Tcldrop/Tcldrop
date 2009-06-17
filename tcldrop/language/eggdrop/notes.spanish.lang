@@ -1,7 +1,7 @@
 # notes.spanish.lang
 #   language messages for the notes module
 #
-# $Id: notes.spanish.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+# $Id$
 
 0xc000,  Reenviando notas a: %.70s\n
 0xc001,Cambiado %d nota%s de %s a %s.

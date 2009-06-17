@@ -1,3 +1,5 @@
+# $Id$
+#
 
 namespace eval ::tclman {
 	variable url {http://Tcl.Tk/man/tcl8.5/TclCmd/}

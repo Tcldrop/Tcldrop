@@ -2,7 +2,7 @@
 #   transfer modülü icin türkce dil paketi
 # Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
 #
-# $Id: transfer.turkish.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xf00,Reddedilen dcc alimi %s: copy to %s FAILED!
 0xf01,NOTICE %s :Dosya sistemi hatasi; bekleyen dosyalar iptal ediliyor.\n

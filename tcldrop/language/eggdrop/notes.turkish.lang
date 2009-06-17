@@ -2,7 +2,7 @@
 #   notes modülü icin türkce dil paketi
 # Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
 #
-# $Id: notes.turkish.lang,v 1.1.1.1 2005/04/25 07:44:53 fireegl Exp $
+# $Id$
 
 0xc000,  Notlari yönlendir: %.70s\n
 0xc001,Switched %d note%s from %s to %s.

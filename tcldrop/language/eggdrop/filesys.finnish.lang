@@ -3,7 +3,7 @@
 #
 # Suomentanut Teemu Likonen (DtW @ IRCnet)
 #
-# $Id: filesys.finnish.lang,v 2.0 2004/08/29 17:50:00 DtW Exp $
+# $Id$
 
 0x300,Muunnan tiedostoalueen tunnuksen: %s ...
 0x301,filedb-päivitys: hakemiston avaaminen epäonnistui!

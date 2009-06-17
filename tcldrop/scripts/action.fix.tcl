@@ -6,7 +6,7 @@
 # Tothwolf  04Oct1999: changed proc names slightly
 # poptix    07Dec2001: handle irssi (and some others) "correct" messages for DCC CTCP
 #
-# $Id: action.fix.tcl,v 1.2 2005/04/25 08:10:09 fireegl Exp $
+# $Id$
 
 # Fix for mIRC dcc chat /me's:
 bind filt - "\001ACTION *\001" filt:dcc_action

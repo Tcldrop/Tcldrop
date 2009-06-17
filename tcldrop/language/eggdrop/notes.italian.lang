@@ -2,7 +2,7 @@
 #   messaggi del notes module
 #   by |olio|
 #
-# $Id: notes.italian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+# $Id$
 
 0xc000,  Rigirate le note a: %.70s\n
 0xc001,Commutate %d note%s da %s a %s.

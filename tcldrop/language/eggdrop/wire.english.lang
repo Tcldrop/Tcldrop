@@ -1,7 +1,7 @@
 # wire.english.lang
 #   language messages for wire module
 #
-# $Id: wire.english.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xa000,You are not on a wire.
 0xa001,Currently on wire

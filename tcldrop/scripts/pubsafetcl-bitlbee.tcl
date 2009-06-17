@@ -32,6 +32,8 @@
 #    a. It should expose the commands in the safe interpreter before executing their code, and then hide the commands again afterwards.
 # 2. See the FixMe's.
 
+# $Id:¤
+
 ### Begin Script:
 catch { package forget pubsafetcl::bitlbee }
 catch { package forget pubsafetcl }

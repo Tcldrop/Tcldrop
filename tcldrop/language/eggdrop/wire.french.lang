@@ -3,7 +3,7 @@
 #
 # Traduction par Fraggle, voir core.french.lang pour plus d'informations
 #
-# $Id: wire.french.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xa000,Vous n'êtes pas sur un wire.
 0xa001,Actuellement sur wire

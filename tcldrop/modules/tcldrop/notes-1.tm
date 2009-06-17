@@ -31,7 +31,7 @@ namespace eval ::tcldrop::notes {
 	variable depends {}
 	variable author {Tcldrop-Dev}
 	variable description {Provides notes support.}
-	variable rcsid {$Id: notes.tcl,v 1.2 2005/04/25 08:09:50 fireegl Exp $}
+	variable rcsid {$Id$}
 	variable commands [list]
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:

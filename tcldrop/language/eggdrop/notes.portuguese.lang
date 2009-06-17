@@ -9,7 +9,7 @@
 #           - BrasIRC.NET - http://www.brasirc.net                   #
 ######################################################################
 
-# $Id: notes.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+# $Id$
 
 0xc000,  Encaminhando notes para: %.70s\n
 0xc001,Comutando %d note%s de %s para %s.

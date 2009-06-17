@@ -1,7 +1,7 @@
 # transfer.german.lang
 #   language messages for transfer module
 #
-# $Id: transfer.german.lang,v 1.1.1.1 2005/04/25 07:44:53 fireegl Exp $
+# $Id$
 
 0xf00,DCC get zurueckgewiesen %s: kopieren nach %s schlug fehl!
 0xf01,NOTICE %s :Das Dateisystem ist defekt; entferne die Dateien aus der Warteschlange.\n

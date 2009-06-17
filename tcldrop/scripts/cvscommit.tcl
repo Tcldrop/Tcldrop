@@ -1,5 +1,7 @@
 #! /usr/bin/tclsh
-
+#
+# $Id$
+#
 # This was written so that cvs commit logs will get written to the Tcldrop support/development channel on irc.
 
 if {[info exists numversion]} {

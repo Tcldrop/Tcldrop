@@ -1,7 +1,7 @@
 # filesys.norwegian.lang
 #   language messages for filesys module
 #
-# $Id: filesys.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Konverterer filsystemets bilde i %s ...
 0x301,filedb-update: katalogen kan ikke åpnes!

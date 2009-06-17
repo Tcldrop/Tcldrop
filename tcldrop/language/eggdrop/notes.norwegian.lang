@@ -1,7 +1,7 @@
 # notes.norwegian.lang
 #   language messages for the notes module
 #
-# $Id: notes.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+# $Id$
 
 0xc000,  Videresend notitser til: %.70s\n
 0xc001,Skiftet %d notis%s fra %s til %s.

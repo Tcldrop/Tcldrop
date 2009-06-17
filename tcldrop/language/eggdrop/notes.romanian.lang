@@ -1,7 +1,7 @@
 # notes.romanian.lang
 #   language messages for the notes module
 #
-# $Id: notes.romanian.lang,v 1.1.1.1 2005/04/25 07:44:52 fireegl Exp $
+# $Id$
 
 0xc000,  Nota mutata catre: %.70s\n
 0xc001,Trecem %d nota%e de la %s catre %s.

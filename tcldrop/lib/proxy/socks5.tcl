@@ -9,7 +9,7 @@
 #  (C) 2005 Philip Moore
 #  This source file is distributed under the BSD license.
 #
-# $Id: socks5.tcl,v 1.1 2005/05/03 05:17:40 fireegl Exp $
+# $Id$
 #
 # TODO:  GSSAPI authentication which is a MUST is missing.
 #		Only CMD CONNECT implemented.

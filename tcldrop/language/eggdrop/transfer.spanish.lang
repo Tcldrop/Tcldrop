@@ -1,7 +1,7 @@
 # transfer.spanish.lang
 #   Mensajes de lenguaje para el modulo transfer
 #
-# $Id: transfer.spanish.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xf00,DCC get rechazado %s: copiado a %s FALLADO!
 0xf01,NOTICE %s :El Archivo del sistema esta roto; abortando archivos en cola.\n

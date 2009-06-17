@@ -9,7 +9,7 @@
 #           - BrasIRC.NET - http://www.brasirc.net                   #
 ##############################################################
 
-# $Id: transfer.portuguese.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xf00,Dcc Get rejeitado %s: cópia para %s FALHOU!
 0xf01,NOTICE %s :O Sistema de Arquivos está quebrado; abortando a lista de arquivos.\n

@@ -1,7 +1,7 @@
 # wire.spanish.lang
 #   Mensajes de lenguaje del modulo wire
 #
-# $Id: wire.spanish.lang,v 1.1.1.1 2005/04/25 07:44:55 fireegl Exp $
+# $Id$
 
 0xa000,Usted no esta en un wire.
 0xa001,Actualmente en wire

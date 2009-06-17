@@ -3,7 +3,7 @@
 #
 # Suomentanut Teemu Likonen (DtW @ IRCnet)
 #
-# $Id: transfer.finnish.lang,v 2.0 2004/08/29 21:45:00 DtW Exp $
+# $Id$
 
 0xf00,Hylk‰‰n DCC-vastaanoton %s: kopiointi kohteeseen %s ep‰onnistui.
 0xf01,NOTICE %s :Tiedostoj‰rjestelm‰ on viallinen; keskeyt‰n tiedoston siirron.\n

@@ -10,7 +10,7 @@
 # Tothwolf  06Oct1999: optimized
 # rtc       10Oct1999: added [set|get][dn|up]loads functions
 #
-# $Id: compat.tcl,v 1.2 2005/04/25 08:10:09 fireegl Exp $
+# $Id$
 
 proc gethosts {hand} {
   getuser $hand HOSTS

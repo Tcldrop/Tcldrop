@@ -22,7 +22,7 @@
 # guppy     03Mar2002: optimized
 # Souperman 05Nov2002: added ordnumber
 #
-# $Id: alltools.tcl,v 1.3 2005/05/08 05:07:10 fireegl Exp $
+# $Id$
 #
 ########################################
 # Descriptions of available commands:

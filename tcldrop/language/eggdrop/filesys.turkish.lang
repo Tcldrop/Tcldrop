@@ -2,7 +2,7 @@
 #   filesys modülü icin türkce dil paketi
 # Bu dosya http://www.eggdropturk.com adresinden cekilmistir.
 #
-# $Id: filesys.turkish.lang,v 1.1.1.1 2005/04/25 07:44:51 fireegl Exp $
+# $Id$
 
 0x300,Converting filesystem image in %s ...
 0x301,filedb-update: dizin acilamiyor!

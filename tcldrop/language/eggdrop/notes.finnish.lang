@@ -3,7 +3,7 @@
 #
 # Suomentanut Teemu Likonen (DtW @ IRCnet)
 #
-# $Id: notes.finnish.lang,v 2.0 2004/08/28 19:55:00 DtW Exp $
+# $Id$
 
 0xc000,  Jälleenlähetä viestit kohteeseen: %.70s\n
 0xc001,Käännetty %s viestiä (%s): %s -> %s.

@@ -1,7 +1,7 @@
 # transfer.norwegian.lang
 #   language messages for transfer module
 #
-# $Id: transfer.norwegian.lang,v 1.1.1.1 2005/04/25 07:44:54 fireegl Exp $
+# $Id$
 
 0xf00,Avviste dcc get %s: kopi til %s FEIL UNDER SENDING!
 0xf01,NOTICE %s :Filsystem feil; fjerner filer fra køen.\n

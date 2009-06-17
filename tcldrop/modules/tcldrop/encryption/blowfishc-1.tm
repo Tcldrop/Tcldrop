@@ -4,7 +4,7 @@
 #		* Note, this is NOT compatible with Eggdrop's blowfish.
 #	Depends: encryption.
 #
-# $Id: blowfishc.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -34,7 +34,7 @@ namespace eval ::tcldrop::encryption::blowfishc {
 	variable description {Provides the blowfishc encryption via a Critcl blowfishc package}
 	variable commands [list encpass Encpass encrypt Encrypt decrypt Decrypt]
 	variable script [info script]
-	variable rcsid {$Id: blowfishc.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $}
+	variable rcsid {$Id$}
 	package provide tcldrop::$name $version
 	package provide tcldrop::blowfishc $version
 	# This makes sure we're loading from a tcldrop environment:

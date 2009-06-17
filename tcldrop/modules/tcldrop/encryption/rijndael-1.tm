@@ -3,7 +3,7 @@
 #		* Provides the rijndael encryption via the Crypto.mod.
 #	Depends: encryption.
 #
-# $Id: rijndael.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
 #
@@ -33,7 +33,7 @@ namespace eval ::tcldrop::encryption::rijndael {
 	variable description {Provides rijndael encryption via Crypto.mod.}
 	variable commands [list]
 	variable script [info script]
-	variable rcsid {$Id: rijndael.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $}
+	variable rcsid {$Id$}
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
