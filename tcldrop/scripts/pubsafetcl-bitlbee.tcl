@@ -1,4 +1,4 @@
-# pubsafetcl-bitlbee.tcl v0.1 - by FireEgl@EFNet <SafeTcl@Atlantica.US> (http://Tcldrop.Org/safetcl) - 2006
+# pubsafetcl-bitlbee.tcl v0.1 - by FireEgl@EFNet <SafeTcl@Atlantica.US> (http://Tcldrop.US/safetcl) - 2006
 
 ### Description:
 # Gives you a public Tcl command interpreter that everybody can use! =)
@@ -274,7 +274,7 @@ namespace eval pubsafetcl::bitlbee {
 	proc string2list {string} { if {[catch {llength $string}]} { regexp -inline -all -- {\S+} $string } else { return $string } }
 
 	variable script [file tail [info script]]
-	putlog "$script v0.1 - by FireEgl@EFNet <FireEgl@Tcldrop.Org> http://www.Tcldrop.US/safetcl - Loaded."
+	putlog "$script v0.1 - by FireEgl@EFNet <FireEgl@Tcldrop.US> http://www.Tcldrop.US/safetcl - Loaded."
 	variable Socket
 	if {![info exists Socket] || [lsearch -exact [file channels] $Socket] == -1} {
 		catch { close $Socket }

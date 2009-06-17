@@ -2,9 +2,9 @@
 #	Provides:
 #		* notes support.
 #
-# $Id: notes.tcl,v 1.2 2005/04/25 08:09:50 fireegl Exp $
+# $Id$
 #
-# Copyright (C) 2003,2004,2005 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at Tcldrop-Dev@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 namespace eval ::tcldrop::notes {

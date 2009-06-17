@@ -1457,35 +1457,17 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault hourly-updates "[rand 6][rand 10]"
 	setdefault daily-updates "[format %02s [rand 25]]"
 	# Load the required modules:
+	# FixMe: There should be a variable or something that tells us what core/main modules to load or even which to exclude..
 	checkmodule core -required 1
 	checkmodule core::database -required 1
 	checkmodule core::users -required 1
 	checkmodule core::conn -required 1
 	checkmodule core::dcc
 	checkmodule encryption -required 1
-	# null encryption is used for bots (+b in the userlist):
-	checkmodule encryption::null
-	checkmodule encryption::blowfish
-	#checkmodule encryption::sha1
-	#checkmodule encryption::sha256
-	# Loaded because is provides the Eggdrop-style [md5] command:
-	checkmodule encryption::md5
-	#::tcldrop::encryption::default encrypt tea
-	#::tcldrop::encryption::default decrypt tea
-	::tcldrop::encryption::default encpass md5
-	::tcldrop::encryption::default encrypt blowfish
-	::tcldrop::encryption::default decrypt blowfish
-	::tcldrop::encryption::default encpass blowfish
-	#::tcldrop::encryption::default encpass sha256
-	checkmodule bots::eggdrop
-	checkmodule bots::dcc
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
-	checkmodule party::dcc
-	checkmodule party::telnet
-	checkmodule party::terminal
-	# The IRC party module shouldn't be loaded by default in v1.0, should it?
-	checkmodule party::irc
+	# bot linking support:
+	checkmodule bots
 	# Loaded by default because it provides the Eggdrop-style [dnslookup] command:
 	checkmodule dns
 	if {[rehash $type]} {

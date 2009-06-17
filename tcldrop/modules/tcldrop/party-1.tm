@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.Org>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -21,7 +21,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at Tcldrop-Dev@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 #	partyline module for tcldrop.  (REQUIRED)
@@ -415,6 +415,11 @@ proc ::tcldrop::party::LOAD {module} {
 	setdefault party_users {} -array 1 -protect 1
 	setdefault party_chans {} -array 1 -protect 1
 	setdefault party_chanusers {} -array 1 -protect 1
+	checkmodule party::dcc
+	checkmodule party::telnet
+	checkmodule party::terminal
+	# The IRC party module shouldn't be loaded by default in v1.0, should it?
+	checkmodule party::irc
 }
 
 bind evnt - loaded ::tcldrop::party::EVNT_loaded -priority 0

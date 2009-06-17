@@ -126,6 +126,20 @@ proc ::tcldrop::encryption::LOAD {module} {
 	array set Types [list]
 	variable Defaults
 	array set Defaults [list encpass [list] encrypt [list] decrypt [list]]
+	# null encryption is used for bots (+b in the userlist):
+	checkmodule encryption::null
+	checkmodule encryption::blowfish
+	#checkmodule encryption::sha1
+	#checkmodule encryption::sha256
+	# Loaded because is provides the Eggdrop-style [md5] command:
+	checkmodule encryption::md5
+	#::tcldrop::encryption::default encrypt tea
+	#::tcldrop::encryption::default decrypt tea
+	::tcldrop::encryption::default encpass md5
+	::tcldrop::encryption::default encrypt blowfish
+	::tcldrop::encryption::default decrypt blowfish
+	::tcldrop::encryption::default encpass blowfish
+	#::tcldrop::encryption::default encpass sha256
 }
 
 bind unld - encryption ::tcldrop::encryption::UNLD -priority 0

@@ -13,7 +13,9 @@
     dollar     Steven Pardieck
     FireEgl    Philip Moore
     Papillon   Hallvard Rykkje
+    phrek
     Pixelz     Rickard Utgren
+    roc
 
   Thanks go to all the people who have made individual contributions to
   the Tcldrop project by sending bug-reports, patches, and otherwise have
@@ -23,6 +25,6 @@
   contact the Tcldrop Development Team at Tcldrop-Dev@Tcldrop.US
      _________________________________________________________________
 
-   Copyright (C) 2003-2008 Tcldrop Development Team
+   Copyright (C) 2003-2009 Tcldrop Development Team
 
    $Id$

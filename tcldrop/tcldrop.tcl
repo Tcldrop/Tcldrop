@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -144,7 +144,7 @@ namespace eval ::tcldrop {
 					set tcldrop(config) $config
 					set name [file tail [file rootname $config]]
 					PutLogLev $name * - "*** Attempting to start $name... (configs: $configs)"
-					PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007 Tcldrop-Dev"
+					PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"
 					if {[tcldrop start [file tail [file rootname $config]] -config $config]} {
 						incr started
 						PutLogLev $name * - "*** $name Started."
@@ -172,7 +172,7 @@ namespace eval ::tcldrop {
 						# Create the interpreter that the Tcldrop will run in:
 						interp create $interpname
 						# Initialize the ::tcldrop namespace in the interpreter, and also create the global tcldrop array:
-						puts "$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]"
+						#puts "$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]"
 						$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]
 						# Make the Tcldrop's ::tcldrop::PutLogLev actually call ::tcldrop::PutLogLev in the parent interp:
 						interp alias $interpname ::tcldrop::PutLogLev {} [namespace current]::PutLogLev $name

@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,8 +24,8 @@
 # The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
-#	server module for Tcldrop.
-#	Depends on: idx, conn.
+#	IRC server module for Tcldrop (makes client connections to other IRC servers).
+#	Depends on: core::conn.
 
 namespace eval ::tcldrop::server {
 	variable version {0.8}
@@ -132,16 +132,15 @@ proc ::tcldrop::server::quit {{reason {}}} {
 		set ::server-idx 0
 		# If we were fully connected to a server before, call the disconnect-server events:
 		if {$return > 1} { callevent disconnect-server }
-	} else {
-		return 0
+		return $return
 	}
-	return $return
+	return 0
 }
 
 proc ::tcldrop::server::server {args} { Server $args }
 proc ::tcldrop::server::Server {opts} {
-	global server serveraddress network server-online server-idx server-cycle-wait
 	callevent connect-server
+	global server serveraddress network server-online server-idx server-cycle-wait
 	array set options [list -control ::tcldrop::server::callserver -errors ::tcldrop::server::Error -writable ::tcldrop::server::Write]
 	array set options $opts
 	if {[info exists options(-pass)]} {
@@ -238,7 +237,7 @@ proc ::tcldrop::server::callraw {from key arg} {
 			if {[catch { $proc $from $key $arg } err]} {
 				putlog "(callraw) Error in script: $proc: $err"
 				puterrlog "$::errorInfo"
-			} elseif {[string equal $err {1}]} {
+			} elseif {$err == 1} {
 				# Abort processing further binds if they return 1.
 				break
 			}
@@ -548,7 +547,7 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault default-port {6667}
 	setdefault nick {Tcldrop}
 	setdefault username {Tcldrop}
-	setdefault realname {www.Tcldrop.Org}
+	setdefault realname {www.Tcldrop.US}
 	setdefault server-online {0} -protect 1
 	setdefault server {} -protect 1
 	setdefault serveraddress {} -protect 1

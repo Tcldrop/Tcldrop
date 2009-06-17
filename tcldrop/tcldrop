@@ -35,7 +35,7 @@ done; \
 # Use the latest tclsh version found, otherwise fall back to 'tclsh' \
 exec tclsh$lastver "$0" ${1+"$@"}
 
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # $Id$
 #
@@ -108,9 +108,9 @@ namespace eval ::tcldrop {
 	} else {
 		catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 	}
-	catch { close stdout }
-	catch { close stdin }
-	catch { close stderr }
+	#catch { close stdout }
+	#catch { close stdin }
+	#catch { close stderr }
 	set tcl_interactive 0
 	exit $::tcldrop::Exit
 }

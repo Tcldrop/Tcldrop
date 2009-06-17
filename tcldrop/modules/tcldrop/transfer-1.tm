@@ -1,6 +1,6 @@
 # transfer.tcl --
 #
-# $Id: transfer.tcl,v 1.2 2005/04/25 08:10:08 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2004 phrek <ephrek@gmail.com>
 #
@@ -19,7 +19,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at Tcldrop-Dev@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 
 #
@@ -46,7 +46,7 @@ namespace eval ::tcldrop::transfer {
 	variable description {Provides dcc send/get support and userfile transfer support for eggdrop userfile sharing.}
 	variable script [info script]
 	variable commands [list dccsend getfilesendtime getfileq]
-	variable rcsid {$Id: transfer.tcl,v 1.2 2005/04/25 08:10:08 fireegl Exp $}
+	variable rcsid {$Id$}
 	package provide tcldrop::$name $version
 	# Export all the commands that should be available to 3rd-party scripters:
 	eval namespace export $commands

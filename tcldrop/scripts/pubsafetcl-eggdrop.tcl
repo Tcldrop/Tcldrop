@@ -1,4 +1,4 @@
-# pubsafetcl-eggdrop.tcl v2.2.1 - by FireEgl@EFNet <SafeTcl@Atlantica.US> (http://Tcldrop.Org/safetcl) - May 2006
+# pubsafetcl-eggdrop.tcl v2.2.1 - by FireEgl@EFNet <SafeTcl@Atlantica.US> (http://Tcldrop.US/safetcl) - May 2006
 
 ### Description:
 # Gives you a public Tcl command interpreter that everybody can use! =)

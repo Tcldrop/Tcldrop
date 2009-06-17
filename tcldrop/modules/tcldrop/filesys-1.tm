@@ -3,7 +3,7 @@
 #		* A place where users can store files. With this module, the bot is usable as a file server.
 #	Depends: transfer.
 #
-# $Id: filesys.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $
+# $Id$
 #
 # Copyright (C) 2004 phrek <ephrek@gmail.com>
 #
@@ -22,7 +22,7 @@
 # Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Or visit http://www.GNU.Org/licenses/gpl.html
 #
-# The author of this project can be reached at FireEgl@Tcldrop.Org
+# The author of this project can be reached at Tcldrop-Dev@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
 #
 #	filesys module for Tcldrop.  (OPTIONAL)
@@ -39,7 +39,7 @@ namespace eval ::tcldrop::filesys {
 	variable description {Provides the file server.}
 	variable commands [list callfil setpwd getpwd getfiles getdirs dccsend filesend fileresend setdesc getdesc setowner getowner setlink getlink getfileq getfilesendtime mkdir rmdir mv cp getflags setflags]
 	variable script [info script]
-	variable rcsid {$Id: filesys.tcl,v 1.2 2005/04/25 08:09:45 fireegl Exp $}
+	variable rcsid {$Id$}
 	package provide tcldrop::$name $version
 	# Export all the commands that should be available to 3rd-party scripters:
 	eval namespace export $commands

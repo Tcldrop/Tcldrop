@@ -330,6 +330,8 @@ proc ::tcldrop::bots::LOAD {module} {
 	proc ::tcldrop::bots::UNLD {module} {
 		return 1
 	}
+	checkmodule bots::eggdrop
+	checkmodule bots::dcc
 }
 
 proc ::tcldrop::bots::EVNT_loaded {event} {
