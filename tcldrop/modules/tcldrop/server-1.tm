@@ -74,6 +74,10 @@ proc ::tcldrop::server::callserver {idx line} {
 	}
 	callraw $from $key $arg
 	putloglev r * "\[@\] $line"
+	if {${::check-stoned}} {
+		# Receiving anything from the server should mean it's still alive..
+		variable LastPONG [clock seconds]
+	}
 }
 
 # Unused, callserver is the "control" proc now.
@@ -98,14 +102,41 @@ proc ::tcldrop::server::Write {idx} {
 		# Other:      USER someName localhost irc.afternet.org :Firstname Lastname
 		# HydraIRC:   USER FireEagle 0 * :FireEgl
 		# BitchX:     USER root +iws root :root
+		if {${check-stoned}} {
+			# Initialize LastPONG (We don't need to PING the server right away, we just connected):
+			variable LastPONG [clock seconds]
+			# Start a timer that checks LastPONG and sends the PINGs:
+			# Note: Eggdrop sends a PING every 5 minutes.
+			timer 16 [list {::tcldrop::server::CheckStoned}] -1
+		}
 	} else {
 		Error SOCKET {Unknown error}
 	}
 }
 
+proc ::tcldrop::server::CheckStoned {} {
+	variable LastPONG
+	if {$LastPONG} {
+		if {[clock seconds] - $LastPONG > 999} {
+			# It's been too long since we heard anything from the server, assume it's dead:
+			Error ${::server-idx} {Stoned server.  ¯\(o_º)/¯  }
+		} elseif {[clock seconds] - $LastPONG > 420} {
+			# Only send PINGs when we haven't heard from the server in a while.
+			puthelp "PING [clock seconds]"
+		}
+	}
+}
+
+# Update LastPONG whenever we receive a PONG (in response to our PING):
+proc ::tcldrop::server::PONG {from key arg} {
+	variable LastPONG [clock seconds]
+	return 0
+}
+
 # Closes the connect to the current IRC server.
 proc ::tcldrop::server::quit {{reason {}}} {
 	if {${::server-idx}} {
+		variable LastPONG 0
 		# We have a server idx, but it may not necessarily be fully connected (logged into) the server.
 		if {${::server-online}} {
 			# We're fully logged into the server.
@@ -153,10 +184,10 @@ proc ::tcldrop::server::Server {opts} {
 			{default} { set handle $network }
 		}
 		setidxinfo $idx [list handle $handle remote $options(-address):$options(-port) hostname $options(-address) type {SERVER} other {serv} traffictype {irc} module {server} timestamp [clock seconds]]
+		set server-idx $idx
 		# Eggdrop compatibility stuff:
 		set serveraddress "$options(-address):$options(-port)"
 		set server-online 0
-		set server-idx $idx
 	} else {
 		# Wait $server-cycle-wait before trying again.
 		variable TimerID [utimer ${server-cycle-wait} [list ::tcldrop::server::jump]]
@@ -557,7 +588,7 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault server-timeout {87}
 	setdefault server-cycle-wait {93}
 	setdefault servererror-quit {1}
-	setdefault check-stoned 1
+	setdefault check-stoned {1}
 	setdefault max-queue-msg {99}
 	setdefault network {Unknown}
 	setdefault modes-per-line {3} -protect 1
@@ -565,6 +596,7 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault max-exempts {13}
 	setdefault max-invites {13}
 	setdefault nicklen {9}
+	bind raw - PONG ::tcldrop::server::PONG -priority 100
 	bind raw - PING ::tcldrop::server::PING -priority 100
 	bind raw - ERROR ::tcldrop::server::ERROR -priority 100
 	bind raw - 001 ::tcldrop::server::001 -priority 100
@@ -607,4 +639,3 @@ proc ::tcldrop::server::UNLD {module} {
 	return 1
 }
 bind unld - server ::tcldrop::server::UNLD -priority 10
-
