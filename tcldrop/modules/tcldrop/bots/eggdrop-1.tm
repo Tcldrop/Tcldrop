@@ -45,6 +45,7 @@ namespace eval ::tcldrop::bots::eggdrop {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	if {![info exists ::tcldrop]} { return }
+	package require eggbase64
 }
 
 # This is for INCOMING bot connections only:
@@ -229,7 +230,7 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	array set idxinfo $::idxlist($idx)
 	# No longer used (for "oldbotnet"): We send 1029899 instead of $::numversion because we need to make it use the old (original) botnet protocol with us.
 	# For Eggdrop v1.6 we send 1062099 instead of $::numversion to make the other end think it's talking to a Eggdrop v1.6 bot:
-	putidx $idx "*hello!\nversion 1029899 $idxinfo(handlen) tcldrop $::tcldrop(version) <${::network}>"
+	putidx $idx "*hello!\nversion 1062099 $idxinfo(handlen) tcldrop $::tcldrop(version) <${::network}>"
 	if {$idxinfo(direction) == {in} && [passwdok $idxinfo(handle) -]} {
 		# Tell them the password to use for future connections:
 		putidx $idx "handshake [set randpass [::tcldrop::randstring 15]]"
@@ -257,6 +258,19 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	#}
 
 	putidx $idx {el}
+}
+
+#|   (45) RBOT (stackable)
+#|        bind rbot <flags> <key> <proc>
+#|        proc-name <key> <text> <nick>
+#|
+#|        Description: triggered by raw text recieved on the botnet. Key is the
+#|          botnet command (i.e. zb for putallbots, c for chat text) and may
+#|          contain wildcards.  Text is the whole line recieved.
+#|        Module: core
+# Based on: http://www.barkerjr.net/pub/irc/eggdrop/patches/rbot1.6.15.patch
+proc ::tcldrop::bots::eggdrop::callrbot {key text nick} {
+
 }
 
 proc ::tcldrop::bots::eggdrop::calleggdrop {handle idx cmd arg} {
@@ -449,12 +463,12 @@ proc ::tcldrop::bots::eggdrop::Zapf-broad {handle idx cmd arg} {
 # This is a [dccputchan] coming from KEEEEEEEL:
 # c KEEEEEEEL A Testing 1 2 3
 # chan KEEEEEEEL 0 Testing 1 2 3
-bind eggdrop b chan ::tcldrop::bots::eggdrop::Chan -priority 1000
-# Unsupported because of non-standard base64 component: bind eggdrop b c ::tcldrop::bots::eggdrop::C -priority 1000
+#bind eggdrop b chan ::tcldrop::bots::eggdrop::Chan -priority 1000
+bind eggdrop b c ::tcldrop::bots::eggdrop::Chan -priority 1000
 proc ::tcldrop::bots::eggdrop::Chan {handle idx cmd arg} {
 	set sarg [split $arg]
 	set remote [lindex $sarg 0]
-	set chan [lindex $sarg 1]
+	set chan [::eggbase64::toint [lindex $sarg 1]]
 	set text [join [lrange $sarg 2 end]]
 	# if {![string match *@* $remote]} { switch -glob -- $arg { {* has joined the party line.} - {* has left the party line: *} { return 0 } } }
 	callparty chat *:$remote chan $chan line $text
@@ -465,17 +479,14 @@ proc ::tcldrop::bots::eggdrop::Chan {handle idx cmd arg} {
 # chan Stupito 0 FireEgl has joined the party line.
 # part Atlantica FireEgl 26
 # chan Atlantica 0 FireEgl has left the party line: file sys
-# pt Atlantica FireEgl a file system
-# part KEEEEEEEL FireEgl 14
-# pt KEEEEEEEL FireEgl O byee...
 
 # actchan FireEgl@KEEEEEEEL 0 this is an action.
-bind eggdrop b actchan ::tcldrop::bots::eggdrop::Actchan -priority 1000
-# Unsupported because of non-standard base64 component: bind eggdrop b a ::tcldrop::bots::eggdrop::A -priority 1000
+#bind eggdrop b actchan ::tcldrop::bots::eggdrop::Actchan -priority 1000
+bind eggdrop b a ::tcldrop::bots::eggdrop::Actchan -priority 1000
 proc ::tcldrop::bots::eggdrop::Actchan {handle idx cmd arg} {
 	set sarg [split $arg]
 	set remote [lindex $sarg 0]
-	set chan [lindex $sarg 1]
+	set chan [::eggbase64::toint [lindex $sarg 1]]
 	set text [join [lrange $sarg 2 end]]
 	callparty action *:$remote chan $chan line $text
 	return 0
@@ -505,12 +516,12 @@ proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
 
 # <llength> *** (YSL) Linked to NauGhTy.
 # nlinked NauGhTy YSL -1061500
-bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
-# Unsupported because of the non-standard base64 components: bind eggdrop b n ::tcldrop::bots::eggdrop::N -priority 1000
+#bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
+bind eggdrop b n ::tcldrop::bots::eggdrop::Nlinked -priority 1000
 proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
-	foreach {bot uplink numversion} [split $arg] {break}
+	lassign [split $arg] bot uplink numversion
 	set icon [string index $numversion 0]
-	set numversion [string range $numversion 1 end]
+	set numversion [::eggbase64::toint [string range $numversion 1 end]]
 	lappend tracepath $uplink
 	variable Linked
 	foreach colonpath [array names Linked *:[set colonpath [string tolower $uplink]]] { set tracepath $Linked($colonpath) }
@@ -539,11 +550,11 @@ proc ::tcldrop::bots::eggdrop::Unlinked {handle idx cmd arg} {
 
 # join SaHeR ZimoZimo 0 *9 rajeh@riy-t2p134.saudi.net.sa
 # j KEEEEEEEL FireEgl A *O Proteus-D@adsl-220-213-190.bhm.bellsouth.net
-bind eggdrop b join ::tcldrop::bots::eggdrop::Join -priority 1000
-# Unsupported because of non-standard base64 components: bind eggdrop j ::tcldrop::bots::eggdrop::J -priority 1000
+#bind eggdrop b join ::tcldrop::bots::eggdrop::Join -priority 1000
+bind eggdrop b j ::tcldrop::bots::eggdrop::Join -priority 1000
 proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
 	foreach {bot handle chan flagidx userhost} [split $arg] {
-		callparty join [set usersidx [string range $flagidx 1 end]]:${handle}@$bot bot $bot handle $handle chan $chan flag [string index $flagidx 0] idx $usersidx userhost $userhost
+		callparty join [set usersidx [::eggbase64::toint [string range $flagidx 1 end]]]:${handle}@$bot bot $bot handle $handle chan [::eggbase64::toint $chan] flag [string index $flagidx 0] idx $usersidx userhost $userhost
 		break
 	}
 	return 0
@@ -551,9 +562,11 @@ proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
 
 # part KEEEEEEEL FireEgl 14
 # pt KEEEEEEEL FireEgl O byee...
-bind eggdrop b part ::tcldrop::bots::eggdrop::Part -priority 1000
+#bind eggdrop b part ::tcldrop::bots::eggdrop::Part -priority 1000
+bind eggdrop b pt ::tcldrop::bots::eggdrop::Part -priority 1000
 proc ::tcldrop::bots::eggdrop::Part {handle idx cmd arg} {
 	foreach {bot usershandle usersidx} [split $arg] {
+		set usersidx [::eggbase64::toint $usersidx]
 		callparty part ${usersidx}:${usershandle}@$bot bot $bot handle $usershandle idx $usersidx line {Parted.}
 		break
 	}
@@ -563,11 +576,14 @@ proc ::tcldrop::bots::eggdrop::Part {handle idx cmd arg} {
 # chan Atlantica 0 FireEgl is now away: la la la....
 # away Atlantica 26 la la la...
 # aw KEEEEEEEL O fell asleep..
-bind eggdrop b away ::tcldrop::bots::eggdrop::Away -priority 1000
+#bind eggdrop b away ::tcldrop::bots::eggdrop::Away -priority 1000
+bind eggdrop b aw ::tcldrop::bots::eggdrop::Away -priority 1000
 proc ::tcldrop::bots::eggdrop::Away {handle idx cmd arg} {
-	callparty away [set usersidx [lindex [set arg [split $arg]] 1]]:*@[set bot [lindex $arg 0]] bot $bot idx $usersidx line [join [lrange $arg 2 end]]
+	callparty away [set usersidx [::eggbase64::toint [lindex [set arg [split $arg]] 1]]]:*@[set bot [lindex $arg 0]] bot $bot idx $usersidx line [join [lrange $arg 2 end]]
 	return 0
 }
+
+# Unhandled:
 
 # idle Egoist 9 3175
 
@@ -585,6 +601,25 @@ proc ::tcldrop::bots::eggdrop::Away {handle idx cmd arg} {
 # reject Stupito FireEgl@Tcldrop For this reason.
 # And a [boot FireEgl@Stupito] from KEEEEEEEL:
 # r KEEEEEEEL FireEgl@Stupito The reason..
+
+# z SafeTcl Tcltest assoc A Noobuntu Botnet
+
+# i Noobuntu O I05c
+# i Noobuntu R Ia
+# i Etobicoke L Sc
+
+# i SafeTcl N PJ
+# i Noobuntu O I1IA
+# i Noobuntu R W[
+# i Etobicoke L hA
+
+# u Noobuntu +EDR0
+
+# The bot we're linked to just unlinked from us:
+# bye No reason
+
+# "End Link?" sent just after the link is fully established:
+# el
 
 bind eggdrop b ping ::tcldrop::bots::eggdrop::Ping -priority 1000
 bind eggdrop b pi ::tcldrop::bots::eggdrop::Ping -priority 1000
