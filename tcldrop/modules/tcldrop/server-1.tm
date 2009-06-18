@@ -86,7 +86,7 @@ proc ::tcldrop::server::Read {idx line} { callserver $idx $line }
 # Sends the NICK and USER info to the IRC server as soon as the socket is open:
 proc ::tcldrop::server::Write {idx} {
 	if {[valididx $idx]} {
-		global nick username realname my-hostname my-host serveraddress server-idx
+		global nick username realname my-hostname my-host serveraddress server-idx check-stoned
 		set server-idx $idx
 		callevent preinit-server
 		# FixMe: Send the PASS command here, if necessary.
@@ -107,7 +107,9 @@ proc ::tcldrop::server::Write {idx} {
 			variable LastPONG [clock seconds]
 			# Start a timer that checks LastPONG and sends the PINGs:
 			# Note: Eggdrop sends a PING every 5 minutes.
-			timer 16 [list {::tcldrop::server::CheckStoned}] -1
+			# This should be higher than the frequency the server PINGs us.
+			# FixMe: Perhaps find out the frequency the server is sending us PINGs and make sure we already have a timer higher than that..
+			timer 14 [list {::tcldrop::server::CheckStoned}] -1
 		}
 	} else {
 		Error SOCKET {Unknown error}
@@ -119,10 +121,12 @@ proc ::tcldrop::server::CheckStoned {} {
 	if {$LastPONG} {
 		if {[clock seconds] - $LastPONG > 999} {
 			# It's been too long since we heard anything from the server, assume it's dead:
-			Error ${::server-idx} {Stoned server.  ¯\(o_º)/¯  }
-		} elseif {[clock seconds] - $LastPONG > 420} {
+			quit "Stoned server..  \xAF\\(o_\xBA)/\xAF  "
+			# Jump to another server, subtracting the time we last heard from the server from the server-cycle-wait time (Let utimer deal with negative numbers):
+			variable ServerCycleTimerID [utimer [expr { ${::server-cycle-wait} - ([clock seconds] - $LastPONG) }] [list ::tcldrop::server::jump]]
+		} elseif {[clock seconds] - $LastPONG > 360} {
 			# Only send PINGs when we haven't heard from the server in a while.
-			puthelp "PING [clock seconds]"
+			putqueue idle "PING [clock seconds]"
 		}
 	}
 }
@@ -151,8 +155,7 @@ proc ::tcldrop::server::quit {{reason {}}} {
 		# Send a QUIT to the server, to be nice:
 		putnow "QUIT :$reason"
 		# Kill any background timers that may try to do a jump:
-		variable TimerID
-		set TimerID [killtimer $TimerID]
+		variable ServerCycleTimerID [killtimer $ServerCycleTimerID]
 		# Clear the server queue:
 		clearqueue all
 		# Set the globals to their offline defaults:
@@ -190,7 +193,7 @@ proc ::tcldrop::server::Server {opts} {
 		set server-online 0
 	} else {
 		# Wait $server-cycle-wait before trying again.
-		variable TimerID [utimer ${server-cycle-wait} [list ::tcldrop::server::jump]]
+		variable ServerCycleTimerID [utimer ${server-cycle-wait} [list ::tcldrop::server::jump]]
 	}
 	return "$options(-address):$options(-port)"
 }
@@ -199,7 +202,7 @@ proc ::tcldrop::server::Server {opts} {
 # and then wait until it's time to connect to another.
 proc ::tcldrop::server::Error {idx {reason {Error}}} {
 	quit $reason
-	variable TimerID [utimer ${::server-cycle-wait} [list ::tcldrop::server::jump]]
+	variable ServerCycleTimerID [utimer ${::server-cycle-wait} [list ::tcldrop::server::jump]]
 }
 
 # Eggdrop style: jump <server> <port> [password]
@@ -472,8 +475,8 @@ proc ::tcldrop::server::ERROR {from key arg} { if {${::servererror-quit}} { Erro
 
 # Set our basic info (botnick, etc) and call the init-server event:
 proc ::tcldrop::server::001 {from key arg} {
-	variable TimerID
-	catch { killutimer $TimerID }
+	variable ServerCycleTimerID
+	catch { killutimer $ServerCycleTimerID }
 	# Save the server's real name.
 	set ::server ${from}:[lindex [split $::serveraddress :] end]
 	setidxinfo ${::server-idx} [list remote $::server]
@@ -571,8 +574,8 @@ proc ::tcldrop::server::LOAD {module} {
 	array set SentData [list penalty 0 lastclicks [list [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}]]]
 	# These are aliases for the queues, because we use integers to specify queues internally.
 	variable QueueAliases
-	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99]
-	variable TimerID 0
+	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99 idle 99 i 99]
+	variable ServerCycleTimerID 0
 	# Default server related settings (These are here in case the user doesn't provide them in his/her config):
 	setdefault servers [list]
 	setdefault default-port {6667}
