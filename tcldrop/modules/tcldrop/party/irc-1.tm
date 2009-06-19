@@ -47,7 +47,7 @@ namespace eval ::tcldrop::party::irc {
 
 proc ::tcldrop::party::irc::Connect {idx} {
 	# Next line is used only during testing:
-	uplevel #0 { source [file join modules party ircparty.tcl] }
+	#~ uplevel #0 { source [file join modules party ircparty.tcl] }
 	setidxinfo $idx [list -control {::tcldrop::party::irc::Read} -writable {::tcldrop::party::irc::Write} -errors {::tcldrop::party::irc::Error} state {CONNECT} other {conn} handle {*} module {ircparty} timestamp [clock seconds]]
 	setircparty user $idx idx $idx nick {*} nickname "*@${::botnet-nick}:$idx" mode {w} username {-} realname {?}
 	if {![info exists ::tcldrop]} { control $idx ::tcldrop::party::irc::Read }
@@ -56,7 +56,7 @@ proc ::tcldrop::party::irc::Connect {idx} {
 
 proc ::tcldrop::party::irc::Write {idx} {
 	array set idxinfo [getidxinfo $idx]
-	if {$idxinfo(state) == {CONNECT}} {
+	if {$idxinfo(state) eq {CONNECT}} {
 		setidxinfo $idx [list state {REGISTER} other {reg} traffictype {partyline} timestamp [clock seconds]]
 		putidx $idx "NOTICE AUTH :*** Looking up your hostname..."
 		putidx $idx "NOTICE AUTH :*** Checking Ident"
@@ -123,7 +123,7 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	PutRAW $idx "002 $userinfo(nickname) :Your host is ${::botnet-nick}, running ircparty version $version"
 	PutRAW $idx "003 $userinfo(nickname) :This server was created Wed Feb 16 2005 at 09:34:49 PST"
 	PutRAW $idx "004 $userinfo(nickname) Tcldrop ircparty oiwszcerkfydnxbauglZC biklmnopstveI bkloveI"
-	PutRAW $idx "005 $userinfo(nickname) CHANTYPES=&# EXCEPTS INVEX CHANMODES=eIb,k,l,imnpst CHANLIMIT=&#:40 PREFIX=(ov)@+ MAXLIST=beI:100 NETWORK=ircparty MODES=4 STATUSMSG=@+ KNOCK CALLERID=g NICKLEN=9 :are supported by this server"
+	PutRAW $idx "005 $userinfo(nickname) CHANTYPES=&#% EXCEPTS INVEX CHANMODES=eIb,k,l,imnpst CHANLIMIT=&#:40 PREFIX=(ov)@+ MAXLIST=beI:100 NETWORK=ircparty MODES=4 STATUSMSG=@+ KNOCK CALLERID=g NICKLEN=9 :are supported by this server"
 	PutRAW $idx "005 $userinfo(nickname)  SAFELIST ELIST=U CASEMAPPING=rfc1459 CHARSET=ascii CHANNELLEN=50 TOPICLEN=160 KICKLEN=120 ETRACE :are supported by this server"
 	PutRAW $idx "251 $userinfo(nickname) :There are 1 users and 1 invisible on 1 servers"
 	PutRAW $idx "252 $userinfo(nickname) 0 :IRC Operators online"
@@ -134,10 +134,22 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	PutRAW $idx "266 $userinfo(nickname) 1 1 :Current global users 1, max 1"
 	PutRAW $idx "250 $userinfo(nickname) :Highest connection count: 1 (1 clients) (1 connections received)"
 	PutRAW $idx "375 $userinfo(nickname) :- ${::botnet-nick} Message of the Day -"
-	PutRAW $idx "372 $userinfo(nickname) :- MotD goes here.  =D"
+	if {![catch { open [file join ${::text-path} motd] r } fid]} {
+		foreach line [split [textsubst [idx2hand $idx] [read -nonewline $fid]] "\n"] { PutRAW $idx "372 $userinfo(nickname) :- $line" }
+	}
+	#~ PutRAW $idx "372 $userinfo(nickname) :- MotD goes here.  =D"
 	PutRAW $idx "376 $userinfo(nickname) :End of /MOTD command."
 	# Auto-join all the channels they have access to:
 	ircparty_JOIN $idx {JOIN} [join [channels] ,]
+	
+	# Auto-join the command channel for this bot:
+	putidx $idx ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :%${::botnet-nick}" [list -flush 1]
+	# /names list for the command channel:
+	PutRAW $idx "353 $userinfo(nickname) = %${::botnet-nick} :@${::botnet-nick} $userinfo(nickname)"
+	PutRAW $idx "366 $userinfo(nickname) %${::botnet-nick} :End of /NAMES list."
+	# topic for the command channel:
+	PutRAW $idx "332 $userinfo(nickname) %${::botnet-nick} :Welcome to the Command Channel for ${::botnet-nick}!"
+	PutRAW $idx "333 $userinfo(nickname) %${::botnet-nick} ${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. $::uptime"
 }
 
 # Sets ircparty related info about a chan/user/chanuser ($type).
@@ -277,11 +289,13 @@ proc ::tcldrop::party::irc::ircparty {command args} {
 	}
 }
 
+#putircparty -chan $chan ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :$chan"
 # putircparty -chan $chan -flags n ":$nick!$host PRIVMSG $chan :$text"
 # putircparty -flags n
 proc ::tcldrop::party::irc::putircparty {args} {
 	array set putinfo [list -excludeidx {} -chan {} -text [lindex $args end] -flags {}]
 	array set putinfo [lrange $args 0 end-1]
+	putlog "::tcldrop::party::irc::putircparty putinfo [array get putinfo]"
 	if {$putinfo(-chan) != {}} {
 		foreach i [ircparty chanlist $putinfo(-chan)] {
 			if {$i != $putinfo(-excludeidx) && [valididx $i] && [matchattr [idx2hand $i] $putinfo(-flags) $putinfo(-chan)]} {
@@ -308,11 +322,12 @@ proc ::tcldrop::party::irc::PutRAWClient {idx code msg} {
 }
 
 proc ::tcldrop::party::irc::ircparty_PING {idx command arg} {
-	PutRAW $idx "PONG $arg"
+	PutRAW $idx "PONG Tcldrop $arg"
 	return 1
 }
 
 proc ::tcldrop::party::irc::ircparty_PONG {idx command arg} {
+	setidxinfo $idx [list timestamp [clock seconds]]
 	return 1
 }
 
@@ -349,9 +364,9 @@ proc ::tcldrop::party::irc::ircparty_USER {idx command arg} {
 # Funnel all login commands through the OPER command:
 proc ::tcldrop::party::irc::ircparty_OPER {idx command arg} {
 	foreach {handle password} [split $arg] {break}
-	if {([validuser $handle] && ![passwdok $handle -] && [passwdok $handle $password]) && (!${::require-p} || [matchattr $line p])} {
+	if {([validuser $handle] && ![passwdok $handle -] && [passwdok $handle $password]) && (!${::require-p} || [matchattr $handle p])} {
 		#setparty $idx handle $handle
-		setidxinfo $idx [list handle $handle]
+		setidxinfo $idx [list handle [getuser $handle handle]]
 		setircparty user $idx nickname "${handle}@${::botnet-nick}:$idx"
 	}
 	return 1
