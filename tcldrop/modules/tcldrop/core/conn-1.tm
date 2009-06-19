@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -523,7 +523,7 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 	}
 	switch -- $optinfo(ident) {
 		{1} - {2} - {default} {
-			after idle [list ::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [list ::tcldrop::core::conn::Ident $idx [array get optinfo]]]
+			::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [list ::tcldrop::core::conn::Ident $idx [array get optinfo]]
 		}
 	}
 	fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
