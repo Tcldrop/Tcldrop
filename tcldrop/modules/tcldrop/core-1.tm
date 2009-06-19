@@ -1436,6 +1436,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
 	putlog "--- Loading Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
+	bind evnt - loaded ::tcldrop::core::EVNT_loaded -priority 0
 	bind evnt - init ::tcldrop::core::EVNT_init -priority 0
 	bind evnt - sighup ::tcldrop::core::EVNT_signal -priority 10000
 	bind evnt - sigint ::tcldrop::core::EVNT_signal -priority 10000
@@ -1640,7 +1641,23 @@ proc ::tcldrop::core::counter {command {id {default}} {incr {1}}} {
 	}
 }
 
-proc ::tcldrop::core::EVNT_init {event} { global pidfile botnet-nick database-basename
+# FixMe: do this some other way? / request exempts & invites for relevant net-types
+proc ::tcldrop::core::EVNT_loaded {event} {
+	putdebuglog "::tcldrop::core::EVNT_loaded $event"
+	# resynch channels after a restart
+	foreach chan [channels] {
+		if {![botonchan $chan]} {
+			putserv "JOIN $chan"
+			putquick "MODE $chan +b"
+			putquick "MODE $chan"
+			putquick "WHO $chan"
+			puthelp "TOPIC $chan"
+		}
+	}
+}
+
+proc ::tcldrop::core::EVNT_init {event} {
+	global pidfile botnet-nick database-basename
 	# Create the pid file:
 	if {![info exists pidfile] || $pidfile eq {}} {
 		if {[info exists botnet-nick] && ${botnet-nick} != {}} {
