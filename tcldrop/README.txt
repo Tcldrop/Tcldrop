@@ -11,9 +11,10 @@ Features:
 
 Requirements:
    At least Tcl v8.5.x is needed.  (http://Tcl.Tk/)
-   For background mode to work you'll need either
+   For background mode to work you'll need one of
    Expect (http://Expect.nist.gov/expect.tar.gz)
    or TclX (http://SF.Net/projects/tclx)
+   or Critcl (http://www.equi4.com/critlib)
    for their [fork] command.
    Cygwin users will also need run.exe (FixMe: Find the URL to it!)
 
