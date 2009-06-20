@@ -1,0 +1,175 @@
+Tcldrop Module Information
+$Id$
+
+Note: This is a very rough draft.
+
+    _____________________________________________________________________
+
+                         Tcldrop Module Information
+
+
+  The purpose of this document is to show you how to download, install, create,
+  and submit modules.
+
+  Contents:
+    1. What are modules?
+    2. Why use modules?
+    3. How to install a module.
+    4. Modules included with Tcldrop.
+    5. Writing modules.
+
+
+  1. What are modules?
+
+    Modules are portions of code which are loaded separately to the bot itself
+    and provide extra services. For example, the filesys module provides the
+    entire file system.
+
+
+  2. Why use modules?
+
+    Modules allow coders to add their own enhancements to the bot while
+    keeping them optional and without increasing the size of the Eggdrop core.
+
+
+  3. How to install a module.
+
+    Please note that these are only basic instructions for installing a module.
+    Please read any directions included with the module you wish to install.
+
+      1. Copy the module file (modulename-1.tm) into your bot's
+         modules/tcldrop/ folder.
+
+      7. Add 'loadmodule modulename' to your tcldrop.conf file (do not
+         add the -1.tm suffix).
+
+      8. Rehash or restart your bot.
+
+    To view your currently loaded modules, type '.module'.
+
+
+  4. Modules included with Tcldrop.
+
+    assoc*    This module provides assoc support,
+              i.e. naming channels on the partyline (botnet).
+
+    bots      The core botnet support for a generized botnet interface.
+              (deprecated, Eggdrop/Tcldrop will soon be the only recognized type of bots).
+
+    bots::eggdrop  The Eggdrop/Tcldrop botnet support.
+
+    bots::dcc  The Eggdrop botnet related DCC commands (this module should be renamed, perhaps to bots::eggdrop::dcc).
+
+    channels  This module provides channel related support for the bot.
+              Without it, you won't be able to make the bot join a channel
+              or save channel specific userfile information.
+
+    channels::dcc IRC Channel related DCC commands.
+
+    compress* This module provides support for file compression.
+              This allows the bot to transfer compressed user files and,
+              therefore, save a significant amount of bandwidth.
+
+    console   This module provides storage of console settings when you exit
+              the bot or type .store on the partyline.
+
+    console::dcc  Console related DCC commands.
+
+    core      This is the core of Tcldrop.  It's what ties everything together.
+
+    core::conn  Provides the listen/control socket commands.
+                Everything that makes a network connection should be using this.
+
+    core::database  Provides a central storage interface for the user/channel/invite/exempt/ignore/etc files.
+
+    core::dcc   The core DCC related commands.
+
+    core::users  Provides all user database related commands and binds.
+
+    ctcp      This module provides the normal ctcp replies that you'd expect.
+              Without it loaded, things like CTCP CHAT will not work.
+
+    dns       This module provides asynchronous dns support.
+              This will avoid periods where the bot just hangs there,
+              waiting for a hostname to resolve.
+
+    encryption  The core encryption support, which allows multiple encryption types to work together (not conflict).
+
+    encryption::blowfish  Eggdrop can encrypt your userfile, so users can have secure
+              passwords.  Please note that when you change your encryption
+              method later (i.e. using other modules like a md5 module),
+              you can't use your current userfile anymore.
+              Tcldrop will not start without an encryption module.
+
+    encryption::md5  Provides the [md5] Tcl command.
+
+    filesys   This module provides an area within the bot where users can store
+              and manage files.
+              With this module, the bot is usable as a file server.
+
+    irc       This module provides basic IRC support for your bot.
+              You have to load this if you want your bot to come on IRC.
+
+    irc::dcc  Provides all IRC related DCC commands.
+
+    irc::msg  Provides all IRC related MSG commands.
+
+    notes*    This module provides support for storing of notes for users from
+              each other.  Note sending between currently online users is
+              supported in the core, this is only for storing the notes for
+              later retrieval.
+
+    party     Provides the core partyline interface.
+              The partyline is basically the chat system inside a Tcldrop/Eggdrop.
+
+    party::dcc  Provides the DCC CHAT interface.
+
+    party::irc  Provides the IRC interface.  (you connect to it with your IRC client)
+
+    party::telnet  Provides the telnet interface.
+
+    party::terminal  Provides the "terminal" (stdin/stdout) interface.
+
+    seen*     This module provides very basic seen commands via msg,
+              on channel, or via dcc.
+              This module works only for users in the bot's userlist.
+
+    server    This module provides the core server support.
+              You have to load this if you want your bot to come on IRC.
+
+    server::dcc  Provides the server related DCC commands.
+
+    share     This module provides userfile sharing support between two
+              directly linked bots.
+
+    transfer* The transfer module provides DCC SEND/GET support and userfile
+              transfer support for userfile sharing.
+
+    uptime*   This module reports uptime statistics to the uptime contest
+              web site at http://uptime.eggheads.org.  Go look and see what
+              your uptime is!  It takes about 9 hours to show up, so if your
+              bot isn't listed, try again later.  See doc/settings/mod.uptime
+              for more information, including details on what information is
+              sent to the uptime server.
+
+    wire*     This module provides all the standard .wire partyline commands.
+              It is an encrypted partyline communication tool, compatible with
+              wire.tcl.
+
+    woobie    This is for demonstrative purposes only.  If you are looking for
+              starting point in writing modules, woobie is the right thing.
+
+
+* Hasn't been written for Tcldrop yet.
+
+
+  5. Programming modules.
+
+    1. Create and edit modules/tcldrop/MODULENAME-1.tm in your Tcldrop directory
+       (where MODULENAME is the module name).
+
+    See the modules/tcldrop/woobie-1.tm module as an example.
+
+_____________
+
+  Copyright (C) 2009 Tcldrop Development Team
