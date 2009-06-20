@@ -80,16 +80,13 @@ namespace eval ::tcldrop {
 	puts [Tcldrop run $tcldrop(argv)]
 	variable Exit
 	if {[info exists Exit]} { exit $Exit } elseif {$tcldrop(background-mode)} {
-		if {![catch { package require critcl }]} {
-			::critcl::cproc fork {} int { return fork(); }
-			if {[llength [info commands fork]] && ![catch { fork } pid]} {
-				if {$pid != 0} {
-					puts "Launched into the background (using Critcl)  (pid: $pid)"
-					exit 0
-				} else {
-					vwait ::tcldrop::Exit
-					exit $Exit
-				}
+		if {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
+			if {$pid != 0} {
+				puts "Launched into the background (using Critcl)  (pid: $pid)"
+				exit 0
+			} else {
+				vwait ::tcldrop::Exit
+				exit $Exit
 			}
 		} elseif {![catch { package require Tclx }] && [llength [info commands fork]] && ![catch { fork } pid]} {
 			if {$pid != 0} {
