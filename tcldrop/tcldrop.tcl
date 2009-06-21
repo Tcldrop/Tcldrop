@@ -244,6 +244,8 @@ namespace eval ::tcldrop {
 	}
 	proc tcldrop {command name args} { Tcldrop $command $name $args }
 
+	if {![info exists tcldrop(argv)]} { set tcldrop(argv) $::argv }
+
 	if {[info commands putloglev] != {}} {
 		# This is so we can see the Tcldrop's putlog's in case we're running inside an Eggdrop.
 		proc PutLogLev {name levels channel text} {
