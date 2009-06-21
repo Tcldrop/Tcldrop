@@ -762,10 +762,18 @@ namespace eval ::tcldrop {
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
 		PutLogLev * o * "Using Tclx for signal trapping."
-	} elseif {[info commands trap] != {}} {
+	} elseif {![catch { package require Expect }] && [info commands trap] != {}} {
 		# Use trap from Expect:
+		trap ::tcldrop::Signal [list SIGHUP SIGQUIT SIGTERM SIGINT SIGBUS SIGSEGV SIGFPE SIGALRM SIGILL]
+		proc ::tcldrop::Signal {args} {
+			set signal [string tolower "sig[trap -name]"]
+			variable Tcldrop
+			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
+		}
+		PutLogLev * o * "Using Expect for signal trapping."
 	} else {
 		# No signal trapping is possible. =(
+		PutLogLev * o * "Neither Tclx nor Expect found. No signal trapping possible!"
 	}
 }
 
