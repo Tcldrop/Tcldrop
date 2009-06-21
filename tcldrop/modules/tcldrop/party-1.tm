@@ -344,23 +344,6 @@ proc ::tcldrop::party::callbcst {bot text} {
 	}
 }
 
-proc ::tcldrop::party::LOG {levels channel text} {
-	global party_users idxlist botnet-nick
-	foreach u [array names party_users "*:*@${botnet-nick}"] {
-		array set userinfo $party_users($u)
-		if {[info exists idxlist($userinfo(idx))]} {
-			array set userinfo $idxlist($userinfo(idx))
-			if {[info exists userinfo(console-channel)] && ([string match -nocase $channel $userinfo(console-channel)] || [string match -nocase $userinfo(console-channel) $channel]) && [info exists userinfo(console-levels)] && [checkflags $levels $userinfo(console-levels)]} {
-				putdcc $userinfo(idx) $text
-			}
-			array unset userinfo
-		} else {
-			# FixMe: This is the wrong place for this:
-			callparty quit $u
-		}
-	}
-}
-
 bind load - party ::tcldrop::party::LOAD -priority 0
 proc ::tcldrop::party::LOAD {module} {
 	# This variable will store all the users who are on the partyline, each array name is in the form: 14:FireEgl@Botname
@@ -372,11 +355,6 @@ proc ::tcldrop::party::LOAD {module} {
 	checkmodule party::terminal
 	# The IRC party module shouldn't be loaded by default in v1.0, should it?
 	checkmodule party::irc
-}
-
-bind evnt - loaded ::tcldrop::party::EVNT_loaded -priority 0
-proc ::tcldrop::party::EVNT_loaded {event} {
-	bind log - * ::tcldrop::party::LOG
 }
 
 bind unld - party ::tcldrop::party::UNLD -priority 0

@@ -734,6 +734,18 @@ proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 	return 0
 }
 
+
+proc ::tcldrop::core::dcc::LOG {levels channel text} {
+	global idxlist
+	foreach i [array names idxlist] {
+		array set idxinfo $idxlist($i)
+		if {[info exists idxinfo(console-channel)] && ([string match -nocase $channel $idxinfo(console-channel)] || [string match -nocase $idxinfo(console-channel) $channel]) && [info exists idxinfo(console-levels)] && [checkflags $levels $idxinfo(console-levels)]} {
+			putdcc $i $text
+		}
+		array unset idxinfo
+	}
+}
+
 if {[info exists ::tcl::proc_counter]} {
 	bind dcc n proc_counter ::tcldrop::core::dcc::PROC_COUNTS
 	bind dcc n proc_counts ::tcldrop::core::dcc::PROC_COUNTS
@@ -752,6 +764,8 @@ if {[info exists ::tcl::proc_counter]} {
 
 bind load - core::dcc ::tcldrop::core::dcc::LOAD -priority 0
 proc ::tcldrop::core::dcc::LOAD {module} {
+	checkmodule console
+	bind log - * ::tcldrop::core::dcc::LOG
 	bind dcc n tcl ::tcldrop::core::dcc::TCL
 	bind dcc n set ::tcldrop::core::dcc::SET
 	bind dcc - help ::tcldrop::core::dcc::HELP
@@ -790,7 +804,6 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	loadhelp cmds1.help
 	loadhelp cmds2.help
 	loadhelp [file join set cmds1.help]
-	checkmodule console
 }
 
 bind unld - core::dcc ::tcldrop::core::dcc::UNLD
