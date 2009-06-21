@@ -141,7 +141,7 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	PutRAW $idx "376 $userinfo(nickname) :End of /MOTD command."
 	# Auto-join all the channels they have access to:
 	ircparty_JOIN $idx {JOIN} [join [channels] ,]
-	
+
 	# Auto-join the command channel for this bot:
 	putidx $idx ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :%${::botnet-nick}" [list -flush 1]
 	# /names list for the command channel:
@@ -295,7 +295,7 @@ proc ::tcldrop::party::irc::ircparty {command args} {
 proc ::tcldrop::party::irc::putircparty {args} {
 	array set putinfo [list -excludeidx {} -chan {} -text [lindex $args end] -flags {}]
 	array set putinfo [lrange $args 0 end-1]
-	putlog "::tcldrop::party::irc::putircparty putinfo [array get putinfo]"
+	#putlog "::tcldrop::party::irc::putircparty putinfo [array get putinfo]"
 	if {$putinfo(-chan) != {}} {
 		foreach i [ircparty chanlist $putinfo(-chan)] {
 			if {$i != $putinfo(-excludeidx) && [valididx $i] && [matchattr [idx2hand $i] $putinfo(-flags) $putinfo(-chan)]} {
