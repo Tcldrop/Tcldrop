@@ -764,7 +764,22 @@ namespace eval ::tcldrop {
 		PutLogLev * o * "Using Tclx for signal trapping."
 	} elseif {![catch { package require Expect }] && [info commands trap] != {}} {
 		# Use trap from Expect:
-		trap ::tcldrop::Signal [list SIGHUP SIGQUIT SIGTERM SIGINT SIGBUS SIGSEGV SIGFPE SIGALRM SIGILL]
+		set trapInfo {}
+		catch {trap ::tcldrop::Signal {SIGHUP}} trapResult; lappend trapInfo [list {SIGHUP} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGQUIT}} trapResult; lappend trapInfo [list {SIGQUIT} $trapResult]
+		catch {trap ::tcldrop::Signal {SITGTERM}} trapResult; lappend trapInfo [list {SIGTERM} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGINT}} trapResult; lappend trapInfo [list {SIGINT} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGBUS}} trapResult; lappend trapInfo [list {SIGBUS} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGSEGV}} trapResult; lappend trapInfo [list {SIGSEGV} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGFPE}} trapResult; lappend trapInfo [list {SIGFPE} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGALRM}} trapResult; lappend trapInfo [list {SIGALRM} $trapResult]
+		catch {trap ::tcldrop::Signal {SIGILL}} trapResult; lappend trapInfo [list {SIGILL} $trapResult]
+		catch {unset trapResult}
+		foreach item $trapInfo {
+			lassign item signal result
+			if {$result ne {}} { PutLogLev * o * "Expect failed to trap signal $signal: \"$result\"" }
+		}
+		catch {unset trapInfo item signal result}
 		proc ::tcldrop::Signal {args} {
 			set signal [string tolower "sig[trap -name]"]
 			variable Tcldrop
