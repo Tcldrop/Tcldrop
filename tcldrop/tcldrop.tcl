@@ -772,7 +772,7 @@ namespace eval ::tcldrop {
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
-		foreach Signal {SIGHUP SIGQUIT SIGGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGALRM SIGBUS} {
+		foreach Signal {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGALRM SIGBUS} {
 			if {[catch { trap ::tcldrop::Signal $Signal } error]} {
 				# FixMe: If there's some that fail on every OS then just remove them from the list above.
 				PutLogLev * o * "Expect failed to trap signal $Signal: \"$error\""
