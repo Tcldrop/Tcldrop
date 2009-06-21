@@ -353,7 +353,7 @@ proc ::tcldrop::core::addlangsection {section {language {}}} {
 	set retval 0
 	# Loading Eggdrop's .lang's first, and then ours, so that ours can override Eggdrops if needed.
 	foreach langfile [list [file join ${lang-path} eggdrop "${section}.${language}.lang"] [file join ${lang-path} "${section}.${language}.lang"]] {
-		if {[file readable $langfile] && ![catch { open $langfile r } fid]} {
+		if {![catch { open $langfile r } fid]} {
 			set continued 0
 			while {[gets $fid line] >= 0} {
 				if {[string equal [string index $line 0] {#}]} {

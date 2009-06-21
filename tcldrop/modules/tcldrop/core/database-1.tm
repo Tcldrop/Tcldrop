@@ -227,12 +227,8 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			upvar 1 "::tcldrop::core::database::OPT_$database" opt
 			array set opt $arguments
 			if {![info exists opt(-file)] || $opt(-file) eq {}} { set opt(-file) "${::database-basename}.$database" }
-			if {![file readable $opt(-file)]} {
-				if {![file exists $opt(-file)]} {
-					return -code error "database ${command}: The file doesn't exist: $opt(-file)"
-				} else {
-					return -code error "database ${command}: The file not readable: $opt(-file)"
-				}
+			if {![file exists $opt(-file)]} {
+				return -code error "database ${command}: The file doesn't exist: $opt(-file)"
 			} elseif {![catch { set ::database($database) [read [set fid [open $opt(-file) r]] [file size $opt(-file)]][close $fid] } return]} {
 				# Note/FixMe: It's possible that there's a line length limit for files, and since the database stores everything on one line, this limit may be reached.
 				if {![llength [info commands $database]]} { interp alias {} $database {} ::tcldrop::core::database::database $database }
