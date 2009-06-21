@@ -26,6 +26,7 @@
 #
 # roc (@efnet) 2008-10-18
 # FireEgl@EFNet 2008-10-21  (I only optimized it a bit, roc did all the hard work!  Thank you!)
+# BL4DE@EFnet 2009-06-21 complete rewrite of the encode proc
 
 package require Tcl 8.5
 namespace eval ::eggbase64 {
@@ -121,6 +122,29 @@ proc ::eggbase64::encode {input} {
 		}
 	}
 	return $output
+}
+
+# FixMe: This is BL4DE's rewrite of encode. It needs to be fixed to not be slower than the old proc. 
+#
+# time {::eggbase64::encode {V¬-/R�.¦#¦M+++=ìb}} 10000
+# 55.4778 microseconds per iteration
+# time {::eggbase64::encode2 {V¬-/R�.¦#¦M+++=ìb}} 10000
+# 59.8292 microseconds per iteration
+
+proc ::eggbase64::encode2 {input} {
+	variable EGGDROP_BASE64_SALT
+	binary scan [Pad $input] c* input
+	foreach {a b c d} $input {
+		set output ""
+		set val [expr {$a*256**3+$b*256**2+$c*256+$d}]
+		for {set i 1} {$i < 7} {incr i} {
+			append output [lindex $EGGDROP_BASE64_SALT [expr { $val % 64 }]]
+			set val [expr { $val / 64 }]
+		}
+		lappend final $output
+	}
+	foreach {a b} $final { append retval "$b$a" }
+	return $retval
 }
 
 # Returns $input with NUL padding:
