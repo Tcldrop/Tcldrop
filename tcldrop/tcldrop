@@ -75,9 +75,11 @@ namespace eval ::tcldrop {
 	variable tcldrop
 	# On at least one FreeBSD box running tclsh8.4, argv gets reset after we source another script. So we store it here in the tcldrop array for later use:
 	set tcldrop(argv) $::argv
-	if {[catch { ::source [file join [file dirname [info script]] tcldrop.tcl] }]} { ::source tcldrop.tcl }
+	if {[catch { ::source [file join [file dirname [info script]] tcldrop.tcl] } error]} {
+		puts "$error\n$::errorInfo"
+		exit 1
+	}
 	set tcldrop(host_env) {tclsh}
-	puts [Tcldrop run $tcldrop(argv)]
 	variable Exit
 	if {[info exists Exit]} { exit $Exit } elseif {$tcldrop(background-mode)} {
 		if {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
