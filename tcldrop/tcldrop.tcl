@@ -742,8 +742,11 @@ namespace eval ::tcldrop {
 			if {[array size Tcldrop]} { set pre "Tcldrop/$name: " } else { set pre {} }
 			if {![string match {*e*} $levels] || [catch { puts stderr "$pre$text" }]} { catch { puts "$pre$text" } }
 		}
+		set tcldrop(host_env) {tclsh}
+		puts [Tcldrop run $tcldrop(argv)]
 	}
 
+	# Do the signal handlers:
 	if {![catch { package require Tclx }] && [info commands signal] != {} && ![catch {
 		signal trap SIGHUP [list ::tcldrop::Signal %S]
 		signal trap SIGQUIT [list ::tcldrop::Signal %S]
@@ -764,32 +767,76 @@ namespace eval ::tcldrop {
 		PutLogLev * o * "Using Tclx for signal trapping."
 	} elseif {![catch { package require Expect }] && [info commands trap] != {}} {
 		# Use trap from Expect:
-		set trapInfo {}
-		catch {trap ::tcldrop::Signal {SIGHUP}} trapResult; lappend trapInfo [list {SIGHUP} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGQUIT}} trapResult; lappend trapInfo [list {SIGQUIT} $trapResult]
-		catch {trap ::tcldrop::Signal {SITGTERM}} trapResult; lappend trapInfo [list {SIGTERM} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGINT}} trapResult; lappend trapInfo [list {SIGINT} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGBUS}} trapResult; lappend trapInfo [list {SIGBUS} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGSEGV}} trapResult; lappend trapInfo [list {SIGSEGV} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGFPE}} trapResult; lappend trapInfo [list {SIGFPE} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGALRM}} trapResult; lappend trapInfo [list {SIGALRM} $trapResult]
-		catch {trap ::tcldrop::Signal {SIGILL}} trapResult; lappend trapInfo [list {SIGILL} $trapResult]
-		catch {unset trapResult}
-		foreach item $trapInfo {
-			lassign item signal result
-			if {$result ne {}} { PutLogLev * o * "Expect failed to trap signal $signal: \"$result\"" }
-		}
-		catch {unset trapInfo item signal result}
 		proc ::tcldrop::Signal {args} {
 			set signal [string tolower "sig[trap -name]"]
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
+		foreach Signal {SIGHUP SIGQUIT SIGGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGALRM SIGBUS} {
+			if {[catch { trap ::tcldrop::Signal $Signal } error]} {
+				# FixMe: If there's some that fail on every OS then just remove them from the list above.
+				PutLogLev * o * "Expect failed to trap signal $Signal: \"$error\""
+			}
+		}
+		unset -nocomplain Signal error
 		PutLogLev * o * "Using Expect for signal trapping."
 	} else {
 		# No signal trapping is possible. =(
 		PutLogLev * o * "Neither Tclx nor Expect found. No signal trapping possible!"
 	}
-}
 
-catch { namespace import ::tcldrop::* }
+	variable Exit
+	# Exit right now if something already set Exit:
+	if {[info exists Exit]} { exit $Exit }
+
+	#catch { namespace import ::tcldrop::* }
+
+	# Background and foreground modes only apply to tclsh...
+	# If we're running inside an Eggdrop or Wish or some other program then they'll keep us running (no need to do fork or vwait in those cases).
+	if {$tcldrop(host_env) eq {tclsh}} {
+		if {$tcldrop(background-mode)} {
+			# Background mode was requested.
+			if {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
+				if {$pid != 0} {
+					puts "Launched into the background (using Critcl)  (pid: $pid)"
+					exit 0
+				} else {
+					vwait ::tcldrop::Exit
+					exit $Exit
+				}
+			} elseif {![catch { package require Tclx }] && [llength [info commands fork]] && ![catch { fork } pid]} {
+				if {$pid != 0} {
+					puts "Launched into the background (using TclX)  (pid: $pid)"
+					exit 0
+				} else {
+					vwait ::tcldrop::Exit
+					exit $Exit
+				}
+			} elseif {![catch { package require Expect }] && [llength [info commands fork]] && ![catch { fork } pid]} {
+				if {$pid != 0} {
+					puts "Launched into the background (using Expect)  (pid: $pid)"
+					exit 0
+				} else {
+					catch { disconnect }
+					vwait ::tcldrop::Exit
+					exit $Exit
+				}
+			} else {
+				puts "Running in foreground mode.  (pid: [pid])\n(Install Tclx or Expect for background mode support.)"
+				set tcldrop(background-mode) 0
+			}
+		}
+		# Foreground mode was requested or we're falling back to it.  (otherwise we would have exited before we got to this point).
+		puts "${::argv0}: Entering Tcl event-loop (vwait)"
+		if {![catch { vwait ::tcldrop::Exit } error]} {
+			catch { puts "Exiting with error level $Exit ... $error" }
+		} else {
+			catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
+		}
+	}
+	#catch { close stdout }
+	#catch { close stdin }
+	#catch { close stderr }
+	#set tcl_interactive 0
+	exit $::tcldrop::Exit
+}

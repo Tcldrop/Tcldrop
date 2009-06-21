@@ -75,53 +75,5 @@ namespace eval ::tcldrop {
 	variable tcldrop
 	# On at least one FreeBSD box running tclsh8.4, argv gets reset after we source another script. So we store it here in the tcldrop array for later use:
 	set tcldrop(argv) $::argv
-	if {[catch { ::source [file join [file dirname [info script]] tcldrop.tcl] } error]} {
-		puts "$error\n$::errorInfo"
-		exit 1
-	}
-	set tcldrop(host_env) {tclsh}
-	puts [Tcldrop run $tcldrop(argv)]
-	variable Exit
-	if {[info exists Exit]} { exit $Exit } elseif {$tcldrop(background-mode)} {
-		if {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
-			if {$pid != 0} {
-				puts "Launched into the background (using Critcl)  (pid: $pid)"
-				exit 0
-			} else {
-				vwait ::tcldrop::Exit
-				exit $Exit
-			}
-		} elseif {![catch { package require Tclx }] && [llength [info commands fork]] && ![catch { fork } pid]} {
-			if {$pid != 0} {
-				puts "Launched into the background (using TclX)  (pid: $pid)"
-				exit 0
-			} else {
-				vwait ::tcldrop::Exit
-				exit $Exit
-			}
-		} elseif {![catch { package require Expect }] && [llength [info commands fork]] && ![catch { fork } pid]} {
-			if {$pid != 0} {
-				puts "Launched into the background (using Expect)  (pid: $pid)"
-				exit 0
-			} else {
-				catch { disconnect }
-				vwait ::tcldrop::Exit
-				exit $Exit
-			}
-		} else {
-			puts {Running in foreground mode. Install Tclx or Expect for background mode support.}
-			set tcldrop(background-mode) 0
-		}
-	}
-	puts "${::argv0}: Entering Tcl event-loop (vwait)"
-	if {![catch { vwait ::tcldrop::Exit } error]} {
-		catch { puts "Exiting with error level $Exit ... $error" }
-	} else {
-		catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
-	}
-	#catch { close stdout }
-	#catch { close stdin }
-	#catch { close stderr }
-	set tcl_interactive 0
-	exit $::tcldrop::Exit
+	::source [file join [file dirname [info script]] tcldrop.tcl]
 }
