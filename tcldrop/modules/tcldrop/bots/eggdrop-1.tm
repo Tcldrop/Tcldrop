@@ -125,9 +125,9 @@ proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
 # > el
 
 proc ::tcldrop::bots::eggdrop::Read {idx line} {
-	putloglev d * "in eggdrop::Read $idx $line"
+	#putloglev d * "in eggdrop::Read $idx $line"
 	array set idxinfo $::idxlist($idx)
-	putloglev d * "idxinfo(state): $idxinfo(state)"
+	#putloglev d * "idxinfo(state): $idxinfo(state)"
 	switch -- $idxinfo(state) {
 		{FORK_BOT} { Write_OUT $idx }
 		{BOT_IN} { Write_IN $idx $line }
@@ -248,6 +248,8 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	variable Peers
 	set Peers($idx) $botinfo(handle)
 	registerbot $botinfo(handle) [list handle $botinfo(handle) id $lowerhandle type eggdrop]
+
+	# Notify the LINK binds:
 	calllink $botinfo(handle) ${::botnet-nick}
 
 	# join !botname user chan# (icon)sock user@host
@@ -269,26 +271,46 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 #|          contain wildcards.  Text is the whole line recieved.
 #|        Module: core
 # Based on: http://www.barkerjr.net/pub/irc/eggdrop/patches/rbot1.6.15.patch
+# callrbot: You can compare this procs function to the callraw proc in server.tm:
 proc ::tcldrop::bots::eggdrop::callrbot {key text nick} {
-
-}
-
-proc ::tcldrop::bots::eggdrop::calleggdrop {handle idx cmd arg} {
-	# retval will be the number of binds that were triggered..
-	set retval 0
-	foreach {type flags mask proc} [bindlist eggdrop $cmd] {
-		if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
-			if {[catch { $proc $handle $idx $cmd $arg } err]} {
+	foreach {type flags mask proc} [bindlist rbot $key] {
+		if {[string equal -nocase $key $mask] && [matchattr $nick $flags]} {
+			if {[catch { $proc $key $text $nick } err]} {
 				putlog "error in script: $proc: $err"
 			} elseif {[string equal $err {1}]} {
+				countbind $type $mask $proc
 				# Abort processing further binds if they return 1.
-				break
+				return 1
+			} else {
+				countbind $type $mask $proc
 			}
-			incr retval
-			countbind $type $mask $proc
 		}
 	}
-	if {!$retval} { putdebuglog "calleggdrop: $handle $idx $cmd $arg" }
+	return 0
+}
+
+# calleggdrop: You can compare this procs function to the callserver proc in server.tm:
+proc ::tcldrop::bots::eggdrop::calleggdrop {handle idx cmd arg} {
+	if {![set retval [callrbot $cmd "$cmd $arg" $handle]]} {
+		# FixMe: Consider changing the bind name from "eggdrop" to something else.
+		foreach {type flags mask proc} [bindlist eggdrop $cmd] {
+			if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
+				if {[catch { $proc $handle $idx $cmd $arg } err]} {
+					putlog "error in script: $proc: $err"
+				} elseif {[string equal $err {1}]} {
+					# Abort processing further binds if they return 1.
+					incr retval
+					countbind $type $mask $proc
+					break
+				} else {
+					incr retval
+					countbind $type $mask $proc
+				}
+			}
+		}
+	}
+	# If $retval is 0 it means we didn't trigger any binds so note it in the logs:
+	if {!$retval} { putdebuglog "calleggdrop (unhandled bot command): $handle $idx $cmd $arg" }
 	set retval
 }
 
@@ -391,7 +413,7 @@ proc ::tcldrop::bots::eggdrop::Handshake {handle idx cmd arg} {
 bind eggdrop b version ::tcldrop::bots::eggdrop::Version -priority -1000
 proc ::tcldrop::bots::eggdrop::Version {handle idx cmd arg} {
 	if {([string equal $cmd {version}] || [string equal $cmd {v}]) && [string is integer -strict [set handlen [lindex [set sline [split $arg]] 1]]]} {
-		foreach {numversion handlen bottype version network} $sline { break }
+		lassign $sline numversion handlen bottype version network
 		setidxinfo $idx [set version [list numversion $numversion handlen $handlen bottype $bottype version $version network $network]]
 		variable Bots
 		if {[info exists Bots([set lowerbot [string tolower $handle]])]} { array set botinfo $Bots($lowerbot) }
@@ -504,7 +526,7 @@ proc ::tcldrop::bots::eggdrop::Chat {handle idx cmd arg} {
 
 bind eggdrop b update ::tcldrop::bots::eggdrop::Update -priority 1000
 proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
-	foreach {bot numversion} [split $arg] {break}
+	lassign [split $arg] bot numversion
 	variable Bots
 	if {[info exists Bots([set bot [string tolower $bot]])]} {
 		array set botinfo $Bots($bot)
@@ -516,7 +538,7 @@ proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
 
 # <llength> *** (YSL) Linked to NauGhTy.
 # nlinked NauGhTy YSL -1061500
-#bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
+bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
 bind eggdrop b n ::tcldrop::bots::eggdrop::Nlinked -priority 1000
 proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
 	lassign [split $arg] bot uplink numversion
@@ -553,10 +575,10 @@ proc ::tcldrop::bots::eggdrop::Unlinked {handle idx cmd arg} {
 #bind eggdrop b join ::tcldrop::bots::eggdrop::Join -priority 1000
 bind eggdrop b j ::tcldrop::bots::eggdrop::Join -priority 1000
 proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
-	foreach {bot handle chan flagidx userhost} [split $arg] {
-		callparty join [set usersidx [::eggbase64::toint [string range $flagidx 1 end]]]:${handle}@$bot bot $bot handle $handle chan [::eggbase64::toint $chan] flag [string index $flagidx 0] idx $usersidx userhost $userhost
-		break
-	}
+	lassign [split $arg] bot handle chan flagidx userhost
+	# FixMe: Do callchjn here instead of callparty..callparty join should be invoked by a CHJN bind:
+	# Note: Joining one channel automatically means they left the previous one they're in (Eggdrop doesn't send part/pt's unless they do ".chat off")
+	callparty join [set usersidx [::eggbase64::toint [string range $flagidx 1 end]]]:${handle}@$bot bot $bot handle $handle chan [::eggbase64::toint $chan] flag [string index $flagidx 0] idx $usersidx userhost $userhost
 	return 0
 }
 
@@ -565,11 +587,10 @@ proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
 #bind eggdrop b part ::tcldrop::bots::eggdrop::Part -priority 1000
 bind eggdrop b pt ::tcldrop::bots::eggdrop::Part -priority 1000
 proc ::tcldrop::bots::eggdrop::Part {handle idx cmd arg} {
-	foreach {bot usershandle usersidx} [split $arg] {
-		set usersidx [::eggbase64::toint $usersidx]
-		callparty part ${usersidx}:${usershandle}@$bot bot $bot handle $usershandle idx $usersidx line {Parted.}
-		break
-	}
+	set partmsg [lassign [split $arg] bot usershandle usersidx]
+	set usersidx [::eggbase64::toint $usersidx]
+	# FixMe: Do a callchpt here instead of callparty..callparty part should be invoked by a CHPT bind:
+	callparty part ${usersidx}:${usershandle}@$bot bot $bot handle $usershandle idx $usersidx line $partmsg
 	return 0
 }
 
@@ -618,13 +639,22 @@ proc ::tcldrop::bots::eggdrop::Away {handle idx cmd arg} {
 # The bot we're linked to just unlinked from us:
 # bye No reason
 
+# "nick change", I changed my name using: .handle Fire_Egl
+# nc SafeTcl N Fire_Egl
+
 # "End Link?" sent just after the link is fully established:
 # el
 
 bind eggdrop b ping ::tcldrop::bots::eggdrop::Ping -priority 1000
 bind eggdrop b pi ::tcldrop::bots::eggdrop::Ping -priority 1000
 proc ::tcldrop::bots::eggdrop::Ping {handle idx cmd arg} {
-	putidx $idx [string trimright "pong $arg"]
+	putidx $idx [string trimright "po $arg"]
+	return 0
+}
+
+bind eggdrop b pong ::tcldrop::bots::eggdrop::Ping -priority 1000
+bind eggdrop b po ::tcldrop::bots::eggdrop::Ping -priority 1000
+proc ::tcldrop::bots::eggdrop::Pong {handle idx cmd arg} {
 	return 0
 }
 

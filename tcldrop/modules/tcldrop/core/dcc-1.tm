@@ -41,7 +41,7 @@ namespace eval ::tcldrop::core::dcc {
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}
-	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle calldcc callchon callchof dccdumpfile dccsimul]
+	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle getdccaway setdccaway getchan setchan calldcc callchon callchof dccdumpfile dccsimul]
 	# putdccall getdccaway dccbroadcast putdccbut
 	namespace export {*}$commands
 }
@@ -201,6 +201,59 @@ proc ::tcldrop::core::dcc::dccdumpfile {idx filename} {
 #    Module: core
 proc ::tcldrop::core::dcc::getdccidle {idx} { expr { [clock seconds] - [idxinfo $idx timestamp] } }
 
+
+#  getdccaway <idx>
+#    Returns: away message for a dcc chat user (or "" if the user is not
+#      set away)
+#    Module: core
+proc ::tcldrop::core::dcc::getdccaway {idx} {
+	if {[info exists ::idxlist($idx)] && [dict exists $::idxlist($idx) away]} {
+		dict get $::idxlist($idx) away
+	}
+}
+
+#  setdccaway <idx> <message>
+#    Description: sets a party line user's away message and marks them away.
+#     If set to "", the user is marked as no longer away.
+#    Returns: nothing
+#    Module: core
+proc ::tcldrop::core::dcc::setdccaway {idx text} {
+	if {[info exists ::idxlist($idx)]} {
+		dict set ::idxlist($idx) away $text
+	}
+	# Notify the partyline:
+	callparty away ${idx}:*@${::botnet-nick} line $text
+}
+
+#  getchan <idx>
+#    Returns: the current party line channel for a user on the party line;
+#      "0" indicates he's on the group party line, "-1" means he has chat off,
+#      and a value from 1 to 99999 is a private channel
+#    Module: core
+# Note: This command is in this module because it can be used to determine if the partyline is used at all.
+#       And because you can't use it to find the partyline chan of a user who's on a remote bot (it only works for LOCAL users).
+proc ::tcldrop::core::dcc::getchan {idx} {
+	getconsole $idx chan
+}
+
+#  setchan <idx> <channel>
+#    Description: sets a party line user's channel. The party line user
+#      is not notified that she is now on a new channel. A channel name
+#      can be used (provided it exists).
+#    Returns: nothing
+#    Module: core
+# -1 means none (Such as when doing ".chat off")
+proc ::tcldrop::core::dcc::setchan {idx {channel {-1}}} {
+	if {[info exists ::idxlist($idx)]} {
+		setconsole $idx chan $channel
+		array set idxinfo $::idxlist($idx)
+		# FixMe: Need to create a command that can return what "flag" to use based on user-flags
+		# flag is one of: * (owner), + (master), @ (op), or % (botnet master).
+		# FixMe: Allow hiding the userhost like the nohostwhowhom1.6.16.patch by BarkerJr does, except make it a per-user option and/or a global setting to turn it on/off:
+		callparty join $idx:$idxinfo(handle)@${::botnet-nick} bot ${::botnet-nick} handle $idxinfo(handle) idx $idx chan $channel flag "" userhost $idxinfo(remote)
+	}
+}
+
 # FILTDCC, filter for things before they're sent to the remote.  (Tcldrop-specific)
 # Note: FILT is a filter for things we receive FROM the remote.  (Taken from Eggdrop)
 proc ::tcldrop::core::dcc::callfiltdcc {idx text args} {
@@ -247,6 +300,8 @@ proc ::tcldrop::core::dcc::calldcc {handle idx arg} {
 #           wildcards. This is NOT triggered when someone returns from the
 #           file area, etc.
 #         Module: core
+# This is in this module for the same reasons [getchan] and [setchan] are here.
+# This is not really a partyline related bind.  As you could trigger this bind without involving the partyline at all.
 proc ::tcldrop::core::dcc::callchon {handle idx} {
 	foreach {type flags mask proc} [bindlist chon] {
 		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
@@ -268,6 +323,8 @@ proc ::tcldrop::core::dcc::callchon {handle idx} {
 #           can contain wildcards. Note that the connection may have already
 #           been dropped by the user, so don't send output to the idx.
 #         Module: core
+# This is in this module for the same reasons [getchan] and [setchan] are here.
+# This is not really a partyline related bind.  As you could trigger this bind without involving the partyline at all.
 proc ::tcldrop::core::dcc::callchof {handle idx {reason {}}} {
 	foreach {type flags mask proc} [bindlist chof] {
 		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
@@ -278,6 +335,26 @@ proc ::tcldrop::core::dcc::callchof {handle idx {reason {}}} {
 		}
 	}
 }
+
+
+# FixMe: This code is flawed, perhaps forget it and start over like it never existed:
+#bind chon - * ::tcldrop::party::CHON
+#proc ::tcldrop::party::CHON {handle idx} {
+#	party add ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick}
+#}
+#bind chon - * ::tcldrop::party::CHON -priority 0
+#proc ::tcldrop::party::CHON {handle idx} {
+#	if {[set chan [getchan $idx]] != -1} {
+#		callparty connect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
+#	}
+#}
+#bind chof - * ::tcldrop::party::CHOF -priority 0
+#proc ::tcldrop::party::CHOF {handle idx} {
+#	if {[set chan [getchan $idx]] != -1} {
+#		callparty disconnect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
+#	}
+#}
+
 
 # Here goes all the DCC binds:
 # These are the CORE dcc commands only!  Any module related dcc commands should be put in their module directory.
@@ -713,6 +790,7 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	loadhelp cmds1.help
 	loadhelp cmds2.help
 	loadhelp [file join set cmds1.help]
+	checkmodule console
 }
 
 bind unld - core::dcc ::tcldrop::core::dcc::UNLD

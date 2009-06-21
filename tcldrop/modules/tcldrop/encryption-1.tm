@@ -135,10 +135,10 @@ proc ::tcldrop::encryption::LOAD {module} {
 	checkmodule encryption::md5
 	#::tcldrop::encryption::default encrypt tea
 	#::tcldrop::encryption::default decrypt tea
-	::tcldrop::encryption::default encpass md5
-	::tcldrop::encryption::default encrypt blowfish
-	::tcldrop::encryption::default decrypt blowfish
-	::tcldrop::encryption::default encpass blowfish
+	default encpass md5
+	default encrypt blowfish
+	default decrypt blowfish
+	default encpass blowfish
 	#::tcldrop::encryption::default encpass sha256
 }
 

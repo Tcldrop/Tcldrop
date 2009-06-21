@@ -26,6 +26,20 @@
 #
 #	partyline module for tcldrop.  (REQUIRED)
 
+
+# Notes:
+#
+# This is my (FireEgl) attempt to make a generalized partyline system; one that's independent of an Eggdrop-style partyline.
+# Reason being, I want the party::* modules to not directly depend on the bots::eggdrop module.
+# Instead, they can both depend on THIS module for doing anything partyline related.
+# The "partyline", I envisage, will be a generalized thing that can span across Eggdrop botnets, or even a pseudo IRC network, or whatever else.
+
+# FixMe: A lot of this should be moved into the bots::eggdrop module.  Whatever's left is all that this module should contain.
+
+
+# The partyline shouldn't depend on the bots::eggdrop module.. It shouldn't even contain any Eggdrop-style partyline commands/binds, I want it more general-purpose than that..
+# The partyline should be its own thing, with bots::eggdrop interfacing with it.  And the same with party::telnet, it should interface with the partyline in the same way.
+
 namespace eval ::tcldrop::party {
 	variable name {party}
 	variable version {0.1}
@@ -34,53 +48,16 @@ namespace eval ::tcldrop::party {
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
 	package provide tcldrop::partyline $version
-	variable depends {console bots core::users core::dcc core::conn core}
+	variable depends {bots core::users core::dcc core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Core partyline support.}
-	variable commands [list callparty getparty setparty party whom dccbroadcast dccputchan getdccaway setdccaway whomlist callchjn callchpt callaway callchat callact callbcst]
+	variable commands [list callparty getparty setparty party whom dccbroadcast dccputchan whomlist callchjn callchpt callaway callchat callact callbcst]
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
 }
-
-
-# FixMe: When a bot unlinks, we should remove anything we know about the users on that bot from the Users array.
-#    (25) DISC (stackable)
-#         bind disc <flags> <mask> <proc>
-#         proc-name <botname>
-#
-#         Description: triggered when a bot disconnects from the botnet for
-#           whatever reason. Just like the link bind, flags are ignored; mask
-#           is matched against the botnetnick of the bot that unlinked.
-#           Wildcards are supported in mask.
-#         Module: core
-bind disc - * ::tcldrop::party::DISC -priority -1000
-proc ::tcldrop::party::DISC {bot {reason {Unlinked.}}} {
-	callparty quit *:*@$bot line $reason
-	callparty disc $bot line $reason
-}
-
-bind link - * ::tcldrop::party::LINK -priority -1000
-proc ::tcldrop::party::LINK {bot via} {
-	callparty link $bot handle $bot bot $bot via $via
-}
-
-bind chon - * ::tcldrop::party::CHON -priority 0
-proc ::tcldrop::party::CHON {handle idx} {
-	if {[set chan [getchan $idx]] != -1} {
-		callparty connect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
-	}
-}
-
-bind chof - * ::tcldrop::party::CHOF -priority 0
-proc ::tcldrop::party::CHOF {handle idx} {
-	if {[set chan [getchan $idx]] != -1} {
-		callparty disconnect ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick} chan $chan line {Join.}
-	}
-}
-
 
 #  whom <chan>
 #    Returns: list of people on the botnet who are on that channel. 0 is
@@ -138,30 +115,12 @@ proc ::tcldrop::party::dccputchan {channel message} { callparty chat ${::botnet-
 #     Returns: nothing
 #     Module: core
 
-#  getdccaway <idx>
-#    Returns: away message for a dcc chat user (or "" if the user is not
-#      set away)
-#    Module: core
-proc ::tcldrop::party::getdccaway {idx} {
-	foreach u [array names ::party_users [string tolower ${idx}:*@${::botnet-nick}]] {
-		array set userinfo $::party_users($u)
-		if {[info exists userinfo(away)] && $userinfo(away) != {}} { return $userinfo(away) }
-		array unset userinfo
-	}
-}
-
-#  setdccaway <idx> <message>
-#    Description: sets a party line user's away message and marks them away.
-#     If set to "", the user is marked as no longer away.
-#    Returns: nothing
-#    Module: core
-proc ::tcldrop::party::setdccaway {idx text} { callparty away ${idx}:*@${::botnet-nick} line $text }
 
 proc ::tcldrop::party::callparty {command usermask args} { CallParty $command $usermask $args }
 proc ::tcldrop::party::CallParty {command usermask arguments} {
 	global party_users
 	foreach u [array names party_users [string tolower $usermask]] {
-		array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost {Uknown@Uknown} chans [list] source {}]
+		array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost {Uknown@Uknown} chans [list] away {} source {}]
 		array set userinfo $party_users($u)
 		array set userinfo $arguments
 		set userinfo(idletime) [clock seconds]
@@ -208,7 +167,7 @@ proc ::tcldrop::party::CallParty {command usermask arguments} {
 proc ::tcldrop::party::party {command usermask args} {
 	switch -- $command {
 		{add} {
-			array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost $usermask chans [list] source {} idletime [clock seconds]]
+			array set userinfo [list command $command line {} idx 0 handle {} bot {} flag {} chan 0 userhost $usermask chans [list] away {} source {} idletime [clock seconds]]
 			array set userinfo $args
 			set ::party_users($usermask) [array get userinfo]
 		}
@@ -238,13 +197,6 @@ proc ::tcldrop::party::setparty {type what args} {
 proc ::tcldrop::party::getparty {type what args} {
 
 }
-
-
-bind chon - * ::tcldrop::party::CHON
-proc ::tcldrop::party::CHON {handle idx} {
-	party add ${idx}:${handle}@${::botnet-nick} idx $idx handle $handle bot ${::botnet-nick}
-}
-
 
 # The following are Eggdrop partyline binds,
 # they should not be used by any of Tcldrop's modules,

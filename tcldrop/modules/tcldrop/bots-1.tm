@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -27,7 +27,6 @@
 #	bots module for tcldrop.
 #
 # This module provides the core components for bots of all types to talk to each other.
-
 
 namespace eval ::tcldrop::bots {
 	variable name {bots}
@@ -135,13 +134,14 @@ proc ::tcldrop::bots::calllink {bot {via {}}} {
 
 #    (25) DISC (stackable)
 #         bind disc <flags> <mask> <proc>
-#         proc-name <botname>
+#         proc-name <botname> [reason]
 #
 #         Description: triggered when a bot disconnects from the botnet for
 #           whatever reason. Just like the link bind, flags are ignored; mask
 #           is matched against the botnetnick of the bot that unlinked.
 #           Wildcards are supported in mask.
 #         Module: core
+# Support for reason is Tcldrop-only.
 proc ::tcldrop::bots::calldisc {bot {reason {}}} {
 	foreach {type flags mask proc} [bindlist disc] {
 		if {[string match -nocase $mask $bot]} {
@@ -318,6 +318,19 @@ proc ::tcldrop::bots::AutoLinkBots {minute hour day month year} {
 		}
 	}
 }
+
+
+bind disc - * ::tcldrop::party::DISC -priority -1000
+proc ::tcldrop::party::DISC {bot {reason {Unlinked.}}} {
+	callparty quit *:*@$bot line $reason
+	callparty disc $bot line $reason
+}
+
+bind link - * ::tcldrop::party::LINK -priority -1000
+proc ::tcldrop::party::LINK {bot via} {
+	callparty link $bot handle $bot bot $bot via $via
+}
+
 
 bind load - bots ::tcldrop::bots::LOAD -priority 0
 proc ::tcldrop::bots::LOAD {module} {

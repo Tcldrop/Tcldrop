@@ -545,7 +545,7 @@ The optional arguments will be documented here (when they're generally useful).
 
   channel info <name>
     Returns: a list of info about the specified channel's settings.
-    COMPATIBILITY WARNING: Tcldrop doesn't return the info in 
+    COMPATIBILITY WARNING: Tcldrop doesn't return the info in
                            the same format that Eggdrop does.
     Module: channels
 
@@ -791,7 +791,7 @@ The optional arguments will be documented here (when they're generally useful).
     Returns: nothing
     Module: irc
 
-  putkick <channel> <nick,nick,...> [reason] 
+  putkick <channel> <nick,nick,...> [reason]
     Description: sends kicks to the server and tries to put as many nicks into one kick command as possible.
    Returns: nothing
    Module: irc
@@ -2266,3 +2266,5 @@ The optional arguments will be documented here (when they're generally useful).
 #  ~  matches 1 or more space characters (can be used for whitespace between
 #     words)
      _________________________________________________________________
+
+$Id$

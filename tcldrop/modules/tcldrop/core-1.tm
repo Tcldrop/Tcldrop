@@ -1034,7 +1034,7 @@ proc ::tcldrop::core::loadmodule {module args} { LoadModule $module $args }
 # FixMe: Some parts of this may could be dicts:
 proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
-	array set opts [list -version {0} -force {0} -required {0}]
+	array set opts [list -version {0} -force {0} -required {1}]
 	array set opts $options
 	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err])} {
 		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
@@ -1459,12 +1459,12 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault daily-updates "[format %02s [rand 25]]"
 	# Load the required modules:
 	# FixMe: There should be a variable or something that tells us what core/main modules to load or even which to exclude..
-	checkmodule core -required 1
-	checkmodule core::database -required 1
-	checkmodule core::users -required 1
-	checkmodule core::conn -required 1
+	checkmodule core
+	checkmodule core::database
+	checkmodule core::users
+	checkmodule core::conn
 	checkmodule core::dcc
-	checkmodule encryption -required 1
+	checkmodule encryption
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
 	# bot linking support:

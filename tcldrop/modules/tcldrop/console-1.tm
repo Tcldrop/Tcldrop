@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -38,7 +38,7 @@ namespace eval ::tcldrop::console {
 	variable author {Tcldrop-Dev}
 	variable description {Provides commands for getting/setting console infos.}
 	variable {$Id$}
-	variable commands [list getconsole setconsole echo strip getchan setchan console store initconsole]
+	variable commands [list getconsole setconsole echo strip console store initconsole]
 	variable script [info script]
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
@@ -106,25 +106,8 @@ proc ::tcldrop::console::initconsole {idx} {
 			append levels $c
 		}
 	}
-	dict set console console-levels  $levels
+	dict set console console-levels $levels
 	setidxinfo $idx $console
-}
-
-#  getchan <idx>
-#    Returns: the current party line channel for a user on the party line;
-#      "0" indicates he's on the group party line, "-1" means he has chat off,
-#      and a value from 1 to 99999 is a private channel
-#    Module: core
-proc ::tcldrop::console::getchan {idx} { getconsole $idx chan }
-
-#  setchan <idx> <channel>
-#    Description: sets a party line user's channel. The party line user
-#      is not notified that she is now on a new channel. A channel name
-#      can be used (provided it exists).
-#    Returns: nothing
-#    Module: core
-proc ::tcldrop::console::setchan {idx {channel {-1}}} {
-	setconsole $idx chan $channel
 }
 
 #  echo <idx> [status]
