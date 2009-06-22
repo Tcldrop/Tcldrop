@@ -748,61 +748,58 @@ namespace eval ::tcldrop {
 		puts [Tcldrop run $tcldrop(argv)]
 	}
 
+	variable Exit
+	# Exit right now if something already set Exit:
+	if {[info exists Exit]} { exit $Exit }
+
 	# Do the signal handlers:
-	if {![catch { package require Tclx }] && [info commands signal] != {} && ![catch {
-		signal trap SIGHUP [list ::tcldrop::Signal %S]
-		signal trap SIGQUIT [list ::tcldrop::Signal %S]
-		signal trap SIGTERM [list ::tcldrop::Signal %S]
-		signal trap SIGINT [list ::tcldrop::Signal %S]
-		signal trap SIGBUS [list ::tcldrop::Signal %S]
-		signal trap SIGSEGV [list ::tcldrop::Signal %S]
-		signal trap SIGFPE [list ::tcldrop::Signal %S]
-		signal trap SIGALRM [list ::tcldrop::Signal %S]
-		signal trap SIGILL [list ::tcldrop::Signal %S]
-	}]} {
+	# Note: The last one to trap the signal takes precedence.. (There can only be one signal trapper per signal)
+	# Tclx can be told to trap * (all signals), but it actually seems to trap fewer than Expect (at least on Windows).
+	# Note/FixMe: There's probably something wrong about trapping * (ALL signals) here, needs testing to see if the bots dying because of "normal" signals not meant to close the app..
+	if {![catch { package require Tclx }] && [info commands signal] != {} && ![catch { signal trap * [list ::tcldrop::Signal %S] }]} {
 		# Use signal from TclX:
 		proc ::tcldrop::Signal {{signal {default}}} {
 			set signal [string tolower $signal]
+			PutLogLev * o * "Tclx Caught Signal: $signal"
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
 		PutLogLev * o * "Using Tclx for signal trapping."
-	} elseif {![catch { package require Expect }] && [info commands trap] != {}} {
+	}
+	# Expect has to be told which signals to trap, but it seems to trap more of them than Tclx (at least on Windows):
+	# Note/FixMe: We could save a little memory by not loading both Tclx and Expect.   (Do we really need to trap all the signals possible?)
+	if {![catch { package require Expect }] && [info commands trap] != {}} {
 		# Use trap from Expect:
-		proc ::tcldrop::Signal {args} {
-			set signal [string tolower "sig[trap -name]"]
+		proc ::tcldrop::Signal {signal} {
+			PutLogLev * o * "Expect Caught Signal: $signal"
+			#set signal [string tolower "sig[trap -name]"]
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
-		foreach Signal {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGALRM SIGBUS} {
-			if {[catch { trap ::tcldrop::Signal $Signal } error]} {
-				# FixMe: If there's some that fail on every OS then just remove them from the list above.
-				PutLogLev * o * "Expect failed to trap signal $Signal: \"$error\""
+		foreach Signal {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGBUS} {
+			# FixMe: If there's some that fail on every OS then just remove them from the list above.
+			if {[catch { trap [list ::tcldrop::Signal [string tolower $Signal]] $Signal } error]} {
+				PutLogLev * d * "Expect failed to trap signal $Signal: \"$error\""
 			}
 		}
 		unset -nocomplain Signal error
 		PutLogLev * o * "Using Expect for signal trapping."
-	} else {
-		# No signal trapping is possible. =(
-		PutLogLev * o * "Neither Tclx nor Expect found. No signal trapping possible!"
 	}
-
-	variable Exit
-	# Exit right now if something already set Exit:
-	if {[info exists Exit]} { exit $Exit }
 
 	#catch { namespace import ::tcldrop::* }
 
 	# Background and foreground modes only apply to tclsh...
 	# If we're running inside an Eggdrop or Wish or some other program then they'll keep us running (no need to do fork or vwait in those cases).
+	# FixMe: If Tclx or Expect is already loaded, they should be tried first, critcl should be last.
 	if {$tcldrop(host_env) eq {tclsh}} {
 		if {$tcldrop(background-mode)} {
 			# Background mode was requested.
-			if {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
+			if {![catch { package require Expect }] && [llength [info commands fork]] && ![catch { fork } pid]} {
 				if {$pid != 0} {
-					puts "Launched into the background (using Critcl)  (pid: $pid)"
+					puts "Launched into the background (using Expect)  (pid: $pid)"
 					exit 0
 				} else {
+					catch { disconnect }
 					vwait ::tcldrop::Exit
 					exit $Exit
 				}
@@ -814,12 +811,11 @@ namespace eval ::tcldrop {
 					vwait ::tcldrop::Exit
 					exit $Exit
 				}
-			} elseif {![catch { package require Expect }] && [llength [info commands fork]] && ![catch { fork } pid]} {
+			} elseif {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
 				if {$pid != 0} {
-					puts "Launched into the background (using Expect)  (pid: $pid)"
+					puts "Launched into the background (using Critcl)  (pid: $pid)"
 					exit 0
 				} else {
-					catch { disconnect }
 					vwait ::tcldrop::Exit
 					exit $Exit
 				}
@@ -835,10 +831,10 @@ namespace eval ::tcldrop {
 		} else {
 			catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 		}
+		#catch { close stdout }
+		#catch { close stdin }
+		#catch { close stderr }
+		#set tcl_interactive 0
+		exit $::tcldrop::Exit
 	}
-	#catch { close stdout }
-	#catch { close stdin }
-	#catch { close stderr }
-	#set tcl_interactive 0
-	exit $::tcldrop::Exit
 }
