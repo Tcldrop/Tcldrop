@@ -258,7 +258,8 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 				puts -nonewline $fid $::database($database)
 				close $fid
 				if {![info exists opt(-permissions)] || $opt(-permissions) eq {} || $opt(-permissions) == 0 || [catch { file attributes $opt(-file) -permissions $opt(-permissions) }]} {
-					file attributes $opt(-file) -permissions ${::database-perm}
+					# -permissions doesn't seem to work on Windows..
+					catch { file attributes $opt(-file) -permissions ${::database-perm} }
 				}
 			} else {
 				return -code error $return
