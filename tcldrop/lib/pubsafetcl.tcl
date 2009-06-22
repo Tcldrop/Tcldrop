@@ -646,26 +646,24 @@ namespace eval pubsafetcl {
 		interp alias $interp info {} [namespace current]::Info $interp
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
-		if {[info commands file] == {}} {
-			interp hide $interp file
-			proc File {interp option name args} {
-				switch -glob -- [string tolower "$option"] {
-					{ch*} { set option channels }
-					{di*} { set option dirname }
-					{ext*} { set option extension }
-					{j*} { set option join }
-					{na*} { set option nativename }
-					{no*} { set option normalize }
-					{ro*} { set option rootname }
-					{se*} { set option separator }
-					{sp*} { set option split }
-					{ta*} { set option tail }
-					{default} { return -code error "file $option is not allowed!" }
-				}
-				eval [linsert [split $args] 0 interp invokehidden $interp file $option $name]
-			}
-			interp alias $interp file {} [namespace current]::File $interp
+		catch { interp hide $interp file }
+		proc File {interp option name args} {
+			switch -glob -- [string tolower "$option"] {
+				{ch*} { set option channels }
+				{di*} { set option dirname }
+				{ext*} { set option extension }
+				{j*} { set option join }
+				{na*} { set option nativename }
+				{no*} { set option normalize }
+				{ro*} { set option rootname }
+				{se*} { set option separator }
+				{sp*} { set option split }
+				{ta*} { set option tail }
+				{default} { return -code error "file $option is not allowed!" }
 		}
+			eval [linsert [split $args] 0 interp invokehidden $interp file $option $name]
+		}
+		interp alias $interp file {} [namespace current]::File $interp
 
 		# This provides reasonable emulation of the puts command:
 		# Putting to stdout makes it save it to a variable, which can be processed later.
