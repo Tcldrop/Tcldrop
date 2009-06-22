@@ -1680,7 +1680,8 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 	# (If Signal already exists, it means we're already processing another fatal/exit signal.)
 	if {![info exists Signal] || $Signal ne $signal} {
 		switch -- [string tolower $signal] {
-			{sighup} {
+			{sighup} - {1} {
+				# http://en.wikipedia.org/wiki/SIGHUP
 				if {${::die-on-sighup}} {
 					shutdown {Caught Signal: SIGHUP (HANGUP SIGNAL) -- SIGNING OFF}
 					variable Signal {SIGHUP}
@@ -1689,7 +1690,9 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 					rehash $signal
 				}
 			}
-			{sigterm} {
+			{sigterm} - {15} {
+				# This is the default signal used when you "kill <pid>" on *nix.
+				# http://en.wikipedia.org/wiki/SIGTERM
 				if {${::die-on-sigterm}} {
 					shutdown {Caught Signal: SIGTERM (TERMINATE SIGNAL) -- SIGNING OFF}
 					variable Signal {SIGTERM}
@@ -1697,8 +1700,9 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 					putlog {RECEIVED TERMINATE SIGNAL (IGNORING)}
 				}
 			}
-			{sigint} {
-				# This is generally a CTRL+C.
+			{sigint} - {2} {
+				# CTRL+C
+				# http://en.wikipedia.org/wiki/SIGINT_(POSIX)
 				if {[info exists ::die-on-sigint] && ${::die-on-sigint}} {
 					shutdown {Caught Signal: SIGINT}
 					variable Signal {SIGINT}
@@ -1706,7 +1710,9 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 					putlog {Caught Signal: SIGINT (IGNORING)}
 				}
 			}
-			{sigquit} {
+			{sigquit} - {3} {
+				# CTRL+\ or CTRL+4 or SysRq
+				# http://en.wikipedia.org/wiki/SIGQUIT
 				if {[info exists ::die-on-sigquit] && ${::die-on-sigquit}} {
 					die {Caught Signal: SIGQUIT}
 					variable Signal {SIGQUIT}
@@ -1714,34 +1720,68 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 					putlog {Caught Signal: RECEIVED QUIT SIGNAL (IGNORING)}
 				}
 			}
+			{sigusr1} - {sigusr2} {
+				# Tcldrop will do a [restart] for this one..
+				# http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
+				putlog "Received $signal signal: restarting..."
+				restart $signal
+				# FixMe: Perhaps do something different for SIGUSR2?
+			}
+			{sigxcpu} {
+				# Soft-limit for CPU time exceeded..shutdown now while we can still do it gracefully:
+				# http://en.wikipedia.org/wiki/SIGXCPU
+				shutdown {Caught Signal: SIGXCPU (CPU Time Exceeded) -- Shutting down..}
+				variable Signal {SIGXCPU}
+			}
+			{sigpipe} - {13} {
+				# http://en.wikipedia.org/wiki/SIGPIPE
+				shutdown {Caught Signal: SIGPIPE (Broken Pipe) -- Shutting down..} 13
+				variable Signal {SIGPIPE}
+				exit 13
+			}
+			{sigabrt} - {sigiot} - {6} {
+				# http://en.wikipedia.org/wiki/SIGABRT
+				die "Caught Signal: $signal"
+				variable Signal $signal
+				exit 6
+			}
 			{sigbus} - {20} {
-				die {BUS ERROR -- CRASHING!} 20
+				# http://en.wikipedia.org/wiki/SIGBUS
+				# FixMe: Consider just doing [exit] and not [die] for all of these that say "-- CRASHING!" ... It may be unsafe to allow it to save the user/chan files and whatever else.
+				die {Caught Signal: SIGBUS (BUS ERROR) -- CRASHING!} 20
 				variable Signal {SIGBUS}
 				exit 20
 			}
 			{sigsegv} - {11} {
-				die {SEGMENT VIOLATION -- CRASHING!} 11
+				# http://en.wikipedia.org/wiki/SIGSEGV
+				die {Caught Signal: SIGSEGV (SEGMENT VIOLATION) -- CRASHING!} 11
 				variable Signal {SIGSEGV}
 				exit 11
 			}
 			{sigfpe} - {8} {
-				die {FLOATING POINT ERROR -- CRASHING!} 8
+				# http://en.wikipedia.org/wiki/SIGFPE
+				die {Caught Signal: SIGFPE (FLOATING POINT ERROR) -- CRASHING!} 8
 				variable Signal {SIGFPE}
 				exit 8
 			}
-			{sigill} {
+			{sigill} - {4} {
 				# log Context..?  EH?
+				# http://en.wikipedia.org/wiki/SIGILL
+				die {Caught Signal: SIGILL (ILLEGAL INSTRUCTION) -- CRASHING!} 4
+				variable Signal {SIGFPE}
+				exit 4
 			}
-			{sigalrm} - {sigalarm} {
-				# eh?
+			{sigrtmin} - {sigrtmax} {
+				# http://en.wikipedia.org/wiki/SIGRTMIN_and_SIGRTMAX
 			}
-			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} {
-				# Completely ignore these signals.  (They can't be triggered unless they get trapped in ../../../tcldrop.tcl anyway.)
+			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigcld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} - {sigpoll} - {sigio} - {sigprof} - {sigsys} - {sigtrap} - {sigvtalrm} - {sigalrm} - {sigalarm} - {14} {
+				# Completely ignore these signals.  They shouldn't even be trapped, but in case they are we ignore them here.
 			}
-			{default} {
-				# Casual shutdown as the default, with exit code 1 because it's an unknown signal.
-				shutdown "Caught Signal: $signal  (UNKNOWN SIGNAL - SHUTTING DOWN...)" 1
+			{default} - {254} - {255} {
+				# Casual shutdown as the default, with exit code 254 because it's an unknown signal.
+				shutdown "Caught Signal: $signal  (UNKNOWN SIGNAL - SHUTTING DOWN...)" 254
 				variable Signal [string toupper $signal]
+				# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
 			}
 		}
 		# If we didn't shutdown, this will unset the Signal variable so that we can process another signal 1+ seconds in the future:

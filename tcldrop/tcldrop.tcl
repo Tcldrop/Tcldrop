@@ -753,38 +753,65 @@ namespace eval ::tcldrop {
 	if {[info exists Exit]} { exit $Exit }
 
 	# Do the signal handlers:
+
+	# Eggdrop does these signals:
+	# SIGBUS "BUS ERROR -- CRASHING!"
+	# SIGSEGV "SEGMENT VIOLATION -- CRASHING!"
+	# SIGFPE "FLOATING POINT ERROR -- CRASHING!"
+	# SIGTERM "TERMINATE SIGNAL -- SIGNING OFF" or "RECEIVED TERMINATE SIGNAL (IGNORING)"
+	# SIGQUIT "RECEIVED QUIT SIGNAL (IGNORING)"
+	# SIGHUP "HANGUP SIGNAL -- SIGNING OFF" or "Received HUP signal: rehashing..."
+	# SIGILL log context and continue
+	# SIGALRM used for gethostbyname
+
+	# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
+
 	# Note: The last one to trap the signal takes precedence.. (There can only be one signal trapper per signal)
-	# Tclx can be told to trap * (all signals), but it actually seems to trap fewer than Expect (at least on Windows).
-	# Note/FixMe: There's probably something wrong about trapping * (ALL signals) here, needs testing to see if the bots dying because of "normal" signals not meant to close the app..
-	if {![catch { package require Tclx }] && [info commands signal] != {} && ![catch { signal trap * [list ::tcldrop::Signal %S] }]} {
-		# Use signal from TclX:
-		proc ::tcldrop::Signal {{signal {default}}} {
-			set signal [string tolower $signal]
-			PutLogLev * o * "Tclx Caught Signal: $signal"
-			variable Tcldrop
-			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
-		}
-		PutLogLev * o * "Using Tclx for signal trapping."
-	}
-	# Expect has to be told which signals to trap, but it seems to trap more of them than Tclx (at least on Windows):
-	# Note/FixMe: We could save a little memory by not loading both Tclx and Expect.   (Do we really need to trap all the signals possible?)
+
+	# Never add SIGCHLD or SIGALRM to this list, and only list the ones we'll use or expect other people to use in Tcldrop:
+	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGPIPE}
+	variable trappedSignals {}
+	# Expect seems able to trap more of them than Tclx (at least on Windows):
 	if {![catch { package require Expect }] && [info commands trap] != {}} {
-		# Use trap from Expect:
+		# Use trap from Expect.
 		proc ::tcldrop::Signal {signal} {
-			PutLogLev * o * "Expect Caught Signal: $signal"
-			#set signal [string tolower "sig[trap -name]"]
+			PutLogLev console o - "Expect Caught Signal: $signal"
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
-		foreach Signal {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGILL SIGFPE SIGBUS} {
-			# FixMe: If there's some that fail on every OS then just remove them from the list above.
-			if {[catch { trap [list ::tcldrop::Signal [string tolower $Signal]] $Signal } error]} {
-				PutLogLev * d * "Expect failed to trap signal $Signal: \"$error\""
+		foreach Signal $trapSignals {
+			if {![catch { trap [list ::tcldrop::Signal [string tolower $Signal]] $Signal } error]} {
+				lappend trappedSignals $Signal
+				#PutLogLev console o - "Using Expect for trapping signal: $Signal."
+			} else {
+				#PutLogLev console d - "Expect failed to trap signal $Signal: \"$error\""
 			}
 		}
-		unset -nocomplain Signal error
-		PutLogLev * o * "Using Expect for signal trapping."
+		PutLogLev console o - "Using Expect for trapping signals: [join $trappedSignals {, }]."
 	}
+	# If Expect failed to trap any signals we try to trap them using Tclx:
+	if {[llength $trapSignals] > [llength $trappedSignals] && ![catch { package require Tclx }] && [info commands signal] != {}} {
+		# Use signal from TclX.
+		proc ::tcldrop::Signal {{signal {default}}} {
+			set signal [string tolower $signal]
+			PutLogLev console o - "Tclx Caught Signal: $signal"
+			variable Tcldrop
+			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
+		}
+		foreach Signal $trapSignals {
+			if {[lsearch -exact $trappedSignals $Signal] == -1} {
+				if {![catch { signal trap $Signal [list ::tcldrop::Signal %S] } error]} {
+					lappend trappedSignals $Signal
+					PutLogLev console o - "Using Tclx for trapping signal: $Signal."
+				} else {
+					#PutLogLev console d - "Tclx failed to trap signal $Signal: \"$error\""
+				}
+			}
+		}
+	}
+	foreach Signal $trapSignals { if {[lsearch -exact $trappedSignals $Signal] == -1} { lappend untrappedSignals $Signal } }
+	if {[info exists untrappedSignals]} { PutLogLev console o - "Unable to trap these signals: [join $untrappedSignals {, }]." }
+	unset -nocomplain trapSignals trappedSignals Signal error untrappedSignals
 
 	#catch { namespace import ::tcldrop::* }
 
@@ -823,6 +850,9 @@ namespace eval ::tcldrop {
 				puts "Running in foreground mode.  (pid: [pid])\n(Install Tclx or Expect for background mode support.)"
 				set tcldrop(background-mode) 0
 			}
+			# FixMe: Make it run in the foreground when receiving a SIGTTIN or SIGTTOU - http://en.wikipedia.org/wiki/SIGTTIN & http://en.wikipedia.org/wiki/SIGTTOU
+			#        Or SIGCONT - http://en.wikipedia.org/wiki/SIGCONT
+			#        And SIGTSTP/SIGSTOP should return it to the background. - http://en.wikipedia.org/wiki/SIGTSTP
 		}
 		# Foreground mode was requested or we're falling back to it.  (otherwise we would have exited before we got to this point).
 		puts "${::argv0}: Entering Tcl event-loop (vwait)"
