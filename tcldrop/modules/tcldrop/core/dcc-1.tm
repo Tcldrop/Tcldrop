@@ -461,24 +461,64 @@ proc ::tcldrop::core::dcc::-USER {handle idx text} {
 	return 0
 }
 
+proc textWidth {text {width {60}}} {
+	set data [split $text]
+	set block {}
+	for {set pos 0} {$pos <= [llength $data]} {incr pos} {
+		set current [lindex $data $pos]
+		if {[string length [join [concat $block $current] {, }]] <= 60} {
+			lappend block $current
+		} else {
+			lappend formatted $block
+			set block $current
+		}
+	}
+	lappend formatted $block
+	return $formatted
+}
+
 # Usage: whois <handle>
 proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 	if {[validuser $text]} {
 		putcmdlog "#$handle# whois $text"
+		# FixMe: column width should auto-adjust based on handlen
 		putdcc $idx {HANDLE    PASS FLAGS                        LAST}
 		if {[getuser $text PASS] eq {}} { set haspass {no} } else { set haspass {yes} }
 		if {[set laston [getuser $text LASTON]] != {}} {
 			# FixMe: Make it show a very short time format eg. "11:06" or "05 Oct".
+			set laston "[lindex $laston 0] ([lindex $laston 1])"
 		}
 		putdcc $idx [format {%-9.9s %-4.4s %-28.28s %-35.35s} [getuser $text handle] $haspass [getuser $text FLAGS] $laston]
 		foreach c [channels] {
 			# FixMe: Make it show the laston for the channel:
 			putdcc $idx "[format {   %-11.11s %-28.28s %-12.12s} $c [getuser $text FLAGS $c] {}]"
 		}
-		# FixMe: Make it wrap the hosts like Eggdrop.
-		putdcc $idx "  HOSTS: [join [getuser $text HOSTS] {, }]"
+		# Wrap hosts
+		# FixMe: Turn this into a proc if something else uses a similar formatting.
+		set hosts [getuser $text HOSTS]
+		set block {}
+		for {set pos 0} {$pos <= [llength $hosts]} {incr pos} {
+			set current [lindex $hosts $pos]
+			if {[string length [join [concat $block $current] {, }]] <= 60} {
+				lappend block $current
+			} else {
+				lappend hostsList $block
+				set block $current
+			}
+		}
+		lappend hostsList $block
+		putdcc $idx "  HOSTS: [join [lindex $hostsList 0] {, }]"
+		foreach block [lrange $hostsList 1 end] { putdcc $idx "         [join $block {, }]" }
+		unset -nocomplain hosts block pos current hostsList
 		putdcc $idx "  Saved Console Settings:"
-		putdcc $idx "    [getuser $text CONSOLE]"
+		array set idxinfo [getuser $text CONSOLE]
+		# Channel:
+		putdcc $idx "    [lang 0xb042] $idxinfo(console-channel)"
+		# Console flags:  Strip flags:  Echo:
+		putdcc $idx "    [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
+		# Page setting:  Console channel:
+		putdcc $idx "    [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
+		#~ putdcc $idx "    [getuser $text CONSOLE]"
 		if {[set comment [getuser $text COMMENT]] != {}} { putdcc $idx "  COMMENT: $comment" }
 	} else {
 		putdcc $idx {Can't find anyone matching that.}
@@ -694,7 +734,7 @@ proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 }
 
 # Usage: status [all]
-# FixMe: Add stuff for the 'all' arg
+# FixMe: Add more stuff for the 'all' arg
 proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	putcmdlog "#$handle# status $text"
 	putdcc $idx "I am ${::botnet-nick}, running Tcldrop v$::tcldrop(version): [countusers] users."
@@ -704,6 +744,29 @@ proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	putdcc $idx "OS: $::tcl_platform(os) $::tcl_platform(osVersion)"
 	putdcc $idx "Tcl library: $::tcl_library"
 	putdcc $idx "Tcl version: $::tcl_patchLevel"
+	if {[info exists ::tcl_platform(threaded)] && $::tcl_platform(threaded)} { putdcc $idx "Tcl is threaded." }
+	# FixMe: Perhaps move some of these to relevant modules
+	# FixMe: If some of these vars are _always_ set, remove the expr.
+	if {[string equal -nocase [slindex $text 0] {all}]} {
+		putdcc $idx "-"
+		putdcc $idx "Botnet nickname: ${::botnet-nick}"
+		putdcc $idx "Databases:"
+		putdcc $idx "  Users   : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.users"}]"
+		putdcc $idx "  Channels: [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.channels"}]"
+		putdcc $idx "  Ignores : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.ignores"}]"
+		putdcc $idx "  Bans    : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.bans"}]"
+		putdcc $idx "  Exempts : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.exempts"}]"
+		putdcc $idx "  Invites : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.invites"}]"
+		putdcc $idx "Directories:"
+		putdcc $idx "  Help   : [expr {[info exists ::help-path]?${::help-path}:{}}]"
+		putdcc $idx "  Temp   : [expr {[info exists ::temp-path]?${::temp-path}:{}}]"
+		putdcc $idx "  Modules: [expr {[info exists ::mod-path]?${::mod-path}:{}}]"
+		putdcc $idx "Motd: [file nativename [file join ${::text-path} $::motd]]"
+		putdcc $idx "Telnet Banner: [file nativename [file join ${::text-path} ${::telnet-banner}]]"
+		putdcc $idx "New users get flags \[[expr {[info exists ::default-flags]?${::default-flags}:{}}]\], notify: [expr {[info exists ::notify-newusers]?${::notify-newusers}:0}]"
+		putdcc $idx "Permanent owner(s): [expr {[info exists ::owner]?${::owner}:{}}]"
+		putdcc $idx "Ignores last [expr {[info exists ::ignore-time]?${::ignore-time}:0}] minutes."
+	}
 	putdcc $idx "Loaded module information: "
 	return 0
 }

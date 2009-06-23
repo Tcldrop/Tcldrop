@@ -39,7 +39,6 @@ namespace eval ::tcldrop::irc::dcc {
 	variable rcsid {$Id$}
 }
 
-# FixMe: .status is not part of the irc module in eggdrop, move to core?
 proc ::tcldrop::irc::dcc::STATUS {handle idx text} {
 	if {${::server-online}} {
 		putdcc $idx "    Online as: $::botname ($::realname)"

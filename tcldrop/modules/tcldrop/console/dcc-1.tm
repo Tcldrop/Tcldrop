@@ -58,11 +58,11 @@ proc ::tcldrop::console::dcc::STORE {handle idx text} {
 	# Saved your Console Settings:
 	putdcc $idx [lang 0xb041]
 	# Channel:
-	putdcc $idx "[lang 0xb042] $idxinfo(console-channel)"
+	putdcc $idx "  [lang 0xb042] $idxinfo(console-channel)"
 	# Console flags:  Strip flags:  Echo:
-	putdcc $idx "[lang 0xb043] $idxinfo(console-levels) [lang 0xb044] $idxinfo(console-strip) [lang 0xb045] $idxinfo(console-echo)"
+	putdcc $idx "  [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
 	# Page setting:  Console channel:
-	putdcc $idx "[lang 0xb046] $idxinfo(console-page) [lang 0xb047] $idxinfo(console-chan)"
+	putdcc $idx "  [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
 	return 0
 }
 
