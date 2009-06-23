@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -45,11 +45,33 @@ namespace eval ::tcldrop::encryption::md5 {
 	#    Returns: the 128 bit MD5 message-digest of the specified string
 
 	# This will find md5 and then make sure the ::md5 command always returns hex in lowercase:
-	proc FindMD5 {args} { variable md5ver
-		if {[llength [info commands ::md5_orig]]} {
+	proc FindMD5 {args} {
+		variable useCritcl
+		variable md5ver
+		if {[llength [info commands ::md5_orig]] || [llength [info commands ::md5c_orig]]} {
 			# Note: We ASSume we've been here and already renamed ::md5 to ::md5_orig, made a replacement ::md5 proc, and that ::md5 returns hex in lowercase.
 			return 1
+		} elseif {![catch { package require md5c } md5ver] && ![catch {binary scan [::md5c ""] H* Output}]} {
+			set useCritcl 1
+			switch -- $Output {
+				{d41d8cd98f00b204e9800998ecf8427e} { rename ::md5c ::md5 }; # FixMe
+				{D41D8CD98F00B204E9800998ECF8427E} {
+					rename ::md5c ::md5c_orig
+					proc md5 {args} {
+						if {[llength $args] == 1} {
+							binary scan [::md5c_orig ""] H* x
+							string tolower $x
+						} else {
+							::md5c_orig {*}$args
+						}
+					}
+					proc encpass {password} { string tolower [::md5::hmac -hex -key $password $password] }
+				}
+			}
+		}
+					
 		} elseif {![catch { package require md5 } md5ver] && ![catch { ::md5 "" } Output]} {
+			set useCritcl 0
 			switch -- $Output {
 				{d41d8cd98f00b204e9800998ecf8427e} { }
 				{D41D8CD98F00B204E9800998ECF8427E} {
@@ -98,6 +120,8 @@ namespace eval ::tcldrop::encryption::md5 {
 	}
 	proc UNLD {module} {
 		catch { package forget md5 }
+		catch { package forget md5c }
+		catch { rename ::md5c_orig ::md5c }
 		catch { rename ::md5_orig ::md5 }
 		return 0
 	}

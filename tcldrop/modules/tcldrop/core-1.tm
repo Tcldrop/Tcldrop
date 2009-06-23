@@ -1280,13 +1280,15 @@ proc ::tcldrop::core::help {{type {dcc}} {command {help}} {filename {*}}} {
 # Returns: substituted text
 # FixMe: Add support for %{cols=N}, %{cols=N/W}, %{end} (for cols) and %{center}
 # FixMe: do something smart if we get an invalid handle
-proc ::tcldrop::core::textsubst {handle text {substmap {}}} {
+proc ::tcldrop::core::textsubst {handle text args} {
+	array set options [list -blanklines 1 -substmap [list] -returnlist 0]
+	array set options $args
 	# FixMe: it might be helpful to have the copyright notice in a global var somewhere
 	array set map [list {%B} ${::botnet-nick} {%N} [getuser $handle handle] {%V} "$::tcldrop(name) v${::tcldrop(version)}" {%E} "$::tcldrop(name) v${::tcldrop(version)} (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <${::tcldrop(author)}>" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
 	array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
 	# FixMe: These should be handled differently for telnet
 	array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
-	array set map $substmap
+	array set map $options(-substmap)
 	# Handle %{+flag}, %{-}, %{end} (for flags)
 	set pos 0
 	set append 1
@@ -1314,14 +1316,16 @@ proc ::tcldrop::core::textsubst {handle text {substmap {}}} {
 	if {$append} { append out [string range $text $pos end] }
 	set out [string map [array get map] $out]
 	# replace blank lines with "-"
-	foreach {line} [split $out \n] {
-		if {$line eq {}} {
-			lappend retval {-}
-		} else {
-			lappend retval $line
+	if {$options(-blanklines)} {
+		foreach {line} [split $out \n] {
+			if {$line eq {}} {
+				lappend retval {-}
+			} else {
+				lappend retval $line
+			}
 		}
 	}
-	return [join $retval "\n"]
+	if {$options(-returnlist)} { return $retval } else { return [join $retval "\n"] }
 }
 
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }

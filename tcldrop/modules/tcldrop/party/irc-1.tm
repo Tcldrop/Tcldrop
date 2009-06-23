@@ -135,7 +135,7 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	PutRAW $idx "250 $userinfo(nickname) :Highest connection count: 1 (1 clients) (1 connections received)"
 	PutRAW $idx "375 $userinfo(nickname) :- ${::botnet-nick} Message of the Day -"
 	if {![catch { open [file join ${::text-path} motd] r } fid]} {
-		foreach line [split [textsubst [idx2hand $idx] [read -nonewline $fid]] "\n"] { PutRAW $idx "372 $userinfo(nickname) :- $line" }
+		foreach line [split [textsubst [idx2hand $idx] [read -nonewline $fid] -blanklines 0] "\n"] { PutRAW $idx "372 $userinfo(nickname) :- $line" }
 	}
 	#~ PutRAW $idx "372 $userinfo(nickname) :- MotD goes here.  =D"
 	PutRAW $idx "376 $userinfo(nickname) :End of /MOTD command."

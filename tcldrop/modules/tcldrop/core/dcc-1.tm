@@ -186,11 +186,13 @@ proc ::tcldrop::core::dcc::listdcc {{type {}}} {
 #    Module: core
 proc ::tcldrop::core::dcc::dccdumpfile {idx filename} {
 	if {([valididx $idx]) && (![catch { open [file join ${::text-path} $filename] r } fid] || ![catch { open $filename r } fid] || ![catch { open [file join [file tail $filename]] r } fid])} {
-		foreach l [split [read -nonewline $fid] \n] {
-			putdcc $idx $l -subst 1
+		foreach l [textsubst [idx2hand $idx] [read -nonewline $fid] -returnlist 1] {
+			putdcc $idx $l
 		}
+		close $fid
 		return 1
 	} else {
+		catch {close $fid}; # in case valididx = 0 and file open succeeds
 		return 0
 	}
 }
@@ -461,22 +463,6 @@ proc ::tcldrop::core::dcc::-USER {handle idx text} {
 	return 0
 }
 
-proc textWidth {text {width {60}}} {
-	set data [split $text]
-	set block {}
-	for {set pos 0} {$pos <= [llength $data]} {incr pos} {
-		set current [lindex $data $pos]
-		if {[string length [join [concat $block $current] {, }]] <= 60} {
-			lappend block $current
-		} else {
-			lappend formatted $block
-			set block $current
-		}
-	}
-	lappend formatted $block
-	return $formatted
-}
-
 # Usage: whois <handle>
 proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 	if {[validuser $text]} {
@@ -603,7 +589,6 @@ proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 # FixMe: add botnet support for this?
 proc ::tcldrop::core::dcc::UPTIME {handle idx text} {
 	putcmdlog "#$handle# uptime $text"
-	# FixMe: Add an [uptime] proc that returns the seconds that the bot has been running.
 	putdcc $idx "Online for [duration [uptime]]."
 	return 0
 }
