@@ -1324,6 +1324,8 @@ proc ::tcldrop::core::textsubst {handle text args} {
 				lappend retval $line
 			}
 		}
+	} else {
+		set retval $out
 	}
 	if {$options(-returnlist)} { return $retval } else { return [join $retval "\n"] }
 }
