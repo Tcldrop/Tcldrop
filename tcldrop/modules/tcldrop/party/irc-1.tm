@@ -58,10 +58,10 @@ proc ::tcldrop::party::irc::Write {idx} {
 	array set idxinfo [getidxinfo $idx]
 	if {$idxinfo(state) eq {CONNECT}} {
 		setidxinfo $idx [list state {REGISTER} other {reg} traffictype {partyline} timestamp [clock seconds]]
-		putidx $idx "NOTICE AUTH :*** Looking up your hostname..."
-		putidx $idx "NOTICE AUTH :*** Checking Ident"
-		putidx $idx "NOTICE AUTH :*** Got Ident response"
-		putidx $idx "NOTICE AUTH :*** Found your hostname"
+		Putidx $idx "NOTICE AUTH :*** Looking up your hostname..."
+		Putidx $idx "NOTICE AUTH :*** Checking Ident"
+		Putidx $idx "NOTICE AUTH :*** Got Ident response"
+		Putidx $idx "NOTICE AUTH :*** Found your hostname"
 		return 0
 	} else {
 		return 1
@@ -75,7 +75,7 @@ proc ::tcldrop::party::irc::Read {idx line} {
 			{CHAT} {
 				if {![callircparty $idx [set command [string toupper [lindex [set sline [split [string trim $line]]] 0]]] [join [lrange $sline 1 end]]]} {
 					PutRAW $idx "421 [getircparty user $idx nick] $command :Unknown command"
-					putlog "$idx: $line"
+					putdebuglog "$idx: $line"
 				}
 				return 0
 			}
@@ -85,7 +85,7 @@ proc ::tcldrop::party::irc::Read {idx line} {
 						# ^ These are the only commands available until they send the PASS/NICK/USER commands. ^
 						if {![callircparty $idx $command [join [lrange $sline 1 end]]]} {
 							PutRAW $idx "421 [getircparty user $idx nick] $command :Unknown command"
-							putlog "$idx: $line"
+							putdebuglog "$idx: $line"
 							return 1
 						} elseif {[ircparty registered $idx]} {
 							setidxinfo $idx [list state CHAT other {chat} timestamp [clock seconds]]
@@ -95,7 +95,7 @@ proc ::tcldrop::party::irc::Read {idx line} {
 					}
 					{default} {
 						PutRAW $idx "451 [getircparty user $idx nick] :You have not registered"
-						putlog "$idx: $line"
+						putdebuglog "$idx: $line"
 						return 0
 					}
 				}
@@ -135,7 +135,8 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	PutRAW $idx "250 $userinfo(nickname) :Highest connection count: 1 (1 clients) (1 connections received)"
 	PutRAW $idx "375 $userinfo(nickname) :- ${::botnet-nick} Message of the Day -"
 	if {![catch { open [file join ${::text-path} motd] r } fid]} {
-		foreach line [split [textsubst [idx2hand $idx] [read -nonewline $fid] -blanklines 0] "\n"] { PutRAW $idx "372 $userinfo(nickname) :- $line" }
+		foreach line [textsubst [idx2hand $idx] [read -nonewline $fid] -blanklines 0 -returnlist 1] { PutRAW $idx "372 $userinfo(nickname) :- $line" }
+		close $fid
 	}
 	#~ PutRAW $idx "372 $userinfo(nickname) :- MotD goes here.  =D"
 	PutRAW $idx "376 $userinfo(nickname) :End of /MOTD command."
@@ -143,13 +144,15 @@ proc ::tcldrop::party::irc::Welcome {idx} {
 	ircparty_JOIN $idx {JOIN} [join [channels] ,]
 
 	# Auto-join the command channel for this bot:
-	putidx $idx ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :%${::botnet-nick}" [list -flush 1]
+	Putidx $idx ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :%${::botnet-nick}" [list -flush 1]
 	# /names list for the command channel:
 	PutRAW $idx "353 $userinfo(nickname) = %${::botnet-nick} :@${::botnet-nick} $userinfo(nickname)"
 	PutRAW $idx "366 $userinfo(nickname) %${::botnet-nick} :End of /NAMES list."
 	# topic for the command channel:
 	PutRAW $idx "332 $userinfo(nickname) %${::botnet-nick} :Welcome to the Command Channel for ${::botnet-nick}!"
 	PutRAW $idx "333 $userinfo(nickname) %${::botnet-nick} ${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. $::uptime"
+	setidxinfo $idx [list filter ::tcldrop::party::irc::PutidxFilter]
+	initconsole $idx
 }
 
 # Sets ircparty related info about a chan/user/chanuser ($type).
@@ -295,26 +298,60 @@ proc ::tcldrop::party::irc::ircparty {command args} {
 proc ::tcldrop::party::irc::putircparty {args} {
 	array set putinfo [list -excludeidx {} -chan {} -text [lindex $args end] -flags {}]
 	array set putinfo [lrange $args 0 end-1]
-	#putlog "::tcldrop::party::irc::putircparty putinfo [array get putinfo]"
+	#putdebuglog "::tcldrop::party::irc::putircparty putinfo [array get putinfo]"
 	if {$putinfo(-chan) != {}} {
 		foreach i [ircparty chanlist $putinfo(-chan)] {
 			if {$i != $putinfo(-excludeidx) && [valididx $i] && [matchattr [idx2hand $i] $putinfo(-flags) $putinfo(-chan)]} {
-				putlog "putidx: $i $putinfo(-text)"
-				putidx $i $putinfo(-text)
+				putdebuglog "Putidx: $i $putinfo(-text)"
+				Putidx $i $putinfo(-text)
 			}
 		}
 	} else {
 		foreach i [ircparty chanlist $putinfo(-chan)] {
 			if {$i != $putinfo(-exlcludeidx) && [valididx $i] && [matchattr [idx2hand $i] $putinfo(-flags)]} {
-				putidx $i $putinfo(-text)
+				Putidx $i $putinfo(-text)
 			}
 		}
 	}
 }
 
+# This is the putidx command from the core::conn module, without the filter part.
+# Sends $text to $idx:
+# Note: This is an Eggdrop v1.6 and less command.
+proc ::tcldrop::party::irc::Putidx {idx text {opts {}}} {
+	if {[info exists ::idxlist($idx)]} {
+		array set idxinfo $::idxlist($idx)
+		array set options [list -nonewline 0 -flush 1]
+		array set options $opts
+		if {$options(-nonewline) && [info exists idxinfo(nonewline)] && $idxinfo(nonewline)} {
+			# If -nonewline 1 is specified in $args, and the idx supports using nonewline (eg. DCC CHAT's do NOT support it) then we send it without a newline:
+			if {[catch { puts -nonewline $idxinfo(sock) $text }]} {
+				# CheckMe/FixMe: How soon should the idx be killed?  Immediately, or after idle, or after idle + after 0?
+				after idle [list after 0 [list killidx $idx]]
+				return 0
+			}
+		} else {
+			if {[catch { puts $idxinfo(sock) $text }]} {
+				# CheckMe/FixMe: How soon should the idx be killed?  Immediately, or after idle, or after idle + after 0?
+				after idle [list after 0 [list killidx $idx]]
+				return 0
+			}
+		}
+		# -flush 1 (the default) means we flush the channel:
+		if {$options(-flush) && [catch { flush $idxinfo(sock) }]} { return 0 }
+		timeout reset $idx
+		traffic $idxinfo(traffictype) out [string length $text]
+		return 1
+	}
+	return 0
+}
+
+proc ::tcldrop::party::irc::PutidxFilter {idx text opts} {
+	return ":${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. PRIVMSG %${::botnet-nick} :$text"
+}
 
 proc ::tcldrop::party::irc::PutRAW {idx msg} {
-	putidx $idx ":${::botnet-nick} $msg"
+	Putidx $idx ":${::botnet-nick} $msg"
 }
 
 proc ::tcldrop::party::irc::PutRAWClient {idx code msg} {
@@ -332,7 +369,7 @@ proc ::tcldrop::party::irc::ircparty_PONG {idx command arg} {
 }
 
 proc ::tcldrop::party::irc::ircparty_NICK {idx command arg} {
-	putlog "IN ::tcldrop::party::irc::NICK $idx $command $arg"
+	putdebuglog "IN ::tcldrop::party::irc::NICK $idx $command $arg"
 	set nick [string trimleft $arg {: }]
 	if {[set handle [idx2hand $idx]] == {*}} { set handle "${nick}" }
 	setircparty user $idx nick $nick nickname [set nickname "${handle}@${::botnet-nick}:$idx"]
@@ -341,7 +378,7 @@ proc ::tcldrop::party::irc::ircparty_NICK {idx command arg} {
 }
 
 proc ::tcldrop::party::irc::ircparty_USER {idx command arg} {
-	putlog "IN ::tcldrop::party::irc::USER $idx $command $arg"
+	putdebuglog "IN ::tcldrop::party::irc::USER $idx $command $arg"
 	if {[set username [string trim [lindex [set sarg [split $arg]] 0]]] == {}} {
 		return 0
 	} else {
@@ -382,7 +419,7 @@ proc ::tcldrop::party::irc::ircparty_PASS {idx command arg} {
 
 proc ::tcldrop::party::irc::ircparty_QUIT {idx command arg} {
 	#unsetparty $idx
-	putidx $idx "ERROR :Client Quit: $arg"
+	Putidx $idx "ERROR :Client Quit: $arg"
 	killidx $idx
 	return 1
 }
@@ -391,7 +428,7 @@ proc ::tcldrop::party::irc::ircparty_QUIT {idx command arg} {
 # :irc.choopa.net 324 Tcldrop #Test +tnl 2147483647
 # :irc.choopa.net 329 Tcldrop #Test 985416044
 proc ::tcldrop::party::irc::ircparty_MODE {idx command arg} {
-	putlog "in ::tcldrop::party::irc::ircparty_MODE $idx $command $arg"
+	putdebuglog "in ::tcldrop::party::irc::ircparty_MODE $idx $command $arg"
 	if {[llength [set sarg [split $arg]]] == 1 && [validchan $arg]} {
 		puthelp "$command $arg"
 		RAWCapture {324 329} $idx
@@ -403,7 +440,7 @@ proc ::tcldrop::party::irc::ircparty_MODE {idx command arg} {
 
 # :irc.choopa.net 302 Tcldrop :Tcldrop=+Tcldrop@2001:5c0:84dc:7::
 proc ::tcldrop::party::irc::ircparty_USERHOST {idx command arg} {
-	putlog "in ::tcldrop::party::irc::ircparty_USERHOST $idx $command $arg"
+	putdebuglog "in ::tcldrop::party::irc::ircparty_USERHOST $idx $command $arg"
 	array set userinfo [getircparty user $idx]
 	switch -- $arg {
 		$userinfo(nickname) {
@@ -420,12 +457,12 @@ proc ::tcldrop::party::irc::ircparty_USERHOST {idx command arg} {
 }
 
 proc ::tcldrop::party::irc::ircparty_VERSION {idx command arg} {
-	putlog "in ::tcldrop::party::irc::ircparty_VERSION $idx $command $arg"
+	putdebuglog "in ::tcldrop::party::irc::ircparty_VERSION $idx $command $arg"
 	return 1
 }
 
 proc ::tcldrop::party::irc::ircparty_ISON {idx command arg} {
-	#putlog "in ::tcldrop::party::irc::ircparty_ISON $idx $command $arg"
+	#putdebuglog "in ::tcldrop::party::irc::ircparty_ISON $idx $command $arg"
 	return 1
 }
 
@@ -433,7 +470,7 @@ proc ::tcldrop::party::irc::ircparty_JOIN {idx command arg} {
 	# Allow anybody to join any partyline channel.
 	# Only allow +vofmn to join already valid channels on irc.
 	# Only allow global +mn to join invalid channels. (they'll be [channel add]'d on JOIN)
-	putlog "ircparty_JOIN $idx $command $arg"
+	putdebuglog "ircparty_JOIN $idx $command $arg"
 	array set userinfo [getircparty user $idx]
 	array set idxinfo [getidxinfo $idx]
 	foreach chankey [split $arg ,] {
@@ -475,7 +512,7 @@ proc ::tcldrop::party::irc::ircparty_NAMES {idx command arg} {
 		# FixMe: Split this into multiple 353's if when the line gets too long:
 		PutRAW $idx "353 $userinfo(nickname) $chanflag $chan :[join $nicklist]"
 	}
-	putlog "ircparty names: [join [ircparty chanlist $chan nickname]]"
+	putdebuglog "ircparty names: [join [ircparty chanlist $chan nickname]]"
 	PutRAW $idx "353 $userinfo(nickname) = $chan :[join [ircparty chanlist $chan nickname]]"
 	PutRAW $idx "366 $userinfo(nickname) $chan :End of /NAMES list."
 }
@@ -556,7 +593,7 @@ proc ::tcldrop::party::irc::RAWCapture_RAW {from key arg} {
 	variable RAWCaptures
 	foreach a [array names RAWCaptures $key,*] {
 		array set rawinfo $RAWCaptures($a)
-		putidx $rawinfo(idx) ":$from $key $arg"
+		Putidx $rawinfo(idx) ":$from $key $arg"
 		if {[string equal -nocase $rawinfo(last) $key]} {
 			after idle [list ::tcldrop::party::irc::RAWCapture_unset $rawinfo(raws) $rawinfo(idx)]
 			after cancel $rawinfo(afterid)
@@ -571,16 +608,25 @@ proc ::tcldrop::party::irc::ircparty_PRIVMSG {idx command arg} {
 	# Also, only allow global +mn to send PRIVMSG's to nicks on irc.
 	array set userinfo [getircparty user $idx]
 	array set idxinfo [getidxinfo $idx]
-	if {([validchan [set chan [lindex [set sarg [split $arg]] 0]]] && [ircparty idxonchan $idx $chan]) || ([matchattr $idxinfo(handle) nm])} {
-		if {[matchattr $idxinfo(handle) z]} {
-			puthelp "$command $arg"
+	# check if we're dealing with PRIVMSG's to a command channel
+	if {[string index $arg 0] ne {%}} {
+		if {([validchan [set chan [lindex [set sarg [split $arg]] 0]]] && [ircparty idxonchan $idx $chan]) || ([matchattr $idxinfo(handle) nm])} {
+			if {[matchattr $idxinfo(handle) z]} {
+				puthelp "$command $arg"
+			} else {
+				puthelp "$command $chan :<$idxinfo(handle)> [string range [string trim [join [lrange $sarg 1 end]]] 1 end]"
+			}
+		}
+		if {[ircparty idxonchan $idx $chan]} { putircparty -chan $chan -excludeidx $idx ":$userinfo(nickname) $command $arg" }
+	# This is a command channel
+	} else {
+		set text [string range $arg [expr {[string first {:} $arg] + 1}] end]
+		if {[string index $text 0] eq {.}} {
+			dccsimul $idx $text
 		} else {
-			puthelp "$command $chan :<$idxinfo(handle)> [string range [string trim [join [lrange $sarg 1 end]]] 1 end]"
+			callparty chat $idx:[idx2hand $idx]@${::botnet-nick} handle [idx2hand $idx] idx $idx bot ${::botnet-nick} line $text
 		}
 	}
-	if {[ircparty idxonchan $idx $chan]} { putircparty -chan $chan -excludeidx $idx ":$userinfo(nickname) $command $arg" }
-	#	dccsimul $idx $line
-	#	callparty chat $idx:$chatinfo(handle)@${::botnet-nick} handle $chatinfo(handle) idx $idx bot ${::botnet-nick} line $line
 	return 1
 }
 
