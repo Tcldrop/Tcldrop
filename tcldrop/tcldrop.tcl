@@ -737,6 +737,14 @@ namespace eval ::tcldrop {
  			#wm iconbitmap . -default "myicon.ico"
 
 		stdout console [Tcldrop run [concat [list -n -t] $::argv]]
+
+		# Re-set Exit again so the window will close:
+		variable Exit
+		if {[info exists Exit]} {
+			after 99999 [set ::tcldrop::Exit $Exit]
+			stdout console {Closing window in 99 seconds...}
+			vwait ::tcldrop::Exit
+		}
 	} else {
 		# Assume we're in a tclsh (or tclsh-like) environment.
 		proc PutLogLev {name levels channel text} {
@@ -750,7 +758,9 @@ namespace eval ::tcldrop {
 
 	variable Exit
 	# Exit right now if something already set Exit:
-	if {[info exists Exit]} { exit $Exit }
+	if {[info exists Exit]} {
+		exit $Exit
+	}
 
 	# Do the signal handlers:
 
@@ -769,7 +779,7 @@ namespace eval ::tcldrop {
 	# Note: The last one to trap the signal takes precedence.. (There can only be one signal trapper per signal)
 
 	# Never add SIGCHLD or SIGALRM to this list, and only list the ones we'll use or expect other people to use in Tcldrop:
-	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGPIPE}
+	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK}
 	variable trappedSignals {}
 	# Expect seems able to trap more of them than Tclx (at least on Windows):
 	if {![catch { package require Expect }] && [info commands trap] != {}} {
@@ -809,6 +819,7 @@ namespace eval ::tcldrop {
 			}
 		}
 	}
+
 	foreach Signal $trapSignals { if {[lsearch -exact $trappedSignals $Signal] == -1} { lappend untrappedSignals $Signal } }
 	if {[info exists untrappedSignals]} { PutLogLev console o - "Unable to trap these signals: [join $untrappedSignals {, }]." }
 	unset -nocomplain trapSignals trappedSignals Signal error untrappedSignals
@@ -868,3 +879,4 @@ namespace eval ::tcldrop {
 		exit $::tcldrop::Exit
 	}
 }
+
