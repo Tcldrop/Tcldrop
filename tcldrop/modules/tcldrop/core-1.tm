@@ -1336,12 +1336,16 @@ proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 if {![llength [info commands ::tcldrop::core::Exit]]} {
 	rename ::exit ::tcldrop::core::Exit
 	proc ::tcldrop::core::exit {{code {0}} {reason {Exit}}} {
-		variable Exit $code
+		if {![info exists ::exit]} { set ::exit $code }
 		catch { callevent exit }
-		catch { ::tcldrop::core::Exit $code }
 		catch { file delete -force -- $::pidfile }
+		# This is the real exit command:
+		catch { ::tcldrop::core::Exit $::exit }
+		# We shouldn't ever make it to here..  o_O But unset these variables so the bot can keep running normally (maybe..who knows):
+		after idle [list after 0 [list unset -nocomplain ::exit ::die ::shutdown]]
 		return $code
 	}
+	# The new global exit command is now an alias to our new ::tcldrop::core::exit proc:
 	interp alias {} exit {} ::tcldrop::core::exit
 }
 
@@ -1467,9 +1471,8 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
 	putlog "--- Loading Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
-	bind evnt - loaded ::tcldrop::core::EVNT_loaded -priority 0
-	bind evnt - init ::tcldrop::core::EVNT_init -priority 0
 	setdefault die-on-sighup 0
+	setdefault rehash-on-sighup 1
 	setdefault die-on-sigterm 15
 	setdefault die-on-sigint 2
 	setdefault shutdown-on-sigquit 3
@@ -1484,7 +1487,6 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault exit-on-sigill 4
 	setdefault die-on-sigbreak 21
 	setdefault exit-on-sigbreak 21
-	bind evnt - sig* ::tcldrop::core::EVNT_signal -priority 10000
 	setdefault config {}
 	setdefault owner {}
 	setdefault nick {Tcldrop}
@@ -1497,6 +1499,9 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault timezone [clock format 0 -format {%Z}]
 	setdefault hourly-updates "[rand 6][rand 10]"
 	setdefault daily-updates "[format %02s [rand 25]]"
+	bind evnt - loaded ::tcldrop::core::EVNT_loaded -priority 0
+	bind evnt - init ::tcldrop::core::EVNT_init -priority 0
+	bind evnt - sig* ::tcldrop::core::EVNT_signal -priority 10000
 	# Load the required modules:
 	# FixMe: There should be a variable or something that tells us what core/main modules to load or even which to exclude..
 	checkmodule core
@@ -1740,34 +1745,31 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigcld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} - {sigpoll} - {sigio} - {sigprof} - {sigsys} - {sigtrap} - {sigvtalrm} - {sigalrm} - {sigalarm} - {14} {
 				# Completely ignore these signals.  They shouldn't even be trapped, but in case they are we ignore them here.
 				# Remove this line in the future (There may be signals we want to ignore and not even do a putlog for):
-				putdebuglog {[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang ignoring core]}
+				putdebuglog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang ignoring core]"
 			}
 			{default} {
 				# Users can set whichever of these variables they want to, although some will have appropriate default settings:
 				if {[info exists "::exit-on-$lowersignal"] && [set "::exit-on-$lowersignal"]} {
 					# Do [exit] on this signal..
-					# FixMe: Should there be a putlog?
 					exit [set "::exit-on-$lowersignal"]
 				} elseif {[info exists "::die-on-$lowersignal"] && [set "::die-on-$lowersignal"]} {
 					# Do [die] on this signal..
-					# FixMe: Should there be a putlog?
-					die "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang dying core]"
+					die "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang dying core]"
 				} elseif {[info exists "::shutdown-on-$lowersignal"] && [set "::shutdown-on-$lowersignal"]} {
 					# Do [shutdown] on this signal..
 					# Note: shutdown is an idle-event (it doesn't happen until we return from this proc)..
-					# FixMe: Should there be a putlog?
-					shutdown "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang shutting-down core]"
+					shutdown "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang shutting-down core]"
 				} elseif {[info exists "::restart-on-$lowersignal"] && [set "::restart-on-$lowersignal"]} {
 					# Do [restart] on this signal..
-					putlog "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang restarting core]"
+					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang restarting core]"
 					restart $lowersignal
 				} elseif {[info exists "::rehash-on-$lowersignal"] && [set "::rehash-on-$lowersignal"]} {
 					# Do [rehash] on this signal..
-					putlog "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang rehashing core]"
+					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang rehashing core]"
 					rehash $lowersignal
 				} elseif {![info exists ::die] && ![info exists ::rehash] && ![info exists ::restart] && ![info exists ::shutdown]} {
 					# If we're not doing aything, at least do a putlog saying it's being ignored..
-					putlog {[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang ignoring core]}
+					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang ignoring core]"
 				}
 			}
 		}
