@@ -79,6 +79,23 @@ namespace eval ::tcldrop {
 	array set input {}
 	namespace export tcldrop Tcldrop
 	variable commands [namespace export]
+
+	# Rename the exit command, so that we can handle exits better:
+	if {![llength [info commands ::tcldrop::Exit]]} {
+		rename ::exit ::tcldrop::Exit
+		proc ::tcldrop::exit {{code {0}}} {
+			variable Tcldrop
+			# Create a virtual signal called SIGEXIT (named SIGEXIT rather than just EXIT so that a bind can bind to sig* and still see that we're exiting; and also because we already have an exit event that triggers when [exit] is called from the slaves.):
+			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent SIGEXIT } }
+			# This is the real exit command:
+			::tcldrop::Exit $code
+			# We shouldn't ever make it to here..
+			return $code
+		}
+		# The new global exit command is now an alias to our new ::tcldrop::exit proc:
+		interp alias {} exit {} ::tcldrop::exit
+	}
+
 	# FixMe: Make this a namespace ensemble:
 	proc Tcldrop {command name {arg {}}} {
 		variable Tcldrop
@@ -775,8 +792,6 @@ namespace eval ::tcldrop {
 	# SIGALRM used for gethostbyname
 
 	# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
-
-	# Note: The last one to trap the signal takes precedence.. (There can only be one signal trapper per signal)
 
 	# Never add SIGCHLD or SIGALRM to this list, and only list the ones we'll use or expect other people to use in Tcldrop:
 	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK}

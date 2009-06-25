@@ -1487,6 +1487,8 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault exit-on-sigill 4
 	setdefault die-on-sigbreak 21
 	setdefault exit-on-sigbreak 21
+	setdefault exit-on-sigexit 1
+	setdefault die-on-sigexit 1
 	setdefault config {}
 	setdefault owner {}
 	setdefault nick {Tcldrop}
