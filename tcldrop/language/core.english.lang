@@ -1,0 +1,24 @@
+# The die/shutdown messages when we shutdown due to receiving one of these signals:
+sighup,HANGUP SIGNAL
+sigterm,TERMINATE SIGNAL
+sigint,INTERRUPT SIGNAL
+sigquit,QUIT SIGNAL
+sigxcpu,CPU Time Exceeded
+sigbreak,BREAK SIGNAL
+sigusr1,USR1 SIGNAL
+sigusr2,USR2 SIGNAL
+sigpipe,BROKEN PIPE
+sigabrt,ABORT SIGNAL
+sigbus,BUS ERROR
+sigsegv,SEGMENTATION FAULT/VIOLATION
+sigfpe,FLOATING POINT ERROR
+sigill,ILLEGAL INSTRUCTION
+sigunknown,UNKNOWN SIGNAL
+ignore-signal,IGNORING
+shutting-down,Shutting down...
+dying,Dying...
+exiting,Exiting...
+crashing,CRASHING!
+rehashing,Rehashing...
+restarting,Restarting...
+caught-signal,Caught Signal

@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds calldie callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit
+	namespace export addlang addlangsection bgerror bind bindlist binds calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1196,7 +1196,7 @@ proc ::tcldrop::core::ModuleLoaded {module {options {}}} { info exists ::modules
 
 proc ::tcldrop::core::callevent {event} {
 	foreach {type flags mask proc} [bindlist evnt] {
-		if {[string equal -nocase $event $mask]} {
+		if {[string match -nocase $mask $event]} {
 			if {[catch { $proc $event } err]} {
 				putlog "Error in $proc $event: $err"
 				puterrlog "$::errorInfo"
@@ -1357,16 +1357,41 @@ proc ::tcldrop::core::calldie {{reason {die}} {code {0}}} {
 	}
 }
 
+proc ::tcldrop::core::callshutdown {{reason {shutdown}} {code {0}}} {
+	foreach {type flags mask proc} [bindlist shutdown] {
+		if {[string match -nocase $mask $reason]} {
+			if {[catch { $proc $reason } err]} {
+				putlog "Error in $proc $reason: $err"
+				puterrlog $::errorInfo
+			}
+			#countbind $type $mask $proc
+		}
+	}
+}
+
+# Call the die binds and exit:
 proc ::tcldrop::core::die {{reason {DIE}} {code {0}}} {
 	set ::die $reason
+	# Call the die binds, they'll need to do everything immediately though (and not use any after/timer/utimer commands), because we're exiting after they return:
 	catch { calldie $reason $code }
 	catch { callevent die }
 	catch { putlog "* die $code $reason" }
 	exit $code
 }
-# RacBot renamed die to shutdown:
+# RacBot renamed die to shutdown, but we kind of re-purpose it here..
 # We use this as a slow/safe shutdown, by allowing idle events to finish first:
-proc ::tcldrop::core::shutdown {{reason {SHUTDOWN}} {code {0}}} { after idle [list after 0 [list die $reason $code]] }
+proc ::tcldrop::core::shutdown {{reason {SHUTDOWN}} {code {0}}} {
+	set ::shutdown $reason
+	# Call the shutdown binds first, so they can run before we hit the event loop again which is when [die] will run and cause an [exit]..
+	# Note: shutdown binds are only called when [shutdown] is run.. They won't ever be called if a script uses [die] directly.
+	# This will give scripts that need to run immediately a chance to run before we hit the event-loop again and also a chance to run before the die related binds.
+	catch { callevent shutdown }
+	catch { callshutdown $reason $code }
+	catch { putlog "* shutdown $code $reason" }
+	after idle [list after 0 [list die $reason $code]]
+	# Set ::die now, so scripts that run between now and when we actually [die] can just check for $::die to know it's shutting down rather than both $::shutdown and $::die.
+	set ::die $reason
+}
 
 # Rehash, just like in Eggdrop, it (re)loads the config.
 proc ::tcldrop::core::rehash {{type {}}} {
@@ -1444,18 +1469,27 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	putlog "--- Loading Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
 	bind evnt - loaded ::tcldrop::core::EVNT_loaded -priority 0
 	bind evnt - init ::tcldrop::core::EVNT_init -priority 0
-	bind evnt - sighup ::tcldrop::core::EVNT_signal -priority 10000
-	bind evnt - sigint ::tcldrop::core::EVNT_signal -priority 10000
-	bind evnt - sigterm ::tcldrop::core::EVNT_signal -priority 10000
-	bind evnt - sigquit ::tcldrop::core::EVNT_signal -priority 10000
+	setdefault die-on-sighup 0
+	setdefault die-on-sigterm 15
+	setdefault die-on-sigint 2
+	setdefault shutdown-on-sigquit 3
+	setdefault restart-on-sigusr1 1
+	setdefault restart-on-sigusr2 1
+	setdefault shutdown-on-sigxcpu 1
+	setdefault die-on-sigabrt 6
+	setdefault exit-on-sigabrt 6
+	setdefault exit-on-sigbus 20
+	setdefault exit-on-sigsegv 11
+	setdefault exit-on-sigfpe 8
+	setdefault exit-on-sigill 4
+	setdefault die-on-sigbreak 21
+	setdefault exit-on-sigbreak 21
+	bind evnt - sig* ::tcldrop::core::EVNT_signal -priority 10000
 	setdefault config {}
 	setdefault owner {}
 	setdefault nick {Tcldrop}
 	setdefault fuzz {1}
 	setdefault handlen 9
-	setdefault die-on-sighup 0
-	setdefault die-on-sigterm 1
-	setdefault die-on-sigint 1
 	setdefault max-logs 25
 	setdefault quick-logs 0
 	setdefault my-ip {}
@@ -1677,124 +1711,70 @@ proc ::tcldrop::core::EVNT_init {event} {
 	catch {
 		puts [set fid [open $pidfile w]] [pid]
 		close $fid
-		file attributes $pidfile -permissions 0600
+		# Note: -permissions don't apply on Windows (We'd get an error without using catch)
+		catch { file attributes $pidfile -permissions 0600 }
 	}
 }
 
 proc ::tcldrop::core::EVNT_signal {signal} {
 	variable Signal
-	# (If Signal already exists, it means we're already processing another fatal/exit signal.)
+	# Only handle the signal if Signal doesn't exist or exists but is a different signal than we just caught.. This prevents infinite loops of signals.
 	if {![info exists Signal] || $Signal ne $signal} {
-		switch -- [string tolower $signal] {
-			{sighup} - {1} {
-				# http://en.wikipedia.org/wiki/SIGHUP
-				if {${::die-on-sighup}} {
-					shutdown {Caught Signal: SIGHUP (HANGUP SIGNAL) -- SIGNING OFF}
-					variable Signal {SIGHUP}
-				} else {
-					putlog {Received HUP signal: rehashing...}
-					rehash $signal
-				}
-			}
-			{sigterm} - {15} {
-				# This is the default signal used when you "kill <pid>" on *nix.
-				# http://en.wikipedia.org/wiki/SIGTERM
-				if {${::die-on-sigterm}} {
-					shutdown {Caught Signal: SIGTERM (TERMINATE SIGNAL) -- SIGNING OFF}
-					variable Signal {SIGTERM}
-				} else {
-					putlog {RECEIVED TERMINATE SIGNAL (IGNORING)}
-				}
-			}
-			{sigint} - {2} {
-				# CTRL+C
-				# http://en.wikipedia.org/wiki/SIGINT_(POSIX)
-				if {[info exists ::die-on-sigint] && ${::die-on-sigint}} {
-					shutdown {Caught Signal: SIGINT}
-					variable Signal {SIGINT}
-				} else {
-					putlog {Caught Signal: SIGINT (IGNORING)}
-				}
-			}
-			{sigquit} - {3} {
-				# CTRL+\ or CTRL+4 or SysRq
-				# http://en.wikipedia.org/wiki/SIGQUIT
-				if {[info exists ::die-on-sigquit] && ${::die-on-sigquit}} {
-					die {Caught Signal: SIGQUIT}
-					variable Signal {SIGQUIT}
-				} else {
-					putlog {Caught Signal: RECEIVED QUIT SIGNAL (IGNORING)}
-				}
-			}
-			{sigusr1} - {sigusr2} {
-				# Tcldrop will do a [restart] for this one..
-				# http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2
-				putlog "Received $signal signal: restarting..."
-				restart $signal
-				# FixMe: Perhaps do something different for SIGUSR2?
-			}
-			{sigxcpu} {
-				# Soft-limit for CPU time exceeded..shutdown now while we can still do it gracefully:
-				# http://en.wikipedia.org/wiki/SIGXCPU
-				shutdown {Caught Signal: SIGXCPU (CPU Time Exceeded) -- Shutting down..}
-				variable Signal {SIGXCPU}
-			}
-			{sigpipe} - {13} {
-				# http://en.wikipedia.org/wiki/SIGPIPE
-				shutdown {Caught Signal: SIGPIPE (Broken Pipe) -- Shutting down..} 13
-				variable Signal {SIGPIPE}
-				exit 13
-			}
-			{sigabrt} - {sigiot} - {6} {
-				# http://en.wikipedia.org/wiki/SIGABRT
-				die "Caught Signal: $signal"
-				variable Signal $signal
-				exit 6
-			}
-			{sigbus} - {20} {
-				# http://en.wikipedia.org/wiki/SIGBUS
-				# FixMe: Consider just doing [exit] and not [die] for all of these that say "-- CRASHING!" ... It may be unsafe to allow it to save the user/chan files and whatever else.
-				die {Caught Signal: SIGBUS (BUS ERROR) -- CRASHING!} 20
-				variable Signal {SIGBUS}
-				exit 20
-			}
-			{sigsegv} - {11} {
-				# http://en.wikipedia.org/wiki/SIGSEGV
-				die {Caught Signal: SIGSEGV (SEGMENT VIOLATION) -- CRASHING!} 11
-				variable Signal {SIGSEGV}
-				exit 11
-			}
-			{sigfpe} - {8} {
-				# http://en.wikipedia.org/wiki/SIGFPE
-				die {Caught Signal: SIGFPE (FLOATING POINT ERROR) -- CRASHING!} 8
-				variable Signal {SIGFPE}
-				exit 8
-			}
-			{sigill} - {4} {
-				# log Context..?  EH?
-				# http://en.wikipedia.org/wiki/SIGILL
-				die {Caught Signal: SIGILL (ILLEGAL INSTRUCTION) -- CRASHING!} 4
-				variable Signal {SIGFPE}
-				exit 4
-			}
-			{sigrtmin} - {sigrtmax} {
-				# http://en.wikipedia.org/wiki/SIGRTMIN_and_SIGRTMAX
-			}
+		variable Signal [set lowersignal [string tolower $signal]]
+		# Notes:
+		# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
+		# SIGHUP http://en.wikipedia.org/wiki/SIGHUP Defaults to being ignored in Eggdrop+Tcldrop.
+		# SIGTERM http://en.wikipedia.org/wiki/SIGTERM This is the default signal used when you "kill <pid>" on *nix.  Defaults to doing a [die] in Eggdrop+Tcldrop.
+		# SIGINT 2 http://en.wikipedia.org/wiki/SIGINT_(POSIX) CTRL+C.  Always does an [exit] in Eggdrop.  Default to [die] on Tcldrop.
+		# SIGQUIT 3 http://en.wikipedia.org/wiki/SIGQUIT CTRL+\ or CTRL+4 or SysRq  Ignored? on Eggdrop (FixMe: Find out for sure).  Does [shutdown] on Tcldrop (FixMe: Should it be ignored instead?)
+		# SIGUSR1 SIGUSR2 http://en.wikipedia.org/wiki/SIGUSR1_and_SIGUSR2 Defaults to doing a [restart] in Tcldrop.  Untrapped in Eggdrop?
+		# SIGXCPU http://en.wikipedia.org/wiki/SIGXCPU Soft-limit for CPU time exceeded.  Tcldrop should shutdown now while we can still do it gracefully.
+		# SIGBREAK 21 CTRL+Break/Pause key (Windows only?) I'm pretty sure it can't be ignored, we should die/exit.
+		# SIGPIPE 13 http://en.wikipedia.org/wiki/SIGPIPE
+		# SIGABRT SIGIOT 6 http://en.wikipedia.org/wiki/SIGABRT
+		# SIGBUS http://en.wikipedia.org/wiki/SIGBUS
+		# SIGSEGV 11 http://en.wikipedia.org/wiki/SIGSEGV
+		# SIGFPE 8 http://en.wikipedia.org/wiki/SIGFPE
+		# SIGILL 4 http://en.wikipedia.org/wiki/SIGILL
+	 	switch -- $lowersignal {
 			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigcld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} - {sigpoll} - {sigio} - {sigprof} - {sigsys} - {sigtrap} - {sigvtalrm} - {sigalrm} - {sigalarm} - {14} {
 				# Completely ignore these signals.  They shouldn't even be trapped, but in case they are we ignore them here.
+				# Remove this line in the future (There may be signals we want to ignore and not even do a putlog for):
+				putdebuglog {[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang ignoring core]}
 			}
-			{default} - {254} - {255} {
-				# Casual shutdown as the default, with exit code 254 because it's an unknown signal.
-				shutdown "Caught Signal: $signal  (UNKNOWN SIGNAL - SHUTTING DOWN...)" 254
-				variable Signal [string toupper $signal]
-				# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
+			{default} {
+				# Users can set whichever of these variables they want to, although some will have appropriate default settings:
+				if {[info exists "::exit-on-$lowersignal"] && [set "::exit-on-$lowersignal"]} {
+					# Do [exit] on this signal..
+					# FixMe: Should there be a putlog?
+					exit [set "::exit-on-$lowersignal"]
+				} elseif {[info exists "::die-on-$lowersignal"] && [set "::die-on-$lowersignal"]} {
+					# Do [die] on this signal..
+					# FixMe: Should there be a putlog?
+					die "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang dying core]"
+				} elseif {[info exists "::shutdown-on-$lowersignal"] && [set "::shutdown-on-$lowersignal"]} {
+					# Do [shutdown] on this signal..
+					# Note: shutdown is an idle-event (it doesn't happen until we return from this proc)..
+					# FixMe: Should there be a putlog?
+					shutdown "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang shutting-down core]"
+				} elseif {[info exists "::restart-on-$lowersignal"] && [set "::restart-on-$lowersignal"]} {
+					# Do [restart] on this signal..
+					putlog "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang restarting core]"
+					restart $lowersignal
+				} elseif {[info exists "::rehash-on-$lowersignal"] && [set "::rehash-on-$lowersignal"]} {
+					# Do [rehash] on this signal..
+					putlog "[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang rehashing core]"
+					rehash $lowersignal
+				} elseif {![info exists ::die] && ![info exists ::rehash] && ![info exists ::restart] && ![info exists ::shutdown]} {
+					# If we're not doing aything, at least do a putlog saying it's being ignored..
+					putlog {[lang caught-signal core]: $signal ([lang $lowersignal core]) -- [lang ignoring core]}
+				}
 			}
 		}
-		# If we didn't shutdown, this will unset the Signal variable so that we can process another signal 1+ seconds in the future:
+		# Unset the Signal variable so that we can process another signal 1+ seconds in the future:
 		after idle [list after 999 [list unset -nocomplain ::tcldrop::core::Signal]]
 	}
 }
-
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
