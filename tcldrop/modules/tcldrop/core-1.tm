@@ -1488,6 +1488,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault die-on-sigbreak 21
 	setdefault exit-on-sigbreak 21
 	setdefault die-on-sigexit 1
+	setdefault save-on-sigpwr 1
 	setdefault config {}
 	setdefault owner {}
 	setdefault nick {Tcldrop}
@@ -1742,37 +1743,32 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 		# SIGSEGV 11 http://en.wikipedia.org/wiki/SIGSEGV
 		# SIGFPE 8 http://en.wikipedia.org/wiki/SIGFPE
 		# SIGILL 4 http://en.wikipedia.org/wiki/SIGILL
-	 	switch -- $lowersignal {
-			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigcld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} - {sigpoll} - {sigio} - {sigprof} - {sigsys} - {sigtrap} - {sigvtalrm} - {sigalrm} - {sigalarm} - {14} {
-				# Completely ignore these signals.  They shouldn't even be trapped, but in case they are we ignore them here.
-				# Remove this line in the future (There may be signals we want to ignore and not even do a putlog for):
-				putdebuglog "[lang caught-signal core]: [string toupper $signal] -- [lang ignoring core]"
-			}
-			{default} {
-				# Users can set whichever of these variables they want to, although some will have appropriate default settings:
-				if {[info exists "::exit-on-$lowersignal"] && [set "::exit-on-$lowersignal"]} {
-					# Do [exit] on this signal..
-					exit [set "::exit-on-$lowersignal"]
-				} elseif {[info exists "::die-on-$lowersignal"] && [set "::die-on-$lowersignal"]} {
-					# Do [die] on this signal..
-					die "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang dying core]"
-				} elseif {[info exists "::shutdown-on-$lowersignal"] && [set "::shutdown-on-$lowersignal"]} {
-					# Do [shutdown] on this signal..
-					# Note: shutdown is an idle-event (it doesn't happen until we return from this proc)..
-					shutdown "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang shutting-down core]"
-				} elseif {[info exists "::restart-on-$lowersignal"] && [set "::restart-on-$lowersignal"]} {
-					# Do [restart] on this signal..
-					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang restarting core]"
-					restart $lowersignal
-				} elseif {[info exists "::rehash-on-$lowersignal"] && [set "::rehash-on-$lowersignal"]} {
-					# Do [rehash] on this signal..
-					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang rehashing core]"
-					rehash $lowersignal
-				} elseif {![info exists ::die] && ![info exists ::rehash] && ![info exists ::restart] && ![info exists ::shutdown]} {
-					# If we're not doing aything, at least do a putlog saying it's being ignored..
-					putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang ignoring core]"
-				}
-			}
+		# SIGPWR http://en.wikipedia.org/wiki/SIGPWR Tcldrop defaults to doing a [save].
+		# Users can set whichever of these variables they want to, although some will have appropriate default settings:
+		if {[info exists "::exit-on-$lowersignal"] && [set "::exit-on-$lowersignal"]} {
+			# Do [exit] on this signal..
+			exit [set "::exit-on-$lowersignal"]
+		} elseif {[info exists "::die-on-$lowersignal"] && [set "::die-on-$lowersignal"]} {
+			# Do [die] on this signal..
+			die "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang dying core]"
+		} elseif {[info exists "::shutdown-on-$lowersignal"] && [set "::shutdown-on-$lowersignal"]} {
+			# Do [shutdown] on this signal..
+			# Note: shutdown is an idle-event (it doesn't happen until we return from this proc)..
+			shutdown "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang shutting-down core]"
+		} elseif {[info exists "::restart-on-$lowersignal"] && [set "::restart-on-$lowersignal"]} {
+			# Do [restart] on this signal..
+			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang restarting core]"
+			restart $lowersignal
+		} elseif {[info exists "::rehash-on-$lowersignal"] && [set "::rehash-on-$lowersignal"]} {
+			# Do [rehash] on this signal..
+			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang rehashing core]"
+			rehash $lowersignal
+		} elseif {[info exists "::save-on-$lowersignal"] && [set "::save-on-$lowersignal"]} {
+			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang saving core]"
+			save
+		} elseif {![info exists ::die] && ![info exists ::rehash] && ![info exists ::restart] && ![info exists ::shutdown]} {
+			# If we're not doing aything, at least do a putlog saying it's being ignored..
+			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang ignoring core]"
 		}
 		# Unset the Signal variable so that we can process another signal 1+ seconds in the future:
 		after idle [list after 999 [list unset -nocomplain ::tcldrop::core::Signal]]

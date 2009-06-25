@@ -794,7 +794,7 @@ namespace eval ::tcldrop {
 	# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
 
 	# Never add SIGCHLD or SIGALRM to this list, and only list the ones we'll use or expect other people to use in Tcldrop:
-	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK}
+	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK SIGPWR SIGWINCH}
 	variable trappedSignals {}
 	# Expect seems able to trap more of them than Tclx (at least on Windows):
 	if {![catch { package require Expect }] && [info commands trap] != {}} {
