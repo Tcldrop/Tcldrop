@@ -1487,7 +1487,6 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault exit-on-sigill 4
 	setdefault die-on-sigbreak 21
 	setdefault exit-on-sigbreak 21
-	setdefault exit-on-sigexit 1
 	setdefault die-on-sigexit 1
 	setdefault config {}
 	setdefault owner {}
@@ -1747,7 +1746,7 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 			{0} - {sigpwr} - {sigwinch} - {sigchld} - {sigcld} - {sigurg} - {sigcont} - {sigtstp} - {sigttin} - {sigttou} - {sigstop} - {sigpoll} - {sigio} - {sigprof} - {sigsys} - {sigtrap} - {sigvtalrm} - {sigalrm} - {sigalarm} - {14} {
 				# Completely ignore these signals.  They shouldn't even be trapped, but in case they are we ignore them here.
 				# Remove this line in the future (There may be signals we want to ignore and not even do a putlog for):
-				putdebuglog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang ignoring core]"
+				putdebuglog "[lang caught-signal core]: [string toupper $signal] -- [lang ignoring core]"
 			}
 			{default} {
 				# Users can set whichever of these variables they want to, although some will have appropriate default settings:

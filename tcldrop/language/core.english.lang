@@ -13,7 +13,7 @@ sigbus,BUS ERROR
 sigsegv,SEGMENTATION FAULT/VIOLATION
 sigfpe,FLOATING POINT ERROR
 sigill,ILLEGAL INSTRUCTION
-sigunknown,UNKNOWN SIGNAL
+sigexit,PARENT EXITING
 ignore-signal,IGNORING
 shutting-down,Shutting down...
 dying,Dying...
