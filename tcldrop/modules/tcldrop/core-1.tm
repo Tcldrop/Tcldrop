@@ -1747,6 +1747,7 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 		# Users can set whichever of these variables they want to, although some will have appropriate default settings:
 		if {[info exists "::exit-on-$lowersignal"] && [set "::exit-on-$lowersignal"]} {
 			# Do [exit] on this signal..
+			catch { putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang exiting core]" }
 			exit [set "::exit-on-$lowersignal"]
 		} elseif {[info exists "::die-on-$lowersignal"] && [set "::die-on-$lowersignal"]} {
 			# Do [die] on this signal..
@@ -1757,11 +1758,11 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 			shutdown "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang shutting-down core]"
 		} elseif {[info exists "::restart-on-$lowersignal"] && [set "::restart-on-$lowersignal"]} {
 			# Do [restart] on this signal..
-			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang restarting core]"
+			catch { putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang restarting core]" }
 			restart $lowersignal
 		} elseif {[info exists "::rehash-on-$lowersignal"] && [set "::rehash-on-$lowersignal"]} {
 			# Do [rehash] on this signal..
-			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang rehashing core]"
+			catch { putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang rehashing core]" }
 			rehash $lowersignal
 		} elseif {[info exists "::save-on-$lowersignal"] && [set "::save-on-$lowersignal"]} {
 			putlog "[lang caught-signal core]: [string toupper $signal] ([lang $lowersignal core]) -- [lang saving core]"

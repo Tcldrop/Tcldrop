@@ -33,7 +33,7 @@ namespace eval ::tcldrop::encryption {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
-	variable depends {core::main}
+	variable depends {core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides the core encryption support.}
 	variable rcsid {$Id$}

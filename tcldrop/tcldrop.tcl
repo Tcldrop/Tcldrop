@@ -79,6 +79,8 @@ namespace eval ::tcldrop {
 	array set input {}
 	namespace export tcldrop Tcldrop
 	variable commands [namespace export]
+	catch { ::tcl::tm::path add modules }
+	catch { ::tcl::tm::path add [file join $tcldrop(dirname) modules] }
 
 	# Rename the exit command, so that we can handle exits better:
 	if {![llength [info commands ::tcldrop::Exit]]} {
@@ -882,16 +884,35 @@ namespace eval ::tcldrop {
 		}
 		# Foreground mode was requested or we're falling back to it.  (otherwise we would have exited before we got to this point).
 		puts "${::argv0}: Entering Tcl event-loop (vwait)"
-		if {![catch { vwait ::tcldrop::Exit } error]} {
+		# FixMe: Basically I want a readline or readline-like interface.  So that at least Tcl-commands can be entered on this interpreter (the bot(s) are running in slave interps).
+		# FixMe: In the future I'd like to see a screen-like interface, where each bot has its own "screen" that it runs on.
+		# FixMe: This code is untested...
+		if {!$tcldrop(background-mode) && !$tcldrop(simulate-dcc)} {
+			if {![catch { package require tclreadline }] && [info commands ::tclreadline::Loop] ne {}} {
+				# This is the real tclreadline.
+				puts "Starting tclreadline::Loop ..."
+				# FixMe: Make it exit when ::tcldrop::Exit is set. Or something. Would rather not have to do a trace on ::tcldrop::Exit to accomplish this.
+				::tclreadline::Loop
+			} elseif {![catch { package require TclReadLine }] && [info commands ::TclReadLine::interact] ne {}} {
+				# This is a Tcl script based Tcl readline.
+				puts "Starting TclReadLine::interact ..."
+				# FixMe: Make it exit when ::tcldrop::Exit is set.  (Need to modify the modules/TclReadLine-1.1.tm)
+				::TclReadLine::interact
+			} elseif {![catch { vwait ::tcldrop::Exit } error]} {
+				catch { puts "Exiting with error level $Exit ... $error" }
+			} else {
+				catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
+			}
+			#catch { close stdout }
+			#catch { close stdin }
+			#catch { close stderr }
+			#set tcl_interactive 0
+			exit $::tcldrop::Exit
+		} elseif {![catch { vwait ::tcldrop::Exit } error]} {
 			catch { puts "Exiting with error level $Exit ... $error" }
 		} else {
 			catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 		}
-		#catch { close stdout }
-		#catch { close stdin }
-		#catch { close stderr }
-		#set tcl_interactive 0
-		exit $::tcldrop::Exit
 	}
 }
 
