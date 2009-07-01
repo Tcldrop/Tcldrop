@@ -281,7 +281,7 @@ namespace eval ::tcldrop {
 			}
 			set tcldrop(host_env) {eggdrop}
 		}
-	} elseif {[info exists tk_version] || ![catch { package require Tk 8.3 }]} {
+	} elseif {[info exists tk_version] || ![catch { package require Tk 8.5 } tcldrop(tk_version)]} {
 		# We're running from wish.
 		array set tcldrop [list host_env wish background-mode 0 simulate-dcc 1 channel-stats 1]
 		#option add *Text.wrap word widgetDefault

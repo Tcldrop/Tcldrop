@@ -350,11 +350,6 @@ proc ::tcldrop::party::LOAD {module} {
 	setdefault party_users {} -array 1 -protect 1
 	setdefault party_chans {} -array 1 -protect 1
 	setdefault party_chanusers {} -array 1 -protect 1
-	checkmodule party::dcc
-	checkmodule party::telnet
-	checkmodule party::terminal
-	# The IRC party module shouldn't be loaded by default in v1.0, should it?
-	checkmodule party::irc
 }
 
 bind unld - party ::tcldrop::party::UNLD -priority 0

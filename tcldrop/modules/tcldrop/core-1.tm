@@ -199,9 +199,6 @@ if {![llength [info commands ctime]]} { proc ::tcldrop::core::ctime {time {forma
 
 proc ::tcldrop::core::unames {args} { return "$::tcl_platform(os) $::tcl_platform(osVersion)" }
 
-# Null password encryption.. Used only when an encryption module isn't (yet) loaded:
-#proc ::tcldrop::core::encpass {password args} { set password }
-
 proc ::tcldrop::core::protected {type args} { set ::protected($type) [lsort -unique [concat $::protected($type) $args]] }
 
 # Sets global variables, being careful not to overwrite any that may already exist.
@@ -229,7 +226,6 @@ proc ::tcldrop::core::unsetdefault {var args} {
 	#if {[info exists "::$var"]} { unset "::$var" }
 }
 
-#proc ::tcldrop::core::islist {s} { expr { ![catch { llength $s }] } }
 # Deprecated/FixMe: Replace any/all references to islist with string is list
 proc ::tcldrop::core::islist {s} { string is list $s }
 
@@ -440,7 +436,7 @@ proc ::tcldrop::core::getlang {section id {language {*}} args} {
 # script the language is associated with and <section> is
 # the first part of the filename. I.e. <section>.english.lang
 # (Taken from http://www.racbot.org/docs/tclcmds/scripting_tcl_commands.html)
-proc ::tcldrop::core::langsection {args} { foreach a $args { addlangsection $args } }
+proc ::tcldrop::core::langsection {args} { foreach a $args { addlangsection $a } }
 
 # FixMe: Allow format codes to be part of the filename..That way logfile rotation could happen anytime the result of the format changes..
 proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
@@ -559,7 +555,13 @@ proc ::tcldrop::core::putlog {text {channel {*}}} { putloglev o $channel $text }
 proc ::tcldrop::core::putcmdlog {text {channel {*}}} { putloglev c $channel $text }
 proc ::tcldrop::core::putxferlog {text {channel {*}}} { putloglev x $channel $text }
 proc ::tcldrop::core::puterrlog {text {channel {*}}} { putloglev e $channel $text }
-proc ::tcldrop::core::putdebuglog {text {channel {*}}} { putloglev d $channel $text }
+proc ::tcldrop::core::putdebuglog {text {channel {*}}} {
+	# Only log when we're in debug mode (this should save a few CPU cycles):
+	# (If you want to log to +d without being in debug mode then use putloglev directly.)
+	if {([info exists ::tcldrop(debug)] && $::tcldrop(debug)) || ([info exists ::env(DEBUG)] && $::env(DEBUG))} {
+		putloglev d $channel $text
+	}
+}
 
 # adddebug <output>
 # Module Required: none
@@ -574,7 +576,7 @@ if {![llength [info commands bgerror]]} {
 		# Try to report the error to the proper place, with lots of fallbacks:
 		if {[catch { putloglev e * [set errorinfo "(bgerror) $error:\n$::errorInfo"] }] && [catch { PutLogLev e - $errorinfo }] && [catch { puts stderr $errorinfo }] && [catch { puts stdout $errorinfo }] && [catch { die $errorinfo }]} {
 			# Kill ourself if we can't report the error to anywhere..
-			exit 1
+			if {[catch { exit 1 }]} { catch { ::tcldrop::core::Exit 1 } }
 		}
 	}
 	if {[catch { interp bgerror {} ::tcldrop::core::bgerror }]} { interp alias {} bgerror {} ::tcldrop::core::bgerror }
@@ -1342,7 +1344,7 @@ if {![llength [info commands ::tcldrop::core::Exit]]} {
 		# This is the real exit command:
 		catch { ::tcldrop::core::Exit $::exit }
 		# We shouldn't ever make it to here..  o_O But unset these variables so the bot can keep running normally (maybe..who knows):
-		after idle [list after 0 [list unset -nocomplain ::exit ::die ::shutdown]]
+		after idle [list after 999 [list unset -nocomplain ::exit ::die ::shutdown]]
 		return $code
 	}
 	# The new global exit command is now an alias to our new ::tcldrop::core::exit proc:
@@ -1392,7 +1394,7 @@ proc ::tcldrop::core::shutdown {{reason {SHUTDOWN}} {code {0}}} {
 	catch { callevent shutdown }
 	catch { callshutdown $reason $code }
 	catch { putlog "* shutdown $code $reason" }
-	after idle [list after 0 [list die $reason $code]]
+	after idle [list after 99 [list die $reason $code]]
 	# Set ::die now, so scripts that run between now and when we actually [die] can just check for $::die to know it's shutting down rather than both $::shutdown and $::die.
 	set ::die $reason
 }
@@ -1514,6 +1516,11 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule encryption
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
 	checkmodule party
+	checkmodule dcc::chat
+	checkmodule dcc::telnet
+	checkmodule dcc::terminal
+	# The IRC party module shouldn't be loaded by default in v1.0, should it?
+	checkmodule dcc::irc
 	# bot linking support:
 	checkmodule bots
 	# Loaded by default because it provides the Eggdrop-style [dnslookup] command:
@@ -1811,9 +1818,8 @@ proc ::tcldrop::core::start {} {
 				if {![info exists LastError] || [clock seconds] > $LastError} {
 					set LastError [clock seconds]
 					# Try to report the error to the proper place, with lots of fallbacks:
-					if {[catch { putloglev d * [set errorinfo "(TraceError):\n$::errorInfo"] }] && [catch { PutLogLev d - $errorinfo }] && [catch { puts stderr $errorinfo }] && [catch { puts stdout $errorinfo }] && [catch { die $errorinfo }]} {
-						# Kill ourself if we can't report the error to anywhere..
-						exit 1
+					if {[catch { putloglev d * [set errorinfo "(TraceError):\n$::errorInfo"] }] && [catch { PutLogLev d - $errorinfo }] && [catch { puts stderr $errorinfo }] && [catch { puts stdout $errorinfo }] && [catch { die $errorinfo }] && [catch { exit 1 }]} {
+						catch { ::tcldrop::core::Exit 1 }
 					}
 				}
 			}

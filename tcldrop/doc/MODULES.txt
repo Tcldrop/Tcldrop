@@ -122,13 +122,13 @@ Note: This is a very rough draft.
     party     Provides the core partyline interface.
               The partyline is basically the chat system inside a Tcldrop/Eggdrop.
 
-    party::dcc  Provides the DCC CHAT interface.
+    dcc::chat  Provides the DCC CHAT interface.
 
-    party::irc  Provides the IRC interface.  (you connect to it with your IRC client)
+    dcc::irc  Provides the IRC interface.  (you connect to it with your IRC client)
 
-    party::telnet  Provides the telnet interface.
+    dcc::telnet  Provides the telnet interface.
 
-    party::terminal  Provides the "terminal" (stdin/stdout) interface.
+    dcc::terminal  Provides the "terminal" (stdin/stdout) interface.
 
     seen*     This module provides very basic seen commands via msg,
               on channel, or via dcc.
