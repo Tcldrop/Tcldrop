@@ -630,6 +630,14 @@ proc ::tcldrop::dcc::irc::ircparty_PRIVMSG {idx command arg} {
 	return 1
 }
 
+namespace eval ::tcldrop::dcc::irc {
+	# send PING to all clients every once in a while
+	# FixMe: make this only send PING if there's no activity, and move it into a proc
+	if {![info exists PingTimer]} {
+		set PingTimer [utimer 210 { ::tcldrop::dcc::irc::putircparty -chan * "PING :[unixtime]" } -1]
+	}
+}
+
 bind sign - * ::tcldrop::dcc::irc::SIGN
 proc ::tcldrop::dcc::irc::SIGN {nick host hand chan reason} {
 	# Send to ircparty users who are on $chan:
