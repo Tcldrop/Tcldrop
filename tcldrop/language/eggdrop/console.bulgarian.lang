@@ -1,0 +1,15 @@
+# console.bulgarian.lang
+#   language messages for the console module
+#
+# $Id: console.bulgarian.lang,v1.2 2007/01/05 05:10:31 by MMDollar $
+
+0xb040,Запазих Конзолните Настройки:
+0xb041,Запазих вашите Конзолни Настройки:
+0xb042,Канал:
+0xb043,Конзолни флагове:
+0xb044,Рангови флагове:
+0xb045,Echo:
+0xb046,Настройки на страницата:
+0xb047,Конзолен канал:
+0xb048,да
+0xb049,не

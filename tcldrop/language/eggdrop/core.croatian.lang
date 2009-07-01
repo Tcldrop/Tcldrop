@@ -1,0 +1,442 @@
+# core.english.lang
+#   core language messages for eggdrop
+#
+# $Id: core.english.lang,v 1.43 2004/08/09 04:39:44 wcc Exp $
+
+# General stuff
+0x001,koristenje
+0x002,Neuspjelo.\n
+
+# MODES_
+0x130,Stvoren
+0x131,zadnje koristen
+0x132,neaktivan
+0x133,stavljen od
+0x135,nije aktivan na
+0x137,nije aktivan
+0x138,nije stavljen od bota
+
+# BANS_
+0x104,Globalni banovi
+0x106,Banovi za kanal
+0x109,Napisi '.bans all' da bi vidio cijelu listu
+0x10a,Vise ne baniram
+
+# EXEMPTS_
+0x114,Globalni exepmti
+0x116,Exempti za kanal
+0x119,Napisi '.exempts all' da bi vidio cijelu listu
+0x11a,Vise nema exempta
+
+# INVITES_
+0x124,Globalni inviteo-vi
+0x126,Invite za kanal
+0x129,Napisi '.invites all' da bi vidio cijelu listu
+0x12a,Vise ne inviteam
+
+# MOD_
+0x200,Vec ocitan.
+0x201,Ne mogu pronaci taj direktorij.
+0x202,Nema pocetne funkcije.
+0x204,Treba drugi modul
+0x205,Nema funkcije
+0x206,Modul maknut:
+0x207,Takav modul ne postoji
+0x209,Error pri ocitavanju modula:
+0x20a,Error pri micanju modula:
+0x20b,Ne mogu ocitati module
+0x20c,Stagnant module; there WILL be memory leaks!
+0x20d,Instalirao si module, ali nisi odabrao enkripciju\n\
+modula, pogledaj config file za vise informacija.\n
+0x20e,'Filesys modul' nije ocitan.
+0x20f,Modul ocitan: %-16s (sa jezicnom podrskom)
+0x210,Modul ocitan: %-16s
+
+# USERF_
+0x400,Userlist transfer complete; switched over
+0x402,NE MOGU OCITATI NOVI USERFILE
+0x403,Can't send userfile to you (internal error)
+0x404,Ne mogu pronaci nikog tko se podudara
+0x405,Stari userfile, napisi 'tclsh scripts/weed <userfile> c' za konvertirat
+0x406,Invalid userfile format.
+0x407,Koruptirane user postavke
+0x408,Dupliciraj user postavke
+0x409,Corrupted password reset for
+0x40a,Ignorirani hostovi za kanal:
+0x40b,Spremam user file...
+0x40c,GRESKA pri pisanju user file-a.
+0x40d,ERROR writing user file to transfer.
+0x40e,Userfile creation not necessary--skipping
+0x40f,Rehashing...
+0x410,Ne poznajem nikoga s tim imenom.\n
+0x411,Ne postoji takav user.
+0x412,Backing up user file...
+0x413,Failed connection; aborted userfile transfer.
+0x414,Stari stil dijeljena zatrazen od:
+0x415,Antiquated sharing request
+0x416,User file rejected by
+
+# MISC_
+0x500,expired
+0x501,Totalno
+0x502,Izbrisan
+0x504,na
+0x505,Podudara
+0x506,preskacem prvo
+0x507,(more than %d matches; list truncated)\n
+0x508,--- Pronadjen %d pogodak%s.\n
+0x509,Ambiguous command.\n
+0x50a,huh?  Ocito trebas '.help'\n
+0x50b,Command bindings:\n
+0x50c,Restarting...
+0x50d,es
+0x50e,Switching logfiles...
+0x512,idle
+0x513,AWAY
+0x516,Disconnected
+0x517,invalid bot
+0x518,Detected loop: two bots exist named
+0x51a,from
+0x51b,outdated
+0x51c,rejected
+0x51d,uljez
+0x51e,pokusavam
+0x51f,MOTD file:
+0x520,Nema MOTD file-a.
+0x521,Use:
+0x522,<address>:<port#>[/<relay-port#>]
+0x526,pending
+0x527,trebam op
+0x528,lurking
+0x529,background
+0x52a,terminal mode
+0x52b,status mode
+0x52c,log dump mode
+0x52d,Online for
+0x52e,Cache hit
+0x52f,Tcl library:
+0x530,New users get flags
+0x531,notify
+0x532,Permanent owner(s)
+0x534,CONFIG FILE NIJE OCITAN (NIJE PRONADJEN, ILI GRESKA)
+0x535,USER FILE NIJE PRONADJEN!  (pokusaj './eggdrop -m %s' da bi stvorio jedan)\n
+0x536,POKRECEM BOTA U KREACIJSKOM OKRUZJU NOVOG KORISNIKA.\n\
+Telnetiraj se na bota i upisi 'NEW' kao nadimak.
+0x537,ILI odi na IRC i napisi:  /msg %s hello\n
+0x538,Ovo ce natjerati bota da te prepozna kao vlasnika.
+0x539,USERFILE VEC POSTOJI (izbrisi '-m')
+0x53a,CAN'T WRITE TO TEMP DIR
+0x53b,Can't reload user file!
+0x53c,Fali ti user file!
+0x53e,%B  (%E)\n\nNickname:\n
+0x53f,Cycling logfile %s, over max-logsize (%d)
+0x540,\nNickname.\n
+0x541,Last message repeated %d time(s).\n
+0x542,juped
+0x543,No free sockets available.
+0x544,Tcl version:
+0x545,header version
+
+# IRC_
+0x600,Baniran
+0x601,Ti si baniran
+0x602,Wanted to ban myself--deflected.
+0x603,ovo je bilo zabavno, ajmo opet!
+0x604,Bok
+0x605,Poz
+0x606,Baniran si.
+0x607,NOTICE %s :Your nick was too long and therefore it was truncated to '%s'.\n
+0x608,Introduced to
+0x609,common site
+0x60a,NOTICE %s :Bok %s!  Ja sam %s, eggdrop bot.\n
+0x60b,NOTICE %s :Prepoznat cu te po tvojem host-u '%s' od sada.\n
+0x60c,Buduci da dolazis sa neke IRC stranice
+0x60d,uvijek koristi ovaj nick, da te mogu prepoznati.
+0x60e,TI SI VLASNIK SAD VLASNIK OVOG EGGDROPA
+0x60f,Bot installation complete, first master is %s
+0x610,Dobrodosao u Eggdrop! =]
+0x611,introduced to %s from %s
+0x612,Postavio si novu zaporku.
+0x613,Nemas postavljenu zaporku.
+0x615,Vec imas postavljenu zaporku.
+0x616,Treba imati vise od 6 znamenki/slova.
+0x617,Zaporka namjestena na:
+0x618,Pogresna zaporka.
+0x619,Zaporka promijenjena u:
+0x61a,You're at a common site; you can't IDENT.
+0x61b,NOTICE %s :Ti nisi %s, ti si %s.\n
+0x61c,Pristup odbijen.
+0x61d,I recognize you there.
+0x61e,Dodan hostmask
+0x620,Trenutno:
+0x621,Sad:
+0x622,To remove it:
+0x624,Your info line is locked
+0x625,Removed your info line on
+0x626,Removed your info line.
+0x627,You have no info set on
+0x628,You have no info set.
+0x629,Nisam na tom kanalu.
+0x62a,Resetting channel info.
+0x62b,Prebacujem servere...
+0x62c,Kanal je trenutno sariven.
+0x62d,Sad na kanalu
+0x62e,Nikad vidjen na kanalu.
+0x62f,Zadnji put vidjen
+0x630,Ne poznajem te, molim da se prvo predstavis.
+0x631,No help.
+0x632,Pomoc nije dostupna za tu komandu.
+# 0x633 - unused
+0x634,Trenutno nisam na tom kanalu.
+0x635,Vracam trenutno na nick %s
+0x636,Server kaze da je moj nick pogresan.
+0x637,NICKNAME SE KORISTI: Pokusavam '%s'
+0x638,Can't change nickname on %s.  Is my nickname banned?
+0x639,Nickname has been juped
+0x63a,Channel %s is juped. :(
+0x63b,%s says I'm not registered, trying next one.
+0x63c,The server says we are not registered yet..
+0x63d,Flood od @%s!  Ignoriram ga!
+0x63f,JOIN flood od @%s!  Baniram.
+0x640,Channel flood od %s -- kick-am
+0x641,Pokusavam server
+0x642,DNS lookup neuspio
+0x643,Nisam se uspio spojit na
+0x644,Server got stoned; going for munchies...
+0x645,Odspojen od
+0x646,No server currently.
+0x647,Mode queue is at
+0x648,Server queue is at
+0x649,Help queue is at
+# 0x64a - unused
+# 0x64b - unused
+0x64c,Processing channel
+0x64d,Channel
+0x64e,Desiring channel
+0x64f,Topic kanala
+0x650,pending +o -- I'm lagged
+0x651,pending -o -- I'm lagged
+0x652,pending kick
+0x653,FAKE CHANOP GIVEN BY SERVER
+0x654,End of channel info.
+0x655,mass kick, go sit in a corner
+0x656,Izbrisan ban
+0x657,Hmm, mode info from a channel I'm not on
+0x658,...and thank you for playing.
+0x659,Jumping servers (need %d servers, only have %d)
+0x65a,mijenjam servere
+0x65b,Na previse sam kanala--nemogu uci na: %s
+0x65c,Kanal pun--ne mogu uci na: %s
+0x65d,Kanal je samo za pozvane--ne mogu uci na: %s
+0x65e,Imam ban na tom kanalu--ne mogu uci na: %s
+0x65f,Server kaze da nisam na kanalu: %s
+0x660,Krivi kljuc--ne mogu uci na: %s
+0x661,NOTICE %s :Sve komande se pisu preko /MSG. Za potpunu listu, /MSG %s help   Pozdrav!\n
+0x662,NOTICE %s :Ne prepoznajem te preko tog host-a.\n
+0x663,NOTICE %s :Ili koristis tudji nick ili trebas napisati: /MSG %s IDENT (zaporka)\n
+0x664,NOTICE %s :Kao vlasnik stvarno trebas namjestiti zaporku sa: /MSG %s pass <pass-koji-oces>.\n
+0x665,NOTICE %s :Sve vece komande se koriste preko DCC chat-a. Od sada, ne trebas koristiti -m opciju kada pokreces bota.  Uzivaj !!!\n
+0x666,Ovo je telnet okruzje za %s, eggdrop bota.\nNemoj ga zlouporabiti, pa ce biti otvoren i za sve tvoje prijatelje.\n
+0x667,Sada trebas izabrati nadimak koji ces koristiti na botu,\ni zaporku da se nitko drugi ne moze pretvarati da je ti.\nUpamti oboje!
+0x668,Od sada ne trebas koristiti -m opciju da bi pokrenuo bota.\nUzivaj !!
+0x669,Flood telnet konekcija na %s!  Stavljam na ignore!
+0x66a,Baniran:
+0x66b,join flood
+0x66c,ne kickaj mi prijatelje, kompa
+0x66d,...i ne vracaj se.
+0x66e,Vracam na alternativni nadimak %s
+0x66f,ne skidaj op mojim prijateljima, kompa
+0x670,Izbrisan exempt
+0x671,Izbrisan invite
+0x672,NICK flood od @%s!  Baniram.
+0x673,nick flood
+
+# EGG_
+0x700,Koristenje: eggdrop [options] [config-file]\n\n\
+Opcije:\n\
+  -h   Pomoc\n\
+  -n   Salje cijeli log u konzolu.\n\
+  -nc  Pokazi statistike kanal svakih 10 sekundi.\n\
+  -nt  Koristi terminal kao DCC chat.\n\
+  -m   Stvori user file.\n\
+  -h   Pokazi ovu pomoc.\n\
+  -v   Pokazi informaciju o verziji, onda izadji.\n\n
+
+0x701,Ocitavam da je %s vec pokrenut iz ovog direktorija.\n
+0x702,Ako je ovo krivo, izbrisi '%s'\n
+0x703,* Upozorenje! Nemogu pisati %s file!\n
+
+# USER_
+0x800,  (je globalni op)
+0x801,  (je bot)
+0x802,  (je vlasnik)
+
+# CHAN_
+0x900,No such channel defined
+0x902,* Mode change on %s for nonexistant %s!
+0x903,Masivni deop na %s od %s
+0x904,Masivni deop.  Odi sjest u kut.
+0x907,Oops.   Netko me natjerao da dodjem na %s... odlazim...
+0x908,Mode change by fake op on %s!  Reversing...
+0x909,Abusing ill-gained server ops
+0x90a,Mode change by non-chanop on %s!  Reversing...
+0x90b,Abusing desync
+0x90c,flood
+
+0xa00,Nema ignoriranja
+0xa01,Trenutno ignoriram
+0xa02,Vise ne ignoriram
+
+0xb00,Taj bot nije ovdje.\n
+0xb01,To je bot.  Ne mozes ostaviti poruku za bota.\n
+0xb02,je away
+0xb07,Poruka stigla za tebe
+0xb08,Pohranjena poruka
+0xb18,Bot shut down beginning....
+0xb19,Ne postoji takav korisnik
+0xb1a,nema kanala
+0xb1b,Clanovi 'party line-a':
+0xb1c,Botovi spojeni
+0xb1d,Drugi ljud na botu
+0xb1f,Pokusavam povezati
+0xb20,Nije online; poruka pohranjena.
+0xb21,Notebox je pun, oprosti.
+0xb22,je away; poruka pohranjena.
+0xb23,Poruka poslana za
+0xb24,Odspojen od:
+0xb25,Ljudi na kanalu
+0xb26,Ne mogu povezati tamo
+0xb27,Ne mogu se odspojiti
+0xb28,Loop detected
+0xb29,Bogus link notice from
+0xb2b,Disconnected left
+0xb2c,Spojen na
+0xb2d,Illegal link by leaf
+0xb2e,You are supposed to be a leaf!
+0xb2f,Odbijam bota
+0xb30,Starija verzija bota (unsupported)
+0xb31,Trace rezultat
+0xb32,ne postoji
+0xb33,Remote boots are not allowed.
+0xb34,Can't boot the bot owner.
+0xb35,FILE TRANSFER ODBIJEN
+0xb37,Users across the botnet
+0xb38,Party line
+0xb39,Lokalni kanal
+0xb3a,Korisnici na kanalu
+0xb3b,Nema povezanih botova.
+0xb3c,Nema trace informacije za:
+0xb3d,Tree too complex!
+0xb3e,Odvezujem sve botove...
+0xb3f,Ubijen pokusaj povezivanja sa
+0xb40,Vise ne pokusavam povezati:
+0xb41,Razbijam povezivanje sa
+0xb42,Odspojen od:
+0xb43,Nisam spojen na tog bota.
+0xb44,Smooshing bot tables and assocs...
+0xb45,is a known bot.
+0xb46,Povezati na sebe?  O covjece, jesi lud??
+0xb47,Taj bot je vec spojen.
+0xb48,Invalid telnet address:port stored for
+0xb49,Povezujem na
+0xb4a,Can't find user for relay!
+0xb4b,Ne mogu povezati na
+0xb4c,Relay to myself?  What on EARTH would be the point?!
+0xb4d,Spajam na
+0xb4e,(Napisi *BYE* u liniji za prekid.)
+0xb4f,Aborting relay attempt to
+0xb50,Sad si nazad na
+0xb51,Relay aborted:
+0xb53,Izgubio sam DCC vezu sa
+0xb54,Dropping relay attempt to
+0xb55,Uspijeh!\n\nSAD SPOJEN NA BOTA
+0xb56,(Mozes napisati *BYE* da zatvoris konekciju.)
+0xb57,Relay link:
+0xb58,je napustio 'party line'.
+0xb59,Ended relay link
+0xb5a,RELAY CONNECTION DROPPED.\nYou are now back on
+0xb5b,se opet pridruzio 'party line-u'.
+0xb5c,Dropping relay link to
+0xb5d,Razbijam konekciju sa
+0xb5e,Relay broken
+0xb5f,Ping timeout
+0xb60,unleaflike behavior
+0xb61,Dropped bot
+0xb62,Vec povezujem na tog bota.
+
+0xc00,Ne prihvacam DCC od stranaca.
+0xc01,Odbijen DCC chat (nema pristupa)
+0xc02,Nema pristupa
+0xc03,Moras imati namjestenu zaporku.
+0xc04,Ne prihvacam DCC chat (nema zaporke)
+0xc05,Ne prihvacam DCC chat (+x ali nema spremnika za file)
+0xc07,Previse ljudi je u spremniku za file-ove.
+0xc0c,Oprosti, previse DCC konekcija.
+0xc0d,DCC konekcije pune: %s %s (%s!%s)
+0xc19,Neuspjesno spajanje
+0xc1a,DCC konekcija neuspjela
+0xc1c,Zaporka:
+0xc1d,%s je prisilno izbrisan zbog floodanja.\n
+0xc1e,-=- poof -=-\n
+0xc1f,You've been booted from %s by %s%s%s\n
+0xc20,%s booted %s from the party line%s%s
+0xc21,Ne prihvacam DCC chat (nepostojeci port)
+0xc22,DCC krivi port
+
+0xd00,Floating in limbo (no IRC interaction)
+
+# BOTNET
+0xe00,Lazna poruka odbijena
+0xe01,Povezan na
+0xe02,Krivi bot--trazen %s, dobio %s
+0xe03,je otisao
+0xe04,se pridruzio
+0xe05,je sad away
+0xe06,vise nije away
+0xe07,Promjena nicka:
+
+# dcc.c Messages
+0xe08,Odbijam se povezati sa %s
+0xe09,Povezan na %s.
+0xe0a,Nisam se uspio povezati na %s.
+0xe0b,Kriva zaporka pri povezivanju na %s.
+0xe0c,Trebas zaporku da se spojis na %s.
+0xe0d,GRESKA pri povezivanju %s: %s
+0xe0e,Izgubio bota: %s
+0xe0f,Timeout: bot link to %s at %s:%d
+0xe10,Logiran: %s (%s/%d)
+0xe11,Kriva zaporka: [%s]%s/%d
+0xe12,Negativno.\n
+0xe13,*** %s se spojio na bota.\n
+0xe14,Izgubio DCC konekciju sa %s (%s/%d)
+0xe15,Timeout na DCC chat-u ... lozinka: [%s]%s
+0xe16,DCC konekcija zatvorena (%s!%s)
+0xe17,Failed TELNET incoming (%s)
+0xe18,Odijeno %s/%d (bad src port)
+# 0xe19 - unused
+0xe1a,Odbijeno %s (krivi hostname)
+0xe1b,Telnet konekcija: %s/%d
+0xe1c,Ident neuspio za %s: %s
+0xe1d,(!) Listening port %d abruptly died.
+0xe1e,Odbijeno %s (krivi nick)
+0xe1f,Odbijeno %s (non-bot)
+0xe20,Obijeno %s (non-user)
+0xe21,Odbijeno %s (krivi handle: %s)
+0xe22,Refused telnet connection from %s (duplicate)
+0xe23,Odbijeno [%s]%s (nema zaporke)
+0xe24,Izgubio telnet vezu sa %s/%d
+0xe25,Ident timeout on telnet: %s
+0xe26,Instalacija zavrsena, prvi vlasnik je %s
+0xe27,New user via telnet: [%s]%s/%d
+0xe28,Lost new telnet user (%s/%d)
+0xe29,Lost new telnet user %s (%s/%d)
+0xe2a,Timeout on new telnet user: %s/%d
+0xe2b,Timeout on new telnet user: [%s]%s/%d
+0xe2c,Tcl greska [%s]: %s
+0xe2d,*** ATTENTION: DEAD SOCKET (%d) OF TYPE %s UNTRAPPED
+0xe2e,Lost connection while identing [%s/%d]
+0xe2f,Timeout/EOF ident connection
+0xe30,Lost ident wait telnet socket!!
+0xe31,Denied telnet: %s, No Access
+0xe32,Refused telnet connection from %s (tried using my botnetnick)
+0xe33,Lost telnet connection from %s while checking for duplicate
