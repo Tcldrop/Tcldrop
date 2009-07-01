@@ -254,7 +254,8 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			if {![catch { fconfigure [set fid [open $opt(-file) w]] -blocking 0 -buffering full } return]} {
 				# Create the database if it doesn't (yet) exist:
 				if {![info exists ::database($database)]} { set ::database($database) [list] }
-				if {${::quiet-save} == {0}} { putlog "Saving $database ($opt(-file)) ..." }
+				# Only send putlog when quiet-save is set to 0:
+				if {${::quiet-save} == {0}} { putloglev o - "Saving $database ($opt(-file)) ..." [dict create save 1] }
 				puts -nonewline $fid $::database($database)
 				close $fid
 				if {![info exists opt(-permissions)] || $opt(-permissions) eq {} || $opt(-permissions) == 0 || [catch { file attributes $opt(-file) -permissions $opt(-permissions) }]} {

@@ -51,7 +51,7 @@ namespace eval ::tcldrop {
 	if {![llength [info commands stdout]]} { proc stdout {text} { if {[catch { puts $text }]} { stderr $text } } }
 	if {![llength [info commands stderr]]} { proc stderr {text} { if {[catch { puts stderr $text }]} { stdout $text } } }
 	if {![llength [info commands PutLogLev]]} {
-		proc PutLogLev {levels channel text} {
+		proc PutLogLev {levels channel text {tags {}}} {
 			switch -glob -- $levels {
 				{*e*} { catch { stderr "[clock format [clock seconds] -format {[%H:%M]}] $channel $text" } }
 				{default} { catch { stdout "[clock format [clock seconds] -format {[%H:%M]}] $channel $text" } }
@@ -472,7 +472,7 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 }
 
 # FixMe: Finish writing this.
-proc ::tcldrop::core::LOG {levels channel text} {
+proc ::tcldrop::core::LOG {levels channel text {tags {}}} {
 	variable Logfiles
 	foreach a [array names Logfiles $levels,[string tolower $channel],*] {
 		switch -glob -- $filename {
@@ -523,22 +523,15 @@ proc ::tcldrop::core::LOG {levels channel text} {
 # Sends $text to all the places monitoring $levels.
 # Use * for all levels.
 # Use * for all channels, or - to specify that it's global-only (non-channel related).
-proc ::tcldrop::core::putloglev {levels channel text} {
-	switch -- ${::log-time} {
-		{1} { set text "[clock format [clock seconds] -format {[%H:%M]}] $text" }
-		{2} { set text "[clock format [clock seconds] -format {[%T]}] $text" }
-		{0} - {} - { } { }
-		{default} {
-			# Use a custom clock format.. Should this use a separate variable instead?
-			set text "[clock format [clock seconds] -format ${::log-time}] $text"
-		}
-	}
+# $tags is any metadata/tags/whatever that may be sent along with the log (in dict format, or at least a key/value list). It's up to the log binds to decide what to do with it.
+proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
+	dict set tags log-time ${::log-time}
 	# Call all of the LOG binds here:
 	foreach {type flags mask proc} [bindlist log] {
 		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
-			if {[catch { $proc $levels $channel $text } err]} {
+			if {[catch { $proc $levels $channel $text $tags } err]} {
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel: $err\n$::errorInfo" }
+				catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $err\n$::errorInfo" }
 				# put*log errors are considered fatal errors, so we really should exit:
 				if {![catch { exit 1 }]} { update idletasks }
 				catch { ::tcldrop::core::Exit 1 }
@@ -551,15 +544,15 @@ proc ::tcldrop::core::putloglev {levels channel text} {
 	#update idletasks
 }
 
-proc ::tcldrop::core::putlog {text {channel {*}}} { putloglev o $channel $text }
-proc ::tcldrop::core::putcmdlog {text {channel {*}}} { putloglev c $channel $text }
-proc ::tcldrop::core::putxferlog {text {channel {*}}} { putloglev x $channel $text }
-proc ::tcldrop::core::puterrlog {text {channel {*}}} { putloglev e $channel $text }
-proc ::tcldrop::core::putdebuglog {text {channel {*}}} {
+proc ::tcldrop::core::putlog {text {channel {*}} {tags {}}} { putloglev o $channel $text $tags }
+proc ::tcldrop::core::putcmdlog {text {channel {*}} {tags {}}} { putloglev c $channel $text $tags }
+proc ::tcldrop::core::putxferlog {text {channel {*}} {tags {}}} { putloglev x $channel $text $tags }
+proc ::tcldrop::core::puterrlog {text {channel {*}} {tags {}}} { putloglev e $channel $text $tags }
+proc ::tcldrop::core::putdebuglog {text {channel {*}} {tags {}}} {
 	# Only log when we're in debug mode (this should save a few CPU cycles):
 	# (If you want to log to +d without being in debug mode then use putloglev directly.)
 	if {([info exists ::tcldrop(debug)] && $::tcldrop(debug)) || ([info exists ::env(DEBUG)] && $::env(DEBUG))} {
-		putloglev d $channel $text
+		putloglev d $channel $text $tags
 	}
 }
 

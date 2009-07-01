@@ -1,4 +1,4 @@
-# console/main --
+# console --
 #	Handles:
 #		* Provides commands for getting/setting console infos.
 #	Depends: core::users, core::dcc.
@@ -95,10 +95,10 @@ proc ::tcldrop::console::console {idx args} {
 
 # Gets the console settings for a user from the userfile (if possible),
 # otherwise it uses defaults, and puts it in the idxinfo:
-proc ::tcldrop::console::initconsole {idx} {
+proc ::tcldrop::console::initconsole {idx args} {
 	# Note: console-chan = partyline channel
 	#    console-channel = irc channel
-	set console [dict create console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0]
+	set console [dict create console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0 console-quiet-save ${::quiet-save} console-log-time ${::log-time} {*}$args]
 	catch { set console [dict merge $console [getuser [set handle [idx2hand $idx]] console]] }
 	set levels {}
 	foreach c [split [dict get $console console-levels] {}] {

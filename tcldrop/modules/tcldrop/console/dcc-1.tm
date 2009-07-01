@@ -66,6 +66,11 @@ proc ::tcldrop::console::dcc::STORE {handle idx text} {
 	return 0
 }
 
+proc ::tcldrop::console::dcc::SETCONSOLE {handle idx text} {
+	putcmdlog "#$handle# setconsole $text"
+	setconsole $idx {*}$text
+}
+
 # eggdrop has this command in core, but we put it here (for now) since the console tcl command is in our console module
 proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 	putcmdlog "#$handle# console $text"
@@ -121,6 +126,7 @@ bind load - console::dcc ::tcldrop::console::dcc::LOAD -priority 0
 proc ::tcldrop::console::dcc::LOAD {module} {
 	bind dcc - store ::tcldrop::console::dcc::STORE -priority 1000
 	bind dcc nmot|nmo console ::tcldrop::console::dcc::CONSOLE -priority 1000
+	bind dcc - setconsole ::tcldrop::console::dcc::SETCONSOLE -priority 1000
 	bind unld - console::dcc ::tcldrop::console::dcc::UNLD -priority 0
 	loadhelp console.help
 	loadhelp [file join set console.help]

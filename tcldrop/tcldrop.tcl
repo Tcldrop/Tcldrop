@@ -675,7 +675,7 @@ namespace eval ::tcldrop {
 			.windows.$name.output see end
 			update idletasks
 		}
-		proc PutLogLev {name levels channel text} { stdout $name $text -levels $levels -channel $channel }
+		proc PutLogLev {name levels channel text {tags {}}} { stdout $name $text -levels $levels -channel $channel }
 		proc stdin {name text} {
 			switch -- $name {
 				{console} {
@@ -766,7 +766,7 @@ namespace eval ::tcldrop {
 		}
 	} else {
 		# Assume we're in a tclsh (or tclsh-like) environment.
-		proc PutLogLev {name levels channel text} {
+		proc PutLogLev {name levels channel text {tags {}}} {
 			variable Tcldrop
 			if {[array size Tcldrop]} { set pre "Tcldrop/$name: " } else { set pre {} }
 			if {![string match {*e*} $levels] || [catch { puts stderr "$pre$text" }]} { catch { puts "$pre$text" } }

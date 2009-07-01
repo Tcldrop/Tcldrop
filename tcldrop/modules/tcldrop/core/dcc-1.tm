@@ -782,12 +782,23 @@ proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 	return 0
 }
 
-
-proc ::tcldrop::core::dcc::LOG {levels channel text} {
+# FixMe: Consider removing this proc and instead have separate log procs for each dcc::* module.
+proc ::tcldrop::core::dcc::LOG {levels channel text {tags {}}} {
 	global idxlist
 	foreach i [array names idxlist] {
 		array set idxinfo $idxlist($i)
-		if {[info exists idxinfo(console-channel)] && ([string match -nocase $channel $idxinfo(console-channel)] || [string match -nocase $idxinfo(console-channel) $channel]) && [info exists idxinfo(console-levels)] && [checkflags $levels $idxinfo(console-levels)]} {
+		if {[info exists idxinfo(console-channel)] && ([string match -nocase $channel $idxinfo(console-channel)] || [string match -nocase $idxinfo(console-channel) $channel]) && [info exists idxinfo(console-levels)] && [checkflags $levels $idxinfo(console-levels)] && ((![dict exists $tags save] || ![dict get $tags save]) || !$idxinfo(console-quiet-save))} {
+			# Replace the default log-time with the users preference:
+			dict set tags log-time $idxinfo(console-log-time)
+			switch -- [dict get $tags log-time] {
+				{1} { set text "[clock format [clock seconds] -format {[%H:%M]}] $text" }
+				{2} { set text "[clock format [clock seconds] -format {[%T]}] $text" }
+				{0} - {} - { } { }
+				{default} {
+					# Use a custom clock format.. Should this use a separate variable instead?
+					set text "[clock format [clock seconds] -format [dict get $tags log-time]] $text"
+				}
+			}
 			putdcc $i $text
 		}
 		array unset idxinfo
@@ -813,6 +824,7 @@ if {[info exists ::tcl::proc_counter]} {
 bind load - core::dcc ::tcldrop::core::dcc::LOAD -priority 0
 proc ::tcldrop::core::dcc::LOAD {module} {
 	checkmodule console
+	# FixMe: Consider removing this bind and instead have separate log binds for each dcc::* module..
 	bind log - * ::tcldrop::core::dcc::LOG
 	bind dcc n tcl ::tcldrop::core::dcc::TCL
 	bind dcc n set ::tcldrop::core::dcc::SET
