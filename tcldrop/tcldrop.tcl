@@ -852,7 +852,7 @@ namespace eval ::tcldrop {
 			if {![catch { package require Expect }] && [llength [info commands fork]] && ![catch { fork } pid]} {
 				if {$pid != 0} {
 					puts "Launched into the background (using Expect)  (pid: $pid)"
-					exit 0
+					::tcldrop::Exit 0
 				} else {
 					catch { disconnect }
 					vwait ::tcldrop::Exit
@@ -861,7 +861,7 @@ namespace eval ::tcldrop {
 			} elseif {![catch { package require Tclx }] && [llength [info commands fork]] && ![catch { fork } pid]} {
 				if {$pid != 0} {
 					puts "Launched into the background (using TclX)  (pid: $pid)"
-					exit 0
+					::tcldrop::Exit 0
 				} else {
 					vwait ::tcldrop::Exit
 					exit $Exit
@@ -869,7 +869,7 @@ namespace eval ::tcldrop {
 			} elseif {![catch { package require critcl }] && ![catch {::critcl::cproc fork {} int { return fork(); }}] && [llength [info commands fork]] && ![catch { fork } pid]} {
 				if {$pid != 0} {
 					puts "Launched into the background (using Critcl)  (pid: $pid)"
-					exit 0
+					::tcldrop::Exit 0
 				} else {
 					vwait ::tcldrop::Exit
 					exit $Exit
