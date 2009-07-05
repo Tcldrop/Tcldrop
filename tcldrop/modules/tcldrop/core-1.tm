@@ -1298,6 +1298,7 @@ proc ::tcldrop::core::textsubst {handle text args} {
 			set append 1
 			continue
 		} else {
+			set match 0
 			foreach {channel} [channels] {
 				if {[matchattr $handle $flags $channel]} {
 					set match 1
