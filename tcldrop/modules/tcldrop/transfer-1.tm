@@ -121,7 +121,7 @@ proc ::tcldrop::transfer::dccsend {filename nick {protocol ""} {callback ""} {ca
 			set found 0
 			#register dcc idx
 			set idx [assignidx]
-			registeridx $idx [list idx $idx sock * handle $callingnick remote irc type "OPENING_SOCK" other "dcc send" timestamp [clock seconds]]
+			registeridx $idx idx $idx sock * handle $callingnick remote irc type "OPENING_SOCK" other "dcc send" timestamp [clock seconds]
 			#add to Transfers
 			array set Transfers "$idx [list [list $filename $callingnick $nick [clock seconds]]]"
 			#find open port
@@ -139,8 +139,7 @@ proc ::tcldrop::transfer::dccsend {filename nick {protocol ""} {callback ""} {ca
 				after idle [list ::tcldrop::transfer::Updatequeue $callingnick]
 				return 2
 			} else {
-				setidxinfo $idx [list sock $sock]
-				setidxinfo $idx [list type "GET_PENDING"]
+				idxinfo $idx sock $sock type "GET_PENDING"
 				#TODO: MUST INCLUDE ESCAPE SEQUENCE PROC TO ESCAPE ILLEGAL CHARS according to http://www.irchelp.org/irchelp/rfc/ctcpspec.html
 				#TODO: MUST ALSO MAKE SURE USES LONG FORM OF THE NAT/FIREWALL IP TO USE
 				timeout start $sock -callback [list ::tcldrop::transfer::Dccsendtimeout $nick $idx {} $sock] -timeout [expr ${::xfer-timeout} * 1000]
@@ -153,7 +152,7 @@ proc ::tcldrop::transfer::dccsend {filename nick {protocol ""} {callback ""} {ca
 		} else {
 			#register dcc idx
 			set idx [assignidx]
-			registeridx $idx [list idx $idx sock * handle $callingnick remote irc type "OPENING_SOCK" other "dcc send" timestamp [clock seconds] callback $callback]
+			registeridx $idx idx $idx sock * handle $callingnick remote irc type "OPENING_SOCK" other "dcc send" timestamp [clock seconds] callback $callback
 			#add to Transfers
 			array set Transfers "$idx [list [list $filename $callingnick $nick [clock seconds]]]"
 			if {[catch {socket -server "::tcldrop::transfer::Acceptsend$protocol $callingnick [list $filename] $idx 0" 0} sock]} {
@@ -164,8 +163,7 @@ proc ::tcldrop::transfer::dccsend {filename nick {protocol ""} {callback ""} {ca
 				after idle [list ::tcldrop::transfer::Updatequeue $callingnick]
 				return 2
 			} else {
-				setidxinfo $idx [list sock $sock]
-				setidxinfo $idx [list type "GET_PENDING"]
+				idxinfo $idx sock $sock type "GET_PENDING"
 				#TODO: MUST INCLUDE ESCAPE SEQUENCE PROC TO ESCAPE ILLEGAL CHARS according to http://www.irchelp.org/irchelp/rfc/ctcpspec.html
 				#TODO: MUST ALSO MAKE SURE USES LONG FORM OF THE NAT/FIREWALL IP TO USE
 				timeout start $sock -callback [list ::tcldrop::transfer::Dccsendtimeout $nick $idx {} $sock] -timeout [expr ${::xfer-timeout} * 1000]
@@ -220,9 +218,9 @@ proc ::tcldrop::transfer::Acceptsend {nick filename idx sock host port offset} {
 	variable Transfers
 	#kill the timeout timer for the passive socket
 	#kill the passive socket
-	array set temp [getidxinfo $idx]
+	array set temp [idxinfo $idx]
 	timeout cancel $temp(sock)
-	setidxinfo $idx [list sock $sock]
+	idxinfo $idx sock $sock
 	catch {close $temp(sock)}
 	array unset temp
 	if {${::copy-to-tmp} == 1} {
@@ -487,7 +485,7 @@ proc ::tcldrop::transfer::getfilesendtime {idx} {
 		#no matching idx
 		return -1
 	}
-	set idxinfo [getidxinfo $idx]
+	set idxinfo [idxinfo $idx]
 	if {[string equal [lindex $idxinfo(other) 0] "dcc"]} {
 		#it is a dcc
 		return $idxinfo(timestamp)
@@ -576,7 +574,7 @@ proc ::tcldrop::transfer::Acceptget {filepath ip port size nick hand resend} {
 					set idx [assignidx]
 					timeout start $sock -callback [list ::tcldrop::transfer::Dccgettimeout $nick $idx {} $sock] -timeout [expr ${::xfer-timeout} * 1000]
 					#register dcc idx
-					registeridx $idx [list idx $idx sock $sock port $port handle $nick remote [decimal2ip $ip] type "DATA_TRANSFER" other "dcc get" timestamp [clock seconds]]
+					registeridx $idx idx $idx sock $sock port $port handle $nick remote [decimal2ip $ip] type "DATA_TRANSFER" other "dcc get" timestamp [clock seconds]
 					#configure file
 					fconfigure $fid -translation binary
 					#configure sock
@@ -591,7 +589,7 @@ proc ::tcldrop::transfer::Acceptget {filepath ip port size nick hand resend} {
 			set idx [assignidx]
 			timeout start $sock -callback [list ::tcldrop::transfer::Dccgettimeout $nick $idx {} $sock] -timeout [expr ${::xfer-timeout} * 1000]
 			#register dcc idx
-			registeridx $idx [list idx $idx sock $sock port $port handle $nick remote [decimal2ip $ip] type "DATA_TRANSFER" other "dcc get" timestamp [clock seconds]]
+			registeridx $idx idx $idx sock $sock port $port handle $nick remote [decimal2ip $ip] type "DATA_TRANSFER" other "dcc get" timestamp [clock seconds]
 			#configure file
 			fconfigure $fid -translation binary
 			#configure sock

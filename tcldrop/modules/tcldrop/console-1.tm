@@ -46,7 +46,7 @@ namespace eval ::tcldrop::console {
 
 # Stores the console data in the userfile for $idx:
 proc ::tcldrop::console::store {idx} {
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	if {[info exists idxinfo(handle)]} {
 		setuser $idxinfo(handle) console [array get idxinfo {console-*}]
 		return 1
@@ -106,8 +106,7 @@ proc ::tcldrop::console::initconsole {idx args} {
 			append levels $c
 		}
 	}
-	dict set console console-levels $levels
-	setidxinfo $idx $console
+	idxinfo $idx {*}[dict set console console-levels $levels]
 }
 
 #  echo <idx> [status]
@@ -147,7 +146,7 @@ proc ::tcldrop::console::strip {idx {flags {}}} {
 }
 
 proc ::tcldrop::console::getconsole {idx setting} {
-	if {![catch { idxinfo $idx console-$setting } value]} {
+	if {![catch { getidxinfo $idx console-$setting } value]} {
 		return $value
 	} else {
 		return -code error "No such console setting: \"$setting\""
@@ -155,7 +154,7 @@ proc ::tcldrop::console::getconsole {idx setting} {
 }
 
 proc ::tcldrop::console::setconsole {idx setting value} {
-	setidxinfo $idx [list console-$setting $value]
+	setidxinfo $idx console-$setting $value
 	return $value
 }
 

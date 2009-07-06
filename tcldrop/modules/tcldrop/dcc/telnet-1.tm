@@ -49,15 +49,15 @@ namespace eval ::tcldrop::dcc::telnet {
 	#checkmodule party
 }
 
-proc ::tcldrop::dcc::telnet::Connect {idx} { setidxinfo $idx [list -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle *] }
+proc ::tcldrop::dcc::telnet::Connect {idx} { idxinfo $idx -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle * }
 
 proc ::tcldrop::dcc::telnet::Error {idx {error {}}} {
-	array set chatinfo [getidxinfo $idx]
+	array set chatinfo [idxinfo $idx]
 	callparty quit ${idx}:$chatinfo(handle)@${::botnet-nick}
 }
 
 proc ::tcldrop::dcc::telnet::Write {idx} {
-	setidxinfo $idx [list state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline]
+	idxinfo $idx state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline
 	if {[info exists use-telnet-banner] && ${::use-telnet-banner}} { dccdumpfile $idx ${::telnet-banner} }
 	if {${::open-telnets} || [countusers] == 0} { putdcc $idx {(If you are new, enter 'NEW' here.)} }
 	putdcc $idx {Handle: } -nonewline 1 -flush 1
@@ -72,7 +72,7 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 				if {${::open-telnets} || [countusers] == 0} {
 					# Let them.
 					putdcc $idx {Enter the handle you would like to use: } -nonewline 1 -flush 1
-					setidxinfo $idx [list state TELNET_NEW other {new} timestamp [clock seconds]]
+					idxinfo $idx state TELNET_NEW other {new} timestamp [clock seconds]
 				} else {
 					# Denied!
 					putdcc $idx {You don't have access.  (not accepting 'new' users)}
@@ -81,7 +81,7 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 			} else {
 				if {([validuser $line]) && (![passwdok $line -]) && (!${::require-p} || [matchattr $line p])} {
 					putdcc $idx {Password: } -nonewline 1 -flush 1
-					setidxinfo $idx [list handle $line state CHAT_PASS other {pass} timestamp [clock seconds]]
+					idxinfo $idx handle $line state CHAT_PASS other {pass} timestamp [clock seconds]
 				} else {
 					putdcc $idx {You don't have access.}
 				}
@@ -90,7 +90,7 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 		{CHAT_PASS} {
 			if {[passwdok $chatinfo(handle) $line]} {
 				initconsole $idx
-				setidxinfo $idx [list state CHAT other {chat} timestamp [clock seconds]]
+				idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
 				if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx {Welcome!} }
 				callchon $chatinfo(handle) $idx
 			} else {
@@ -106,14 +106,14 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 			} else {
 				putdcc $idx {Okay, now choose and enter a password: } -nonewline 1 -flush 1
 				adduser $line *!$chatinfo(remote)
-				setidxinfo $idx [list handle $line state TELNET_PW other {newp} timestamp [clock seconds]]
+				idxinfo $idx handle $line state TELNET_PW other {newp} timestamp [clock seconds]
 			}
 		}
 		{TELNET_PW} {
 			if {[string length $line] < 4} {
 				putdcc $idx {Try to use at least 4 characters in your password.}
 				putdcc $idx {Choose and enter a password: } -nonewline 1 -flush 1
-				setidxinfo $idx [list timestamp [clock seconds]]
+				idxinfo $idx timestamp [clock seconds]
 			} else {
 				setuser $chatinfo(handle) pass $line
 				putdcc $idx {Remember that!  You'll need it next time you log in.}
@@ -124,7 +124,7 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 					chattr $chatinfo(handle) ${::default-flags}
 				}
 				initconsole $idx
-				setidxinfo $idx [list state CHAT other {chat} timestamp [clock seconds]]
+				idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
 				callchon $chatinfo(handle) $idx
 			}
 		}

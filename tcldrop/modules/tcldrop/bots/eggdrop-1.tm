@@ -51,14 +51,14 @@ namespace eval ::tcldrop::bots::eggdrop {
 # This is for INCOMING bot connections only:
 proc ::tcldrop::bots::eggdrop::Connect {idx} {
 	putloglev d * "in eggdrop::Connect $idx"
-	setidxinfo $idx [dict create -control ::tcldrop::bots::eggdrop::Read -writable ::tcldrop::bots::eggdrop::Write_IN module eggdrop state BOT_IN other {b-in  } timestamp [clock seconds] traffictype botnet]
+	idxinfo $idx -control ::tcldrop::bots::eggdrop::Read -writable ::tcldrop::bots::eggdrop::Write_IN module eggdrop state BOT_IN other {b-in  } timestamp [clock seconds] traffictype botnet
 }
 
 # This is for INCOMING bot connections only:
 proc ::tcldrop::bots::eggdrop::Write_IN {idx {line {}}} {
 	putloglev d * "in eggdrop::Write_IN $idx $line"
 	putidx $idx {Nickname.}
-	setidxinfo $idx [dict create state BOT_ID other {b-id  } traffictype {botnet} timestamp [clock seconds] direction {in} handlen 9 numversion 0]
+	idxinfo $idx state BOT_ID other {b-id  } traffictype {botnet} timestamp [clock seconds] direction {in} handlen 9 numversion 0
 }
 
 proc ::tcldrop::bots::eggdrop::Errors {idx error} {
@@ -70,7 +70,7 @@ proc ::tcldrop::bots::eggdrop::Errors {idx error} {
 proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
 	if {[dict get $::idxlist($idx) state] eq {FORK_BOT}} {
 		putloglev d * "Got Write $idx"
-		setidxinfo $idx [dict create state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0]
+		idxinfo $idx state BOT_NEW other {botnew} traffictype {botnet} timestamp [clock seconds] direction {out} handlen 9 numversion 0
 	}
 }
 
@@ -137,10 +137,10 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 				if {![passwdok $line -]} {
 					# They have a password set, ask them what it is:
 					putidx $idx {passreq}
-					setidxinfo $idx [list handle $line state CHAT_PASS other {pass}]
+					idxinfo $idx handle $line state CHAT_PASS other {pass}
 				} else {
 					# They don't have a password set.. Accept the line.
-					setidxinfo $idx [list handle $line state BOT other {bot}]
+					idxinfo $idx handle $line state BOT other {bot}
 					after idle [list ::tcldrop::bots::eggdrop::LinkedPeer $idx]
 				}
 			} else {
@@ -154,7 +154,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 			# This is for INCOMING bot connections only; $line should contain the correct password.
 			if {[string equal [getuser $idxinfo(handle) PASS] $line] || [passwdok $idxinfo(handle) $line]} {
 				# Password matches.. Accept the link.
-				setidxinfo $idx [list state BOT other {bot}]
+				idxinfo $idx state BOT other {bot}
 				after idle [list ::tcldrop::bots::eggdrop::LinkedPeer $idx]
 			} else {
 				putidx $idx {badpass}
@@ -165,7 +165,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 			# This is for OUTGOING bot connections only; We wait for $line to be a standard "Nickname." prompt, and then we send our ${::botnet-nick}
 			switch -- $line {
 				{Nickname.} - {Handle.} - {Nickname:} - {Handle:} - {Login:} - {Login.} - {login:} {
-					setidxinfo $idx [list state BOT_PASS other {bot_pass}]
+					idxinfo $idx state BOT_PASS other {bot_pass}
 					putidx $idx ${::botnet-nick}
 				}
 				{default} {
@@ -181,7 +181,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 			#                                            or if no password is set on the other end, they send "*hello!".
 			if {$line eq {*hello!}} {
 				# The other end will send "*hello!" when they've accepted the link.
-				setidxinfo $idx [list state BOT_HELLO other {bot_hello}]
+				idxinfo $idx state BOT_HELLO other {bot_hello}
 			} elseif {[string match {passreq*} $line]} {
 				if {[set pass [getuser $idxinfo(handle) PASS]] != {}} {
 					# They're asking for our password, so send it:
@@ -209,14 +209,14 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 				return 1
 			} else {
 				# Accept the link:
-				setidxinfo $idx [list state BOT other {bot}]
+				idxinfo $idx state BOT other {bot}
 				after idle [list ::tcldrop::bots::eggdrop::LinkedPeer $idx]
 			}
 		}
 		{BOT} {
 			calleggdrop $idxinfo(handle) $idx [string trim [lindex [split $line] 0]] [string trimleft [join [lrange [split $line] 1 end]]]
 			putloglev t * $line
-			setidxinfo $idx [list timestamp [clock seconds]]
+			idxinfo $idx timestamp [clock seconds]
 		}
 		{default} {
 			puterrlog "Unknown state in ::tcldrop::bots::eggdrop::Read: $idxinfo(state)"
@@ -370,7 +370,7 @@ proc ::tcldrop::bots::eggdrop::link {viabot {bot {}}} {
 		set bot $viabot
 		set viabot {}
 		if {![catch { connect [set host [lindex [set botaddr [getuser $bot BOTADDR]] 0]] [set port [lindex $botaddr 1]] -connecttimeout ${::connect-timeout} -inactivetimeout ${::inactive-timeout} -myaddr ${::my-ip} -control ::tcldrop::bots::eggdrop::Read -writable ::tcldrop::bots::eggdrop::Write_OUT -errors ::tcldrop::bots::eggdrop::Errors } idx]} {
-			setidxinfo $idx [list handle $bot remote $host hostname $host port $port state FORK_BOT other {conn  bot} timestamp [set timestamp [unixtime]] traffictype botnet module eggdrop]
+			idxinfo $idx handle $bot remote $host hostname $host port $port state FORK_BOT other {conn  bot} timestamp [set timestamp [unixtime]] traffictype botnet module eggdrop
 			#set TimerID [utimer 99 [list ::tcldrop::bots::eggdrop::BOTConnectTimeout $idx]]
 			return 1
 		} else {
@@ -434,7 +434,7 @@ proc ::tcldrop::bots::eggdrop::Thisbot {handle idx cmd arg} {
 		set Peers($idx) $arg
 		botinfo $handle handle $arg peer $arg
 		# FixMe: Also update the Linked variable.
-		setidxinfo $idx [list handle $arg]
+		idxinfo $idx handle $arg
 		return 0
 	}
 }

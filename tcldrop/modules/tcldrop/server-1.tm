@@ -186,7 +186,7 @@ proc ::tcldrop::server::Server {opts} {
 			{Unknown} - {I.didn't.edit.my.config.file.net} - {unknown-net} - {} { set handle {(server)} }
 			{default} { set handle $network }
 		}
-		setidxinfo $idx [list handle $handle remote $options(-address):$options(-port) hostname $options(-address) type {SERVER} other {serv} traffictype {irc} module {server} timestamp [clock seconds]]
+		idxinfo $idx handle $handle remote $options(-address):$options(-port) hostname $options(-address) type {SERVER} other {serv} traffictype {irc} module {server} timestamp [clock seconds]
 		set server-idx $idx
 		# Eggdrop compatibility stuff:
 		set serveraddress "$options(-address):$options(-port)"
@@ -479,7 +479,7 @@ proc ::tcldrop::server::001 {from key arg} {
 	catch { killutimer $ServerCycleTimerID }
 	# Save the server's real name.
 	set ::server ${from}:[lindex [split $::serveraddress :] end]
-	setidxinfo ${::server-idx} [list remote $::server]
+	idxinfo ${::server-idx} remote $::server
 	set ::botnick [lindex [split $arg] 0]
 	set ::server-online [clock seconds]
 	# Set isupport to user-defined defaults:

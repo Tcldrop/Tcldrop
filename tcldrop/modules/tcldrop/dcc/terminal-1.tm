@@ -70,7 +70,7 @@ proc ::tcldrop::dcc::terminal::start {event} {
 		}
 		proc ::tcldrop::dcc::terminal::Write {idx} {
 			fileevent stdout writable {}
-			registeridx $idx [list idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_ID info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal]
+			registeridx $idx idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_ID info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
 			putdcc $idx {### ENTERING DCC CHAT SIMULATION ###}
 			::tcldrop::dcc::telnet::Write $idx
 		}
@@ -86,7 +86,7 @@ proc ::tcldrop::dcc::terminal::start {event} {
 proc ::tcldrop::dcc::terminal::EVNT_init {event} {
 	if {$::tcldrop(host_env) == {wish}} {
 		proc ::tcldrop::stdin {text} { ::tcldrop::dcc::telnet::Read 1 $text }
-		registeridx 1 [list idx 1 sock stdout filter ::tcldrop::dcc::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal]
+		registeridx 1 idx 1 sock stdout filter ::tcldrop::dcc::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
 		putdcc 1 {### ENTERING DCC CHAT SIMULATION ###}
 		::tcldrop::dcc::telnet::Write 1
 	}

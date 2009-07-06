@@ -48,7 +48,7 @@ proc ::tcldrop::console::dcc::STORE {handle idx text} {
 		putdebuglog "Failed to save console settings for idx $idx"
 		return 0
 	} else {
-		array set idxinfo [getidxinfo $idx]
+		array set idxinfo [idxinfo $idx]
 	}
 	if {$idxinfo(console-echo) == 0} {
 		set idxinfo(console-echo) [lang 0xb049]
@@ -82,7 +82,7 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 			console $idx $text
 		}
 	}
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	foreach level [split $idxinfo(console-levels) {}] {
 		# if new console modes are added, they need to be added to the list in console-1.tm as well
 		switch -exact -- $level {

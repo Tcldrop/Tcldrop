@@ -146,7 +146,7 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		{default} { set info "$options(-address):$options(-port)  (via $proxycount proxies)" }
 	}
 	# Buried in the next line is the call to ::proxy::connect, which BTW can make direct connections as well as proxied connections:
-	if {[catch { registeridx [set idx [assignidx]] [concat [array get options] [list idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -command [list ::tcldrop::core::conn::ProxyControl $idx] {*}[array get options] -writable [list ::tcldrop::core::conn::Write $idx] -readable [list ::tcldrop::core::conn::Read $idx]]] remote "$options(-address):$options(-port)" info $info]] } error]} {
+	if {[catch { registeridx [set idx [assignidx]] {*}[array get options] idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -command [list ::tcldrop::core::conn::ProxyControl $idx] {*}[array get options] -writable [list ::tcldrop::core::conn::Write $idx] -readable [list ::tcldrop::core::conn::Read $idx]]] remote "$options(-address):$options(-port)" info $info] } error]} {
 		return -code error $error
 	} else {
 		# catch { if {$options(-myaddr) eq {} || $options(-myaddr) eq {0.0.0.0} || ${::default-ip} eq {}} { set ::default-ip [lindex [fconfigure $sock -sockname] 0] } }
@@ -159,15 +159,14 @@ proc ::tcldrop::core::conn::ProxyControl {idx sock status id {reason {}}} {
 	global idxlist
 	if {[info exists ::idxlist($idx)]} {
 		if {$status eq {ok} && ![eof $sock]} {
-			array set idxinfo $::idxlist($idx)
-			fconfigure $sock -buffering $idxinfo(-buffering) -blocking $idxinfo(-blocking) -encoding $idxinfo(-encoding) -translation $idxinfo(-translation) {*}$idxinfo(-fconfigure)
+			fconfigure $sock -buffering [dict get $::idxlist($idx) -buffering] -blocking [dict get $::idxlist($idx) -blocking] -encoding [dict get $::idxlist($idx) -encoding] -translation [dict get $::idxlist($idx) -translation] {*}[dict get $::idxlist($idx) -fconfigure]
 			fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
 			fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
-			lassign [fconfigure $sock -sockname] idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)
-			set idxinfo(port) $idxinfo(local-port)
-			# Async sockets may not yet be connected which causes an error, so we catch this here..  (We'll try to do this again in the Write proc)
-			#catch { lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port) }
-			setidxinfo $idx [array get idxinfo]
+			lassign [fconfigure $sock -sockname] local-ip local-hostname local-port
+			dict set ::idxlist($idx) local-ip ${local-ip}
+			dict set ::idxlist($idx) local-hostname ${local-hostname}
+			dict set ::idxlist($idx) local-port ${local-port}
+			dict set ::idxlist($idx) port ${local-port}
 		} else {
 			killidx $idx
 		}
@@ -183,7 +182,7 @@ proc ::tcldrop::core::conn::ControlSock {sock opts} {
 	if {![eof $sock]} {
 		array set idxinfo [list idx [set idx [assignidx]] sock $sock -buffering line -blocking 0 -connect-timeout ${::connect-timeout} -inactive-timeout ${::inactive-timeout} timestamp [clock seconds] traffictype unknown]
 		array set idxinfo $opts
-		registeridx $idx [array get idxinfo]
+		registeridx $idx {*}[array get idxinfo]
 		fconfigure $sock -buffering $idxinfo(-buffering) -blocking $idxinfo(-blocking)
 		fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
 		fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
@@ -195,8 +194,9 @@ proc ::tcldrop::core::conn::ControlSock {sock opts} {
 }
 
 # Note that you can tell connect what command to use with the -control option.
-proc ::tcldrop::core::conn::control {idx command args} { Control $idx $command $args }
-proc ::tcldrop::core::conn::Control {idx command arg} { setidxinfo $idx [concat [list -control $command] $arg] }
+proc ::tcldrop::core::conn::control {idx command args} { idxinfo $idx -control $command {*}$args }
+# Deprecated:
+proc ::tcldrop::core::conn::Control {idx command arg} { idxinfo $idx -control $command {*}$arg }
 
 proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 	variable Timeout
@@ -308,6 +308,7 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 	Timeout cancel $idx
 	if {[info exists ::idxlist($idx)]} {
+		# FixMe: Change this proc to reference ::idxlist directly rather than using the idxinfo array..
 		array set idxinfo $::idxlist($idx)
 		catch { fileevent $idxinfo(sock) writable {} }
 		# Note, I don't know if it's possible to get an error or EOF from here, but just in case:
@@ -328,7 +329,7 @@ proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 			# Try to set the remote-* things now (in case they failed to get set from ProxyControl):
 			catch {
 				lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)
-				setidxinfo $idx [array get idxinfo]
+				idxinfo $idx {*}[array get idxinfo]
 			}
 			if {[info exists idxinfo(-writable)]} {
 				$idxinfo(-writable) $idx
@@ -460,7 +461,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 		fconfigure $sock -buffering line -blocking 0
 		if {$myaddr eq {0.0.0.0}} { set info "Listening on *:$port" } else { set info "Listening on ${myaddr}:$port" }
 		lassign [fconfigure $sock -sockname] local-ip local-hostname local-port
-		registeridx [set idx [assignidx]] [list idx $idx sock $sock module $type handle ($type) remote $myaddr hostname $myaddr local-ip ${local-ip} local-hostname ${local-hostname} local-port ${local-port} port $port myaddr $myaddr type $type other "lstn  $port" timestamp [clock seconds] info $info]
+		registeridx [set idx [assignidx]] idx $idx sock $sock module $type handle ($type) remote $myaddr hostname $myaddr local-ip ${local-ip} local-hostname ${local-hostname} local-port ${local-port} port $port myaddr $myaddr type $type other "lstn  $port" timestamp [clock seconds] info $info
 		putlog "Listening at ${myaddr}:$port  ($type)"
 		return $port
 	} else {
@@ -482,10 +483,10 @@ proc ::tcldrop::core::conn::addlistentype {type args} {
 proc ::tcldrop::core::conn::Ident {idx options id status response} {
 	if {[info exists ::idxlist($idx)]} {
 		if {$status eq {ok}} {
-			setidxinfo $idx [list ident $response]
+			idxinfo $idx ident $response
 		} else {
 			# Must be "-telnet" for Eggdrop compatibilty:
-			setidxinfo $idx [list ident -telnet]
+			idxinfo $idx ident -telnet
 		}
 	}
 }
@@ -493,7 +494,7 @@ proc ::tcldrop::core::conn::Ident {idx options id status response} {
 # This is the callback to the dnslookup command,
 # it simply updates the idx info to show the remotes hostname.
 proc ::tcldrop::core::conn::DNSLookup {ip hostname status idx options} {
-	if {$status && [info exists ::idxlist($idx)]} { setidxinfo $idx [list hostname $hostname remote-hostname $hostname] }
+	if {$status && [info exists ::idxlist($idx)]} { idxinfo $idx hostname $hostname remote-hostname $hostname }
 }
 
 proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
@@ -510,7 +511,7 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 	lassign [fconfigure $sock -sockname] idxinfo(local-ip) idxinfo(local-hostname) idxinfo(local-port)
 	lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)
 	array set optinfo $options
-	registeridx [set idx [assignidx]] [concat [array get idxinfo] [list -inactive-timeout ${::inactive-timeout} idx $idx sock $sock handle * ident {-telnet} hostname [set hostname [lindex [fconfigure $sock -peername] 1]] ip $ip remote -telnet@$hostname port $port type $optinfo(type) ssl $optinfo(ssl) other "$optinfo(type)-in" timestamp [unixtime] traffictype misc]]
+	registeridx [set idx [assignidx]] {*}[array get idxinfo] -inactive-timeout ${::inactive-timeout} idx $idx sock $sock handle * ident {-telnet} hostname [set hostname [lindex [fconfigure $sock -peername] 1]] ip $ip remote -telnet@$hostname port $port type $optinfo(type) ssl $optinfo(ssl) other "$optinfo(type)-in" timestamp [unixtime] traffictype misc]
 	putloglev d * "net: connect! idx $idx (socket $sock)"
 	if {[testip $idxinfo(remote-hostname)]} {
 		switch -- $optinfo(dns) {
@@ -519,7 +520,7 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 			}
 		}
 	} else {
-		setidxinfo $idx [list hostname $hostname]
+		idxinfo $idx hostname $hostname
 	}
 	switch -- $optinfo(ident) {
 		{1} - {2} - {default} {
@@ -586,39 +587,37 @@ proc ::tcldrop::core::conn::killidx {idx args} {
 	return 0
 }
 
-proc ::tcldrop::core::conn::sock2idx {sock} { lindex [listidx [list sock $sock]] 0 }
+proc ::tcldrop::core::conn::sock2idx {sock} { lindex [listidx sock $sock] 0 }
 
-proc ::tcldrop::core::conn::killsock {sock} { killidx [lindex [listidx [list sock $sock]] 0] }
+proc ::tcldrop::core::conn::killsock {sock} { killidx [sock2idx $sock] }
 
-proc ::tcldrop::core::conn::idx2sock {idx} { idxinfo $idx sock }
+proc ::tcldrop::core::conn::idx2sock {idx} { getidxinfo $idx sock }
 
 # Assigns a unique idx handle for a connection:
-proc ::tcldrop::core::conn::assignidx {args} { variable IDXCount
+proc ::tcldrop::core::conn::assignidx {args} {
+	variable IDXCount
 	if {$IDXCount > ${::max-dcc}} { set IDXCount 0 }
 	while {[info exists ::idxlist([incr IDXCount])]} {}
 	return $IDXCount
 }
 
 # Registers an idx.
-# info is a key/value pair list.
+# args is a key/value pair list.
 # Required keys are: type sock idx hostname port timestamp handle other
-# See info about the dcclist command in eggdrop/doc/tcl-commands.doc,
-# because it's dcclist that requires most of these keys.
-proc ::tcldrop::core::conn::registeridx {idx {info {}}} { set ::idxlist($idx) $info }
+# See info about the dcclist command in eggdrop/doc/tcl-commands.doc, because it's dcclist that requires most of these keys.
+proc ::tcldrop::core::conn::registeridx {idx args} { set ::idxlist($idx) [dict set args idx $idx] }
 
 # Unregisters an idx:
 proc ::tcldrop::core::conn::unregisteridx {idx} { array unset ::idxlist $idx }
 
-# Asks for a new idx to be assigned, sets it's info to $info, and returns the assigned idx:
-# info is a key/value pair list.
+# Asks for a new idx to be assigned, sets it's info to $args, and returns the assigned idx:
+# args is a key/value pair list.
 # Required keys are: type sock idx hostname port timestamp handle other
-# See info about the dcclist command in eggdrop/doc/tcl-commands.doc,
-# because it's dcclist that requires most of these keys.
+# See info about the dcclist command in eggdrop/doc/tcl-commands.doc, because it's dcclist that requires most of these keys.
 # Note: This does the job of both assignidx and registeridx.
-proc ::tcldrop::core::conn::initidx {{info {}}} {
-	variable IDXCount
-	set ::idxlist([set count [incr IDXCount]]) $info
-	return $count
+proc ::tcldrop::core::conn::initidx {args} {
+	set ::idxlist([set idx [assignidx]]) [dict set args idx $idx]
+	return $idx
 }
 
 #  idxlist ?info?
@@ -656,16 +655,16 @@ proc ::tcldrop::core::conn::idxlist {{info {}}} {
 }
 
 # Works just like idxlist, but this just returns the idx's (without their info).
-proc ::tcldrop::core::conn::listidx {{info {}}} {
+proc ::tcldrop::core::conn::listidx {args} {
 	global idxlist
-	switch -- $info {
+	switch -- $args {
 		{} { array get idxlist }
 		{default} {
 			lappend list
 			foreach idx [array names idxlist] {
 				array set idxinfo $idxlist($idx)
 				set add 1
-				foreach {i p} $info {
+				foreach {i p} $args {
 					if {![info exists idxinfo($i)] || ![string match -nocase $p $idxinfo($i)]} {
 						set add 0
 						break
@@ -681,40 +680,43 @@ proc ::tcldrop::core::conn::listidx {{info {}}} {
 
 proc ::tcldrop::core::conn::dccused {} { array size ::idxlist }
 
-# Returns or sets one piece of info about $idx:
+# Returns or sets info about $idx:
 # Or returns all info about the idx.
-# Note: Using setidxinfo and getidxinfo are prefered over using this command.
-proc ::tcldrop::core::conn::idxinfo {idx {info {}} {value {}}} {
+proc ::tcldrop::core::conn::idxinfo {idx args} {
 	if {[info exists ::idxlist($idx)]} {
-		switch -- $info {
-			{} { return $::idxlist($idx) }
-			{default} {
-				if {$value ne {}} {
-					dict set ::idxlist($idx) $info $value
-					return $value
-				} elseif {[dict exists $::idxlist($idx) $info]} {
-					return [dict get $::idxlist($idx) $info]
-				} else {
-					return -code error "no such type: $info"
-				}
-			}
+		if {[llength $args]} {
+			set ::idxlist($idx) [dict merge $::idxlist($idx) $args]
+		} else {
+			return $::idxlist($idx)
 		}
 	} else {
 		return -code error "invalid idx: $idx"
+		# Just set the info, turning $args into a proper dict while we're at it:
+		set ::idxlist($idx) [dict create {*}$args]
 	}
 }
 
 # Adds to or replaces info about an existing idx:
-proc ::tcldrop::core::conn::setidxinfo {idx {info {}}} {
+proc ::tcldrop::core::conn::setidxinfo {idx {info {}} {value {}}} {
 	if {[info exists ::idxlist($idx)]} {
-		set ::idxlist($idx) [dict merge $::idxlist($idx) $info]
+		dict set ::idxlist($idx) $info $value
 	} else {
-		set ::idxlist($idx) [dict create {*}$info]
+		return -code error "invalid idx: $idx"
+		# Or?
+		set ::idxlist($idx) [dict create $info $value]
 	}
 }
 
 # Companion to setidxinfo:
-proc ::tcldrop::core::conn::getidxinfo {idx} { if {[info exists ::idxlist($idx)]} { return $::idxlist($idx) } }
+proc ::tcldrop::core::conn::getidxinfo {idx {info {}}} {
+	if {[info exists ::idxlist($idx)]} {
+		if {$info ne {}} {
+			dict get $::idxlist($idx) $info
+		} else {
+			return $::idxlist($idx)
+		}
+	}
+}
 
 # Deletes a piece of info about the idx (to save a tad of memory):
 proc ::tcldrop::core::conn::delidxinfo {idx info} {

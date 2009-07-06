@@ -48,16 +48,16 @@ namespace eval ::tcldrop::dcc::irc {
 proc ::tcldrop::dcc::irc::Connect {idx} {
 	# Next line is used only during testing:
 	#~ uplevel #0 { source [file join modules party ircparty.tcl] }
-	setidxinfo $idx [list -control {::tcldrop::dcc::irc::Read} -writable {::tcldrop::dcc::irc::Write} -errors {::tcldrop::dcc::irc::Error} state {CONNECT} other {conn} handle {*} module {ircparty} timestamp [clock seconds]]
+	idxinfo $idx -control {::tcldrop::dcc::irc::Read} -writable {::tcldrop::dcc::irc::Write} -errors {::tcldrop::dcc::irc::Error} state {CONNECT} other {conn} handle {*} module {ircparty} timestamp [clock seconds]
 	setircparty user $idx idx $idx nick {*} nickname "*@${::botnet-nick}:$idx" mode {w} username {-} realname {?}
 	if {![info exists ::tcldrop]} { control $idx ::tcldrop::dcc::irc::Read }
 	Write $idx
 }
 
 proc ::tcldrop::dcc::irc::Write {idx} {
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	if {$idxinfo(state) eq {CONNECT}} {
-		setidxinfo $idx [list state {REGISTER} other {reg} traffictype {partyline} timestamp [clock seconds]]
+		idxinfo $idx state {REGISTER} other {reg} traffictype {partyline} timestamp [clock seconds]
 		Putidx $idx "NOTICE AUTH :*** Looking up your hostname..."
 		Putidx $idx "NOTICE AUTH :*** Checking Ident"
 		Putidx $idx "NOTICE AUTH :*** Got Ident response"
@@ -70,7 +70,7 @@ proc ::tcldrop::dcc::irc::Write {idx} {
 
 proc ::tcldrop::dcc::irc::Read {idx line} {
 	if {$line != {}} {
-		array set idxinfo [getidxinfo $idx]
+		array set idxinfo [idxinfo $idx]
 		switch -- $idxinfo(state) {
 			{CHAT} {
 				if {![callircparty $idx [set command [string toupper [lindex [set sline [split [string trim $line]]] 0]]] [join [lrange $sline 1 end]]]} {
@@ -88,7 +88,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 							putdebuglog "$idx: $line"
 							return 1
 						} elseif {[ircparty registered $idx]} {
-							setidxinfo $idx [list state CHAT other {chat} timestamp [clock seconds]]
+							idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
 							Welcome $idx
 						}
 						return 0
@@ -111,7 +111,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 }
 
 proc ::tcldrop::dcc::irc::Error {idx {error {}}} {
-	#array set idxinfo [getidxinfo $idx]
+	#array set idxinfo [idxinfo $idx]
 	#callparty quit ${idx}:$idxinfo(handle)@${::botnet-nick}
 	return 1
 }
@@ -151,7 +151,7 @@ proc ::tcldrop::dcc::irc::Welcome {idx} {
 	# topic for the command channel:
 	PutRAW $idx "332 $userinfo(nickname) %${::botnet-nick} :Welcome to the Command Channel for ${::botnet-nick}!"
 	PutRAW $idx "333 $userinfo(nickname) %${::botnet-nick} ${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. $::uptime"
-	setidxinfo $idx [list filter ::tcldrop::dcc::irc::PutidxFilter]
+	idxinfo $idx filter ::tcldrop::dcc::irc::PutidxFilter
 	initconsole $idx
 }
 
@@ -195,7 +195,7 @@ proc ::tcldrop::dcc::irc::getircparty {type args} {
 			variable IRCParty_chanusers
 			variable IRCParty_users
 			if {[info exists IRCParty_chanusers([set chan [string tolower [lindex $args 0]]],[set idx [lindex $args 1]])]} {
-				array set info [getidxinfo $idx]
+				array set info [idxinfo $idx]
 				array set info $IRCParty_chanusers($chan,$idx)
 				array set info $IRCParty_users($idx)
 				if {[set getinfo [lindex $args 2]] != {}} {
@@ -208,7 +208,7 @@ proc ::tcldrop::dcc::irc::getircparty {type args} {
 		{user} - {users} {
 			variable IRCParty_users
 			if {[info exists IRCParty_users([set idx [lindex $args 0]])]} {
-				array set info [getidxinfo $idx]
+				array set info [idxinfo $idx]
 				array set info $IRCParty_users($idx)
 				if {[set getinfo [lindex $args 1]] != {}} {
 					if {[info exists info($getinfo)]} { return $info($getinfo) } else { return {} }
@@ -275,14 +275,14 @@ proc ::tcldrop::dcc::irc::ircparty {command args} {
 			set info [lindex $args 2]
 			foreach u [array names IRCParty_chanusers [string tolower [lindex $args 1]],*] {
 				set userinfo $IRCParty_chanusers($u)
-				set userinfo [getidxinfo $idx]
+				set userinfo [idxinfo $idx]
 				set userinfo $IRCParty_users($userinfo(idx))
 				if {[string equal -nocase $findhand $userinfo($info)]} { return 1 }
 			}
 			return 0
 		}
 		{registered} {
-			array set idxinfo [getidxinfo [set idx [lindex $args 0]]]
+			array set idxinfo [idxinfo [set idx [lindex $args 0]]]
 			array set userinfo [getircparty user $idx]
 			if {$idxinfo(handle) != {*} && $userinfo(username) != {-} && $userinfo(nick) != {*}} {
 				return 1
@@ -355,7 +355,7 @@ proc ::tcldrop::dcc::irc::PutRAW {idx msg} {
 }
 
 proc ::tcldrop::dcc::irc::PutRAWClient {idx code msg} {
-	PutRAW $idx "$code [idxinfo $idx nickname] $msg"
+	PutRAW $idx "$code [getidxinfo $idx nickname] $msg"
 }
 
 proc ::tcldrop::dcc::irc::ircparty_PING {idx command arg} {
@@ -364,7 +364,7 @@ proc ::tcldrop::dcc::irc::ircparty_PING {idx command arg} {
 }
 
 proc ::tcldrop::dcc::irc::ircparty_PONG {idx command arg} {
-	setidxinfo $idx [list timestamp [clock seconds]]
+	idxinfo $idx timestamp [clock seconds]
 	return 1
 }
 
@@ -382,7 +382,7 @@ proc ::tcldrop::dcc::irc::ircparty_USER {idx command arg} {
 	if {[set username [string trim [lindex [set sarg [split $arg]] 0]]] == {}} {
 		return 0
 	} else {
-		if {[string is int [set vhost [string trim [lindex $sarg 1] {""}]]] || [string index $vhost 0] == {+}} { set vhost [idxinfo $idx remote-hostname] }
+		if {[string is int [set vhost [string trim [lindex $sarg 1] {""}]]] || [string index $vhost 0] == {+}} { set vhost [getidxinfo $idx remote-hostname] }
 		# Set the servers name to the most appropriate value, starting with what the client calls us:
 		if {[string length [set server [string trim [lindex $sarg 2] {""}]]] < 5 || ![string match {*.*} $server]} {
 			if {[info exists ::my-hostname] && ${::my-hostname} != {}} {
@@ -403,7 +403,7 @@ proc ::tcldrop::dcc::irc::ircparty_OPER {idx command arg} {
 	foreach {handle password} [split $arg] {break}
 	if {([validuser $handle] && ![passwdok $handle -] && [passwdok $handle $password]) && (!${::require-p} || [matchattr $handle p])} {
 		#setparty $idx handle $handle
-		setidxinfo $idx [list handle [getuser $handle handle]]
+		idxinfo $idx handle [getuser $handle handle]
 		setircparty user $idx nickname "${handle}@${::botnet-nick}:$idx"
 	}
 	return 1
@@ -472,7 +472,7 @@ proc ::tcldrop::dcc::irc::ircparty_JOIN {idx command arg} {
 	# Only allow global +mn to join invalid channels. (they'll be [channel add]'d on JOIN)
 	putdebuglog "ircparty_JOIN $idx $command $arg"
 	array set userinfo [getircparty user $idx]
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	foreach chankey [split $arg ,] {
 		foreach {chan key} [split $chankey] {break}
 		if {![validchan $chan] && [matchattr $idxinfo(handle) n]} { channel add $chan }
@@ -492,7 +492,7 @@ proc ::tcldrop::dcc::irc::ircparty_JOIN {idx command arg} {
 
 proc ::tcldrop::dcc::irc::ircparty_NAMES {idx command arg} {
 	array set userinfo [getircparty user $idx]
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	if {[validchan [set chan [string trimleft $arg :]]]} {
 		switch -glob [lindex [split [getchanmode $chan]] 0] {
 			{*s*} { set chanflag {@} }
@@ -607,7 +607,7 @@ proc ::tcldrop::dcc::irc::ircparty_PRIVMSG {idx command arg} {
 	# but only allow people who are +vofmn to talk on channels on the bots irc connection.
 	# Also, only allow global +mn to send PRIVMSG's to nicks on irc.
 	array set userinfo [getircparty user $idx]
-	array set idxinfo [getidxinfo $idx]
+	array set idxinfo [idxinfo $idx]
 	# check if we're dealing with PRIVMSG's to a command channel
 	if {[string index $arg 0] ne {%}} {
 		if {([validchan [set chan [lindex [set sarg [split $arg]] 0]]] && [ircparty idxonchan $idx $chan]) || ([matchattr $idxinfo(handle) nm])} {
@@ -745,252 +745,57 @@ proc ::tcldrop::dcc::irc::WALL {hand msg} {
 	# FixMe: Make this send the walls to ircparty users with global +mn
 }
 
-if {[info exists ::tcldrop]} {
-	### Special stuff for Tcldrop..
-	checkmodule party
-	proc ::tcldrop::dcc::irc::callircparty {idx command arg} {
-		foreach {type flags mask proc} [bindlist ircparty] {
-			if {[string match -nocase $mask $command]} {
-				if {[catch { $proc $idx $command $arg } err]} {
-					putlog "error in script: $proc: $err"
-					puterrlog $::errorInfo
-				} elseif {[string equal $err {1}]} {
-					return 1
-				}
-				countbind $type $mask $proc
-			}
-		}
-		return 0
-	}
-	# This has to be a LOAD bind:
-	bind load - dcc::irc ::tcldrop::dcc::irc
-	proc ::tcldrop::dcc::irc {module} {
-		setdefault open-telnets 1
-		setdefault info-party 0
-		setdefault connect-timeout 27
-		setdefault use-telnet-banner 0
-		setdefault text-path {text}
-		setdefault telnet-banner {banner}
-		setdefault motd {motd}
-		setdefault network {Unknown}
-		setdefault require-p 0
-		setdefault default-flags {p}
-		# Add new listen types (these are used by the [listen] command):
-		addlistentype ircparty connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
-		bind ircparty - PING ::tcldrop::dcc::irc::ircparty_PING
-		bind ircparty - PONG ::tcldrop::dcc::irc::ircparty_PONG
-		bind ircparty - NICK ::tcldrop::dcc::irc::ircparty_NICK
-		bind ircparty - USER ::tcldrop::dcc::irc::ircparty_USER
-		bind ircparty - OPER ::tcldrop::dcc::irc::ircparty_OPER
-		bind ircparty - WHO ::tcldrop::dcc::irc::ircparty_WHO
-		bind ircparty - LOGIN ::tcldrop::dcc::irc::ircparty_LOGIN
-		bind ircparty - LOGON ::tcldrop::dcc::irc::ircparty_LOGON
-		bind ircparty - PASSWORD ::tcldrop::dcc::irc::ircparty_PASSWORD
-		bind ircparty - PASS ::tcldrop::dcc::irc::ircparty_PASS
-		bind ircparty - QUIT ::tcldrop::dcc::irc::ircparty_QUIT
-		bind ircparty - MODE ::tcldrop::dcc::irc::ircparty_MODE
-		bind ircparty - USERHOST ::tcldrop::dcc::irc::ircparty_USERHOST
-		bind ircparty - VERSION ::tcldrop::dcc::irc::ircparty_VERSION
-		bind ircparty - ISON ::tcldrop::dcc::irc::ircparty_ISON
-		bind ircparty - JOIN ::tcldrop::dcc::irc::ircparty_JOIN
-		bind ircparty - PART ::tcldrop::dcc::irc::ircparty_PART
-		bind ircparty - NAMES ::tcldrop::dcc::irc::ircparty_NAMES
-		bind ircparty - TOPIC ::tcldrop::dcc::irc::ircparty_TOPIC
-		bind ircparty - WHOIS ::tcldrop::dcc::irc::ircparty_WHOIS
-		bind ircparty - PRIVMSG ::tcldrop::dcc::irc::ircparty_PRIVMSG
-		# Don't allow the ircparty module to be unloaded:
-		bind unld - ircparty ::tcldrop::dcc::irc::UNLD
-		proc ::tcldrop::dcc::irc::UNLD {module} { return 1 }
-	}
-} elseif {[info exists ::numversion]} {
-	# Special stuff for Eggdrop..
-	proc ::tcldrop::dcc::irc::callircparty {idx command arg} {
-		if {[llength [info commands ::tcldrop::dcc::irc::ircparty_$command]]} {
-			if {[catch { ::tcldrop::dcc::irc::ircparty_$command $idx $command $arg } err]} {
-				putlog "Error in ::tcldrop::dcc::irc::ircparty_${command}: $err"
-				putloglev ed * $::errorInfo
-				return 0
+proc ::tcldrop::dcc::irc::callircparty {idx command arg} {
+	foreach {type flags mask proc} [bindlist ircparty] {
+		if {[string match -nocase $mask $command]} {
+			if {[catch { $proc $idx $command $arg } err]} {
+				putlog "error in script: $proc: $err"
+				puterrlog $::errorInfo
 			} elseif {[string equal $err {1}]} {
 				return 1
 			}
-		}
-		return 0
-	}
-	# Closes any sockets that the idx is associated with, and unsets all the info known about it:
-	# Note: This is a Tcldrop specific command.
-	proc ::tcldrop::dcc::irc::killidx {idx args} {
-		if {[info exists ::idxlist($idx)]} {
-			array set idxinfo $::idxlist($idx)
-			catch { fileevent $idxinfo(sock) writable {} }
-			catch { fileevent $idxinfo(sock) readable {} }
-			#catch { flush $idxinfo(sock) }
-			unset -nocomplain ::idxlist($idx)
-			array set options [list -now 0]
-			array set options $args
-			if {$options(-now)} {
-				catch { close $idxinfo(sock) }
-			} else {
-				after idle [list catch [list close $idxinfo(sock)]]
-			}
-			return 1
-		}
-		return 0
-	}
-
-	proc ::tcldrop::dcc::irc::sock2idx {sock} { lindex [listidx [list sock $sock]] 0 }
-
-	proc ::tcldrop::dcc::irc::killsock {sock} { killidx [lindex [listidx [list sock $sock]] 0] }
-
-	proc ::tcldrop::dcc::irc::idx2sock {idx} { idxinfo $idx sock }
-
-	# Assigns a unique idx handle for a connection:
-	proc ::tcldrop::dcc::irc::assignidx {args} {
-		variable IDXCount
-		incr IDXCount
-	}
-
-	# Registers an idx.
-	# info is a key/value pair list.
-	# Required keys are: type sock idx hostname port timestamp handle other
-	# See info about the dcclist command in eggdrop/doc/tcl-commands.doc,
-	# because it's dcclist that requires most of these keys.
-	proc ::tcldrop::dcc::irc::registeridx {idx {info {}}} { set ::idxlist($idx) $info }
-
-	# Unregisters an idx:
-	proc ::tcldrop::dcc::irc::unregisteridx {idx} { array unset ::idxlist $idx }
-
-	# Asks for a new idx to be assigned, sets it's info to $info, and returns the assigned idx:
-	# info is a key/value pair list.
-	# Required keys are: type sock idx hostname port timestamp handle other
-	# See info about the dcclist command in eggdrop/doc/tcl-commands.doc,
-	# because it's dcclist that requires most of these keys.
-	# Note: This does the job of both assignidx and registeridx.
-	proc ::tcldrop::dcc::irc::initidx {{info {}}} {
-		variable IDXCount
-		set ::idxlist([set count [incr IDXCount]]) $info
-		return $count
-	}
-
-	#  idxlist ?info?
-	#    Returns: a key/value pair list of active local connections:
-	#        {<idx>} {<info>}
-	#
-	#      The types are: chat, bot, files, file_receiving, file_sending,
-	#      file_send_pending, script, socket (these are connections that have
-	#      not yet been put under 'control'), telnet, and server. The timestamp
-	#      is in unixtime format.
-	#    Module: core
-	# Example: idxlist {type CHAT}
-	# Would return all the idx's and their info matching type CHAT.
-	proc ::tcldrop::dcc::irc::idxlist {{info {}}} {
-		global idxlist
-		switch -- $info {
-			{} { array get idxlist }
-			{default} {
-				lappend list
-				foreach idx [array names idxlist] {
-					array set idxinfo $idxlist($idx)
-					set add 1
-					foreach {i p} $info {
-						if {![info exists idxinfo($i)] || ![string match -nocase $p $idxinfo($i)]} {
-							set add 0
-							break
-						}
-					}
-					if {$add} { lappend list $idx $idxlist($idx) }
-					array unset idxinfo
-				}
-				return $list
-			}
+			countbind $type $mask $proc
 		}
 	}
+	return 0
+}
 
-	# Works just like idxlist, but this just returns the idx's (without their info).
-	proc ::tcldrop::dcc::irc::listidx {{info {}}} {
-		global idxlist
-		switch -- $info {
-			{} { array get idxlist }
-			{default} {
-				lappend list
-				foreach idx [array names idxlist] {
-					array set idxinfo $idxlist($idx)
-					set add 1
-					foreach {i p} $info {
-						if {![info exists idxinfo($i)] || ![string match -nocase $p $idxinfo($i)]} {
-							set add 0
-							break
-						}
-					}
-					if {$add} { lappend list $idx }
-					array unset idxinfo
-				}
-				return $list
-			}
-		}
-	}
-
-	proc ::tcldrop::dcc::irc::dccused {} { array size ::idxlist }
-
-	# Returns or sets one piece of info about $idx:
-	# Or returns all info about the idx.
-	# Note: Using setidxinfo and getidxinfo are prefered over using this command.
-	proc ::tcldrop::dcc::irc::idxinfo {idx {info {}} {value {}}} {
-		if {[info exists ::idxlist($idx)]} {
-			switch -- $info {
-				{} { return $::idxlist($idx) }
-				{default} {
-					array set idxinfo $::idxlist($idx)
-					if {$value != {}} {
-						set idxinfo($info) $value
-						set ::idxlist($idx) [array get idxinfo]
-						return $value
-					} elseif {[info exists idxinfo($info)]} {
-						return $idxinfo($info)
-					} else {
-						return -code error "no such type: $info"
-					}
-				}
-			}
-		} else {
-			return -code error "invalid idx: $idx"
-		}
-	}
-
-	# Adds to or replaces info about an existing idx:
-	proc ::tcldrop::dcc::irc::setidxinfo {idx {info {}}} {
-		if {[info exists ::idxlist($idx)]} { array set idxinfo $::idxlist($idx) }
-		array set idxinfo $info
-		set ::idxlist($idx) [array get idxinfo]
-	}
-
-	# Companion to setidxinfo:
-	proc ::tcldrop::dcc::irc::getidxinfo {idx} { if {[info exists ::idxlist($idx)]} { set ::idxlist($idx) } }
-
-	# Deletes a piece of info about the idx (to save a tad of memory):
-	proc ::tcldrop::dcc::irc::delidxinfo {idx info} {
-		if {[info exists ::idxlist($idx)]} {
-			array set idxinfo $::idxlist($idx)
-			if {[info exists $idxinfo($info)]} {
-				unset idxinfo($info)
-				set ::idxlist($idx) [array get idxinfo]
-				return 1
-			} else {
-				return 0
-			}
-		} else {
-			return 0
-		}
-	}
-
-	# Returns 1 if $idx is a valid idx, or 0 if it's not:
-	# Note: This is an Eggdrop v1.6 and less command.
-	proc ::tcldrop::dcc::irc::valididx {idx} { info exists ::idxlist($idx) }
-
-	# Returns the idx that $handle is on:
-	proc ::tcldrop::dcc::irc::hand2idx {handle} {
-		# FixMe: Make it return the last active user.
-		lindex [listidx [list handle $handle]] 0
-	}
-
-	proc ::tcldrop::dcc::irc::idx2hand {idx} { idxinfo $idx handle }
+bind load - dcc::irc ::tcldrop::dcc::irc::LOAD
+proc ::tcldrop::dcc::irc::LOAD {module} {
+	setdefault open-telnets 1
+	setdefault info-party 0
+	setdefault connect-timeout 27
+	setdefault use-telnet-banner 0
+	setdefault text-path {text}
+	setdefault telnet-banner {banner}
+	setdefault motd {motd}
+	setdefault network {Unknown}
+	setdefault require-p 0
+	setdefault default-flags {p}
+	# Add new listen types (these are used by the [listen] command):
+	addlistentype ircparty connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
+	bind ircparty - PING ::tcldrop::dcc::irc::ircparty_PING
+	bind ircparty - PONG ::tcldrop::dcc::irc::ircparty_PONG
+	bind ircparty - NICK ::tcldrop::dcc::irc::ircparty_NICK
+	bind ircparty - USER ::tcldrop::dcc::irc::ircparty_USER
+	bind ircparty - OPER ::tcldrop::dcc::irc::ircparty_OPER
+	bind ircparty - WHO ::tcldrop::dcc::irc::ircparty_WHO
+	bind ircparty - LOGIN ::tcldrop::dcc::irc::ircparty_LOGIN
+	bind ircparty - LOGON ::tcldrop::dcc::irc::ircparty_LOGON
+	bind ircparty - PASSWORD ::tcldrop::dcc::irc::ircparty_PASSWORD
+	bind ircparty - PASS ::tcldrop::dcc::irc::ircparty_PASS
+	bind ircparty - QUIT ::tcldrop::dcc::irc::ircparty_QUIT
+	bind ircparty - MODE ::tcldrop::dcc::irc::ircparty_MODE
+	bind ircparty - USERHOST ::tcldrop::dcc::irc::ircparty_USERHOST
+	bind ircparty - VERSION ::tcldrop::dcc::irc::ircparty_VERSION
+	bind ircparty - ISON ::tcldrop::dcc::irc::ircparty_ISON
+	bind ircparty - JOIN ::tcldrop::dcc::irc::ircparty_JOIN
+	bind ircparty - PART ::tcldrop::dcc::irc::ircparty_PART
+	bind ircparty - NAMES ::tcldrop::dcc::irc::ircparty_NAMES
+	bind ircparty - TOPIC ::tcldrop::dcc::irc::ircparty_TOPIC
+	bind ircparty - WHOIS ::tcldrop::dcc::irc::ircparty_WHOIS
+	bind ircparty - PRIVMSG ::tcldrop::dcc::irc::ircparty_PRIVMSG
+	# Don't allow the ircparty module to be unloaded:
+	bind unld - ircparty ::tcldrop::dcc::irc::UNLD
+	proc ::tcldrop::dcc::irc::UNLD {module} { return 1 }
 }

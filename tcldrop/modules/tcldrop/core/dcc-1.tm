@@ -119,7 +119,7 @@ proc ::tcldrop::core::dcc::killdcc {idx {reason {}}} {
 #    Returns: nothing
 #    Module: core
 proc ::tcldrop::core::dcc::dccsimul {idx line} {
-	array set chatinfo [getidxinfo $idx]
+	array set chatinfo [idxinfo $idx]
 	# Do the FILT binds:
 	foreach {type flags mask proc} [bindlist filt] {
 		if {$line eq {}} { break }
@@ -148,7 +148,7 @@ proc ::tcldrop::core::dcc::hand2idx {handle} {
 	lindex [listidx [list handle $handle]] 0
 }
 
-proc ::tcldrop::core::dcc::idx2hand {idx} { idxinfo $idx handle }
+proc ::tcldrop::core::dcc::idx2hand {idx} { getidxinfo $idx handle }
 
 # Works just like the Eggdrop dcclist command,
 # it shows the current socket connections.
@@ -201,7 +201,7 @@ proc ::tcldrop::core::dcc::dccdumpfile {idx filename} {
 #    Returns: number of seconds the dcc chat/file system/script user has
 #      been idle
 #    Module: core
-proc ::tcldrop::core::dcc::getdccidle {idx} { expr { [clock seconds] - [idxinfo $idx timestamp] } }
+proc ::tcldrop::core::dcc::getdccidle {idx} { expr { [clock seconds] - [getidxinfo $idx timestamp] } }
 
 
 #  getdccaway <idx>

@@ -53,7 +53,7 @@ proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
 			# FixMe: $althost should be used if we can't connect to $host:
 			set althost [lindex $text 2]
 			set fail [catch { connect $host $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::dcc::telnet::Read -errors ::tcldrop::dcc::telnet::Error -writable ::tcldrop::dcc::chat::Write } idx]
-			if {!$fail} { setidxinfo $idx [list idx $idx handle $hand remote $host hostname $host dccchatip $dccchatip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds]] }
+			if {!$fail} { idxinfo $idx idx $idx handle $hand remote $host hostname $host dccchatip $dccchatip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds] }
 		}
 	}
 	return 1
@@ -84,7 +84,7 @@ proc ::tcldrop::dcc::chat::CHAT {nick uhost handle dest key text} {
 }
 
 # Note: This proc is only used when people do a /ctcp <bot> CHAT
-proc ::tcldrop::dcc::chat::Connect {idx} { setidxinfo $idx [dict create -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::chat::Write -errors ::tcldrop::dcc::telnet::Error module dcc::chat] }
+proc ::tcldrop::dcc::chat::Connect {idx} { idxinfo $idx -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::chat::Write -errors ::tcldrop::dcc::telnet::Error module dcc::chat }
 
 # Note: We share code with the telnetparty module, so this proc isn't used and is only here as a reminder to look at the ::tcldrop::dcc::telnet::Error proc.
 proc ::tcldrop::dcc::chat::Error {idx {error {}}} { ::tcldrop::dcc::telnet::Error $idx $error }
