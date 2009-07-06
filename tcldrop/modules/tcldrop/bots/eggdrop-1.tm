@@ -231,26 +231,14 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	# No longer used (for "oldbotnet"): We send 1029899 instead of $::numversion because we need to make it use the old (original) botnet protocol with us.
 	# For Eggdrop v1.6 we send 1062099 instead of $::numversion to make the other end think it's talking to a Eggdrop v1.6 bot:
 	putidx $idx "*hello!\nversion 1062099 $idxinfo(handlen) tcldrop $::tcldrop(version) <${::network}>"
-	if {$idxinfo(direction) == {in} && [passwdok $idxinfo(handle) -]} {
+	if {$idxinfo(direction) == {in} && [passwdok $idxinfo(handle) - -type null]} {
 		# Tell them the password to use for future connections:
 		putidx $idx "handshake [set randpass [::tcldrop::randstring 15]]"
 		setuser $idxinfo(handle) PASS $randpass -type null
 	}
 	putidx $idx "thisbot ${::botnet-nick}"
 
-	variable Bots
-	if {[info exists Bots([set lowerbot [string tolower $idxinfo(handle)]])]} { array set botinfo $Bots($lowerbot) }
-	if {[info exists botinfo(numversion)]} { set numversion $botinfo(numversion) } else { set numversion $botinfo(numversion) }
-	array set botinfo [list handle $idxinfo(handle) numversion $numversion icon - uplink ${::botnet-nick} peeridx $idx peer $idxinfo(handle) tracepath [list ${::botnet-nick}]]
-	set Bots($lowerbot) [array get botinfo]
-	variable Linked
-	set Linked($lowerbot) [list $botinfo(handle)]
-	variable Peers
-	set Peers($idx) $botinfo(handle)
-	registerbot $botinfo(handle) [list handle $botinfo(handle) id $lowerhandle type eggdrop]
-
-	# Notify the LINK binds:
-	calllink $botinfo(handle) ${::botnet-nick}
+	registerbot $idxinfo(handle) handle $idxinfo(handle) type eggdrop icon - uplink ${::botnet-nick} peeridx $idx peer $idxinfo(handle) tracepath [list ${::botnet-nick}]
 
 	# join !botname user chan# (icon)sock user@host
 	# FixMe: This is the party.tcl modules job of sending the join notice to other bots.
@@ -260,6 +248,9 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	#}
 
 	putidx $idx {el}
+
+	# Notify the LINK binds:
+	calllink $botinfo(handle) ${::botnet-nick}
 }
 
 #|   (45) RBOT (stackable)
@@ -274,7 +265,7 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 # callrbot: You can compare this procs function to the callraw proc in server.tm:
 proc ::tcldrop::bots::eggdrop::callrbot {key text nick} {
 	foreach {type flags mask proc} [bindlist rbot $key] {
-		if {[string equal -nocase $key $mask] && [matchattr $nick $flags]} {
+		if {[string match -nocase $key $mask] && [matchattr $nick $flags]} {
 			if {[catch { $proc $key $text $nick } err]} {
 				putlog "error in script: $proc: $err"
 			} elseif {[string equal $err {1}]} {
@@ -315,30 +306,25 @@ proc ::tcldrop::bots::eggdrop::calleggdrop {handle idx cmd arg} {
 }
 
 proc ::tcldrop::bots::eggdrop::islinked {bot} {
-	variable Bots
-	info exists Bots([string tolower $bot])
+	info exists ::bots([string tolower $bot])
 }
 
 proc ::tcldrop::bots::eggdrop::bots {{mask {*}}} {
-	variable Bots
-	array names Bots [string tolower $mask]
+	array names ::bots [string tolower $mask]
 }
 
 proc ::tcldrop::bots::eggdrop::botlist {{mask {*}}} {
-	variable Bots
+	global bots
 	lappend botlist
-	foreach bot [array names Bots [string tolower $mask]] {
-		array set botinfo $Bots($bot)
-		lappend botlist [list $botinfo(handle) $botinfo(uplink) $botinfo(numversion) $botinfo(icon)]
+	foreach b [array names bots [string tolower $mask]] {
+		lappend botlist [list [dict get $bots($b) handle] [dict get $bots($b) uplink] [dict get $bots($b) numversion] [dict get $bots($b) icon]]
 	}
 	return $botlist
 }
 
 proc ::tcldrop::bots::eggdrop::putbot {bot message} {
-	variable Bots
-	if {[info exists Bots([set bot [string tolower $bot]])]} {
-		array set botinfo $Bots($bot)
-		putidx $botinfo(peeridx) "zapf ${::botnet-nick} $botinfo(handle) $message"
+	if {[info exists ::bots([set bot [string tolower $bot]])]} {
+		putidx [dict get $::bots($bot) peeridx] "zapf ${::botnet-nick} [dict get $::bots($bot) handle] $message"
 		return 1
 	}
 	return 0
@@ -369,6 +355,16 @@ proc ::tcldrop::bots::eggdrop::puteggdrop {mask line} {
 	}
 }
 
+#		if {[info exists Bots($bot)]} {
+#			array set botinfo $Bots($bot)
+#			foreach i [array names Peers] {
+#				if {![string equal $i $botinfo(peeridx)]} {
+#					putlog "Sending2: chan $handle $chan $text"
+#					putidx $i "chan $handle $chan $text"
+#				}
+#			}
+#		}
+
 proc ::tcldrop::bots::eggdrop::link {viabot {bot {}}} {
 	if {$bot == {}} {
 		set bot $viabot
@@ -387,15 +383,13 @@ proc ::tcldrop::bots::eggdrop::link {viabot {bot {}}} {
 }
 
 proc ::tcldrop::bots::eggdrop::unlink {bot} {
-	variable Bots
-	if {[info exists Bots([set lowerbot [string tolower $bot]])]} {
-		array set botinfo $Bots($lowerbot)
+	if {[info exists ::bots([set lowerbot [string tolower $bot]])]} {
 		variable Peers
-		if {[info exists Peers($botinfo(peeridx))]} {
+		if {[info exists Peers([dict get $bots($bot) peeridx])]} {
 			# We're directly connected to $bot.
 			killidx $botinfo(peeridx)
 			calldisc $bot
-			unset Peers($botinfo(peeridx))
+			unset Peers([dict get $bots($bot) peeridx])
 		} else {
 			# We're not directly connected.
 			# FixMe: Make it request the remote bot to unlink $bot.
@@ -405,6 +399,7 @@ proc ::tcldrop::bots::eggdrop::unlink {bot} {
 	return 0
 }
 
+# This is when the remote bot tells us a new password to use for future connections:
 bind eggdrop b handshake ::tcldrop::bots::eggdrop::Handshake -priority 1000
 proc ::tcldrop::bots::eggdrop::Handshake {handle idx cmd arg} {
 	setuser $handle PASS [lindex [split $arg] end] -type null
@@ -414,11 +409,7 @@ bind eggdrop b version ::tcldrop::bots::eggdrop::Version -priority -1000
 proc ::tcldrop::bots::eggdrop::Version {handle idx cmd arg} {
 	if {([string equal $cmd {version}] || [string equal $cmd {v}]) && [string is integer -strict [set handlen [lindex [set sline [split $arg]] 1]]]} {
 		lassign $sline numversion handlen bottype version network
-		setidxinfo $idx [set version [list numversion $numversion handlen $handlen bottype $bottype version $version network $network]]
-		variable Bots
-		if {[info exists Bots([set lowerbot [string tolower $handle]])]} { array set botinfo $Bots($lowerbot) }
-		array set botinfo $version
-		set Bots($lowerbot) [array get botinfo]
+		botinfo $handle numversion $numversion handlen $handlen bottype $bottype version $version network $network
 		return 0
 	} else {
 		# Return 1 if we don't like what their version info has in it..
@@ -441,12 +432,7 @@ proc ::tcldrop::bots::eggdrop::Thisbot {handle idx cmd arg} {
 	} elseif {![string equal $Peers($idx) $handle]} {
 		# It's the right bot, just need to update some variables to get the cAsE right..
 		set Peers($idx) $arg
-		variable Bots
-		if {[info exists Bots([set handle [string tolower $handle]])]} {
-			array set botinfo $Bots($handle)
-			array set botinfo [list handle $arg peer $arg]
-			set Bots($handle) [array get botinfo]
-		}
+		botinfo $handle handle $arg peer $arg
 		# FixMe: Also update the Linked variable.
 		setidxinfo $idx [list handle $arg]
 		return 0
@@ -461,10 +447,8 @@ proc ::tcldrop::bots::eggdrop::Zapf {handle idx cmd arg} {
 		callbot [lindex $larg 0] [lindex $larg 2] [join [lrange $larg 3 end]]
 	} else {
 		# Relay it to $bot
-		variable Bots
-		if {[info exists Bots($bot)]} {
-			array set botinfo $Bots($bot)
-			putidx $botinfo(peeridx) "$cmd $arg"
+		if {[islinked $bot]} {
+			putidx [dict get $::bots($bot) peeridx] "$cmd $arg"
 		}
 	}
 	return 0
@@ -527,12 +511,7 @@ proc ::tcldrop::bots::eggdrop::Chat {handle idx cmd arg} {
 bind eggdrop b update ::tcldrop::bots::eggdrop::Update -priority 1000
 proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
 	lassign [split $arg] bot numversion
-	variable Bots
-	if {[info exists Bots([set bot [string tolower $bot]])]} {
-		array set botinfo $Bots($bot)
-		array set botinfo [list icon [string index $numversion 0] numversion [string range $numversion 1 end]]
-		set Bots($bot) [array get botinfo]
-	}
+	botinfo icon [string index $numversion 0] numversion [string range $numversion 1 end]
 	return 0
 }
 
@@ -548,9 +527,7 @@ proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
 	variable Linked
 	foreach colonpath [array names Linked *:[set colonpath [string tolower $uplink]]] { set tracepath $Linked($colonpath) }
 	set Linked(${colonpath}:[set lowerbot [string tolower $bot]]) [concat $tracepath [list $bot]]
-	variable Bots
-	set Bots($lowerbot) [list handle $bot tracepath $tracepath uplink $uplink numversion $numversion icon $icon peer $handle peeridx $idx]
-	registerbot $lowerbot [list handle $bot id $lowerbot type eggdrop]
+	registerbot $lowerbot [list handle $bot id $lowerbot type eggdrop tracepath $tracepath uplink $uplink numversion $numversion icon $icon peer $handle peeridx $idx]
 	calllink $bot $uplink
 	return 0
 }
@@ -563,8 +540,6 @@ proc ::tcldrop::bots::eggdrop::Unlinked {handle idx cmd arg} {
 	variable Linked
 	array unset Linked *:[set bot [string tolower [lindex [set arg [split $arg]] 0]]]:*
 	array unset Linked *:$bot
-	variable Bots
-	array unset Bots $bot
 	unregisterbot $bot
 	calldisc $bot [join [lrange $arg 1 end]]
 	return 0
@@ -671,8 +646,7 @@ proc ::tcldrop::bots::eggdrop::Share {handle idx cmd arg} {
 bind chat p * ::tcldrop::bots::eggdrop::CHAT
 proc ::tcldrop::bots::eggdrop::CHAT {handle chan text} {
 	variable Peers
-	variable Bots
-	if {![info exists Bots([set bot [string tolower [lindex [split $handle @] end]]])] && ![string match {*@*} $handle] && ![isbotnetnick $bot]} {
+	if {![info exists ::bots([set bot [string tolower [lindex [split $handle @] end]]])] && ![string match {*@*} $handle] && ![isbotnetnick $bot]} {
 		# Locally generated, send it to all our peer bots:
 		set handle $handle@${::botnet-nick}
 		foreach i [array names Peers] {
@@ -681,10 +655,9 @@ proc ::tcldrop::bots::eggdrop::CHAT {handle chan text} {
 		}
 	} else {
 		# Came from a remote bot, send it to all our peers, except the one we got it from:
-		if {[info exists Bots($bot)]} {
-			array set botinfo $Bots($bot)
+		if {[info exists ::bots($bot)]} {
 			foreach i [array names Peers] {
-				if {![string equal $i $botinfo(peeridx)]} {
+				if {![string equal $i [dict get $::bots($bot) peeridx]]} {
 					putlog "Sending2: chan $handle $chan $text"
 					putidx $i "chan $handle $chan $text"
 				}
@@ -695,10 +668,9 @@ proc ::tcldrop::bots::eggdrop::CHAT {handle chan text} {
 }
 
 proc ::tcldrop::bots::eggdrop::LOAD {module} {
-	variable Bots
-	array set Bots {}
 	variable Linked
 	array set Linked {}
+	# FixMe: Peers could instead be a call to [idxlist].
 	variable Peers
 	array set Peers {}
 	# Add a new bot type:

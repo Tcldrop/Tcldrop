@@ -56,43 +56,59 @@ proc ::tcldrop::bots::addbottype {type args} {
 # These commands should provide a way to store and retrieve infos on bots of ALL types:
 # At the very least, all botnet modules should use registerbot and unregister bot.
 # Note: $botid is used so that every bot can be uniquely identified, even if it's connected more than once, or via more than one botnet module.
-# info should be a keyed list, and contain at least "id" and "type" for the bots unique id, and the bots type.
-proc ::tcldrop::bots::registerbot {botid {info {}}} {
-	variable Bots
-	array set botinfo $info
-	set botid [string tolower $botid]
-	if {![info exists botinfo(id)]} { set botinfo(id) $botid }
-	set Bots($botid) [array get botinfo]
+# args should be a keyed list, and contain at least "id" and "type" for the bots unique id, and the bots type.
+proc ::tcldrop::bots::registerbot {botid args} {
+	set ::bots([string tolower $botid]) [dict set args id [string tolower $botid]]
 }
 
 proc ::tcldrop::bots::unregisterbot {botid} {
-	variable Bots
-	array unset Bots [string tolower $botid]
+	array unset ::bots [string tolower $botid]
 }
 
-proc ::tcldrop::bots::botinfo {botid {info {}}} {
-	variable Bots
-	if {[info exists Bots([set botid [string tolower $botid]])]} {
-		if {$info eq {}} {
-			return $Bots($botid)
+proc ::tcldrop::bots::botinfo {botid args} {
+	if {[info exists ::bots([set botid [string tolower $botid]])]} {
+		if {[llength $args]} {
+			# Merge $args into the $::bots($botid) dict:
+			set ::bots($botid) [dict merge $::bots($botid) $args]
 		} else {
-			array set botinfo $Bots($botid)
-			array set botinfo $info
-			set Bots($botid) [array get botinfo]
+			# Return all we know about $botid:
+			return $::bots($botid)
 		}
+	} else {
+		# Just set the info, turning $args into a proper dict while we're at it:
+		set ::bots($botid) [dict create {*}$args]
 	}
 }
 
-proc ::tcldrop::bots::setbotinfo {botid info} {
-	# FixMe: This should set a single piece of info about $botname.
+# Set one piece of info:
+proc ::tcldrop::bots::setbotinfo {botid {info {}} {value {}}} {
+	if {[info exists ::bots([set botid [string tolower $botid]])]} {
+		dict set ::bots($botid) $info $value
+	} else {
+		# Just set the $info
+		# FixMe: Or should this return an error?
+		set ::bots($botid) [dict create $info $value]
+	}
 }
 
+# Return one piece of info:
 proc ::tcldrop::bots::getbotinfo {botid info} {
-	# FixMe:
+	if {[info exists ::bots([set botid [string tolower $botid]])]} { dict get $::bots($botid) $info }
+	# FixMe: Should this error if the botid doesn't exist?
 }
 
+# Delete one piece of info:
 proc ::tcldrop::bots::delbotinfo {botid info} {
-	# FixMe:
+	if {[info exists ::bots($botid)]} {
+		if {[dict exists $::bots($botid) $info]} {
+			dict unset ::bots($botid) $info
+			return 1
+		} else {
+			return 0
+		}
+	} else {
+		return 0
+	}
 }
 
 proc ::tcldrop::bots::callbot {handle cmd arg} {
@@ -165,27 +181,27 @@ proc ::tcldrop::bots::calldisc {bot {reason {}}} {
 # This should find out what botnet module $botnet is using, using getbotinfo, and then pass $text on to that module's putbot command.
 # $bot can refer to the botid OR the bots handle (for compatibility with Eggdrop).
 proc ::tcldrop::bots::putbot {bot text} {
-	variable Bots
-	if {[info exists Bots([set bot [string tolower $bot]])]} {
-		array set botinfo $Bots($bot)
-	} else {
-		foreach b [array names Bots] {
-			array set botinfo $Bots($b)
-			if {[string equal -nocase $botinfo(handle) $bot]} { break }
+	global bots
+	if {![info exists bots([set bot [string tolower $bot]])]} {
+		foreach b [array names bots] {
+			if {[string equal -nocase [dict get $bots($b) handle] $bot]} {
+				set bot $b
+				break
+			}
 		}
 	}
 	# Right now there's 5 ways to handle putbot's.. They're tried in their prefered order, so there shouldn't be any slowdown in supporting all these ways:
 	# FixMe: Consider creating a new bind instead of doing this.  The new bind could be called "putbot".
 	variable BotTypes
-	array set typeinfo $BotTypes($botinfo(type))
+	array set typeinfo $BotTypes([dict get $bots($bot) type])
 	if {[info exists typeinfo(putbot)]} {
-		$typeinfo(putbot) $botinfo(id) $text
+		$typeinfo(putbot) $bot $text
 	} elseif {[info exists typeinfo(namespace)] && [info commands $typeinfo(namespace)::putbot] != {}} {
-		$typeinfo(namespace)::putbot $botinfo(id) $text
+		$typeinfo(namespace)::putbot $bot $text
 	} elseif {[info exists botinfo(putbot)]} {
-		$botinfo(putbot) $botinfo(id) $text
+		$botinfo(putbot) $bot $text
 	} elseif {[info exists botinfo(namespace)] && [info commands $botinfo(namespace)::putbot] != {}} {
-		$botinfo(namespace)::putbot $botinfo(id) $text
+		$botinfo(namespace)::putbot $bot $text
 	} elseif {[info exists botinfo(idx)]} {
 		putidx $botinfo(idx) $text
 	}
@@ -202,10 +218,9 @@ proc ::tcldrop::bots::putallbots {text} {
 			$typeinfo(namespace)::putallbots $text
 		} else {
 			# Fallback to doing a normal putbot for all bots of this type (in case the bot type doesn't support sending to multiple bots at once):
-			variable Bots
-			foreach b [array get Bots] {
-				array set botinfo $Bots($b)
-				if {[string match $botinfo(type) $t]} { putbot $b $text }
+			global bots
+			foreach b [array get bots] {
+				if {[string match [dict get $bots($b) type] $t]} { putbot $b $text }
 			}
 		}
 	}
@@ -213,13 +228,12 @@ proc ::tcldrop::bots::putallbots {text} {
 
 # Note: $bot should refer to the botid when possible, but it falls back to using the bots handle.
 proc ::tcldrop::bots::islinked {bot {type {}}} {
-	variable Bots
-	if {[info exists Bots([string tolower $bot])]} {
+	global bots
+	if {[info exists bots([string tolower $bot])]} {
 		return 1
 	} else {
-		foreach b [array names Bots] {
-			array set botinfo $Bots($b)
-			if {[string equal -nocase $botinfo(handle) $bot]} { return 1 }
+		foreach b [array names bots] {
+			if {[string equal -nocase [dict get $bots($b) handle] $bot]} { return 1 }
 		}
 	}
 	return 0
@@ -227,50 +241,33 @@ proc ::tcldrop::bots::islinked {bot {type {}}} {
 
 # Note: For compatibility with Eggdrop, [bots] returns all the bots handles in a sorted list that removes duplicate handles.
 # If -type <type> is specified, only bots of that type are returned.
+# FixMe: Just supporting -type is too limited.  It should support any key.
 proc ::tcldrop::bots::bots {args} {
-	switch -- [lindex $args 0] {
-		{-type} - {-TYPE} - {-Type} - {} {
-			set bots [set type [variable Bots]]
-			foreach {o v} $args {
-				switch -- $o {
-					{-type} { set type $o }
-				}
-			}
-			if {$type == {}} {
-				foreach i [array names Bots] {
-					array set botinfo $Bots($i)
-					lappend bots $botinfo(handle)
-				}
-			} else {
-				foreach i [array names Bots] {
-					array set botinfo $Bots($i)
-					if {[string equal -nocase $botinfo(type) $type]} { lappend bots $botinfo(handle) }
-				}
-			}
-			lsort -unique $bots
-		}
-		{default} { Bots {*}$args }
-	}
-}
-
-# Works just like [bots], except this returns the botid's instead of the handles.
-proc ::tcldrop::bots::botids {args} {
-	set botids [set type {}]
+	global bots
+	set type {}
 	foreach {o v} $args {
 		switch -- $o {
 			{-type} { set type $o }
 		}
 	}
-	if {$type == {}} {
-		variable Bots
-		array names Bots
-	} else {
-		foreach i [array names Bots] {
-			array set botinfo $Bots($i)
-			if {[string equal -nocase $botinfo(type) $type]} { lappend botids $botinfo(id) }
+	set BotList [list]
+	if {$type eq {}} {
+		foreach b [array names bots] {
+			lappend BotList [dict get $bots($b) handle]
 		}
-		lsort -unique $botids
+	} else {
+		foreach b [array names bots] {
+			if {[string equal -nocase [dict get $bots($b) type] $type]} {
+				lappend BotList [dict get $bots($b) handle]
+			}
+		}
 	}
+	lsort -unique $BotList
+}
+
+# Returns the botid's instead of the handles.
+proc ::tcldrop::bots::botids {args} {
+	array names ::bots
 }
 
 # This will require looking at the userfile [getuser $botname BOTTYPE] to find out what botnet module $botname uses:
@@ -281,7 +278,7 @@ proc ::tcldrop::bots::link {viabot {bothandle {}} {type {}}} {
 		set viabot {}
 	}
 	if {[matchattr $bothandle b]} {
-		if {[set bottype [getuser $bothandle BOTTYPE]] == {}} { set bottype {eggdrop} }
+		if {[catch { getuser $bothandle BOTTYPE } bottype]} { set bottype {eggdrop} }
 		variable BotTypes
 		if {[info exists BotTypes($bottype)]} {
 			array set typeinfo $BotTypes($bottype)
@@ -336,8 +333,7 @@ bind load - bots ::tcldrop::bots::LOAD -priority 0
 proc ::tcldrop::bots::LOAD {module} {
 	variable BotTypes
 	array set BotTypes {}
-	variable Bots
-	array set Bots {}
+	array set ::bots {}
 	bind evnt - loaded ::tcldrop::bots::EVNT_loaded -priority 0
 	bind unld - bots ::tcldrop::bots::UNLD -priority 0
 	proc ::tcldrop::bots::UNLD {module} {
