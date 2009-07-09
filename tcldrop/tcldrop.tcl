@@ -150,7 +150,7 @@ namespace eval ::tcldrop {
 										if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
 										# Also update the console flags to match:
 										if {![info exists tcldrop(console)] || ![string match {*d*} $tcldrop(console)]} {
-											append tcldrop(console) {1d}
+											append tcldrop(console) {d}
 										}
 									}
 									{default} {
@@ -162,12 +162,7 @@ namespace eval ::tcldrop {
 						}
 						{+*} {
 							# If an arg starts with + we treat it as console flags:
-							set tcldrop(console) $a
-							# See if +d (debug) mode was set in the console flags, and update the tcldrop(debug) and ::env(DEBUG) to match:
-							if {[string match {*d*} $a]} {
-								set tcldrop(debug) 1
-								if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
-							}
+							append tcldrop(console) [string range $a 1 end]
 						}
 						{default} {
 							# Whatever's left is treated as config filenames:

@@ -1446,6 +1446,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	if {![info exists StartTime] || $type != {start}} { set StartTime [clock clicks -milliseconds] }
 	if {[info exists ::restart]} { return $::restart }
 	set ::restart $type
+	# log-time must exist before any putlog's can happen:
 	setdefault log-time {2}
 	if {$type eq {restart}} { putlog {Restarting ...} }
 	setdefault uptime [clock seconds]
@@ -1807,23 +1808,17 @@ proc ::tcldrop::core::start {} {
 		} else {
 			set console {oe}
 		}
-		if {![string match {*d*} $tcldrop(console)] && (([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG)))} {
+		if {([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG))} {
 			# Add debug flag to the console if set in tcldrop(debug) or env(DEBUG):
-			append console {d}
-		}
-		# log-time must exist before any putlog's can happen:
-		setdefault log-time {2}
-		# Setup a log bind that sends logs to the "screen":
-		bind log $console * ::tcldrop::PutLogLev -priority 0
-		if {[string match {*d*} $console]} {
+			if {![string match {*d*} $console]} { append console {d} }
 			# Setting an error trace, to catch hard to see errors:
 			proc ::tcldrop::core::TraceError {var var2 op} { variable LastError
-				# Kludge to ignore package require errors (they'll be seen/noticed anyway if important), and prevent error floods by only showing 1 per second:
 				switch -glob -- $::errorInfo {
-					{couldn't load file *} - {can't find package *} {
+					{can't find package *} - {couldn't load file *} {
 						# These are "package require" errors most likely.
 					}
 					{default} {
+						# Prevent error floods by only showing 1 per second:
 						if {![info exists LastError] || [clock seconds] > $LastError} {
 							set LastError [clock seconds]
 							# Try to report the error to the proper place, with lots of fallbacks:
@@ -1836,9 +1831,9 @@ proc ::tcldrop::core::start {} {
 			}
 			variable LastError 0
 			trace add variable ::errorInfo write ::tcldrop::core::TraceError
-			putdebuglog {Running in debug mode.}
 		}
-		putlog "Console flags are: $console"
+		# Setup a log bind that sends logs to the "screen":
+		bind log $console * ::tcldrop::PutLogLev -priority 0
 		# Tell restart that it's the "start" (first time to start).
 		restart start
 		# init events are only called after a "start" is complete, and after we've hit the event-loop:
