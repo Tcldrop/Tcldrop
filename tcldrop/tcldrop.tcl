@@ -70,7 +70,7 @@ namespace eval ::tcldrop {
 	package provide $name $version
 	# tcldrop stores info's that each tcldrop needs while starting up:
 	variable tcldrop
-	array set tcldrop [list name $name config {} config-eval {} background-mode 1 channel-stats 0 simulate-dcc 0 userfile-create 0 host_env {unknown} dirname [file dirname $script] version $version numversion $numversion depends $depends author $author description $description rcsid $rcsid script $script]
+	array set tcldrop [list name $name config {} config-eval {} background-mode 1 channel-stats 0 simulate-dcc 0 userfile-create 0 console {oe} host_env {unknown} dirname [file dirname $script] version $version numversion $numversion depends $depends author $author description $description rcsid $rcsid script $script]
 	# Tcldrop stores info about each Tcldrop that's running:
 	variable Tcldrop
 	array set Tcldrop {}
@@ -117,21 +117,22 @@ namespace eval ::tcldrop {
 				variable configs [list]
 				# FixMe: Need proper command-line option handling.
 				foreach a $name {
-					if {[string match {-*} $a]} {
-						foreach a [split $a {}] {
-							switch -- $a {
-								{-} { }
-								{n} { set tcldrop(background-mode) 0 }
-								{c} { set tcldrop(channel-stats) 1 }
-								{t} { set tcldrop(simulate-dcc) 1 }
-								{m} { set tcldrop(userfile-create) 1 }
-								{v} {
-									variable Exit 0
-									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"
-								}
-								{h} - {?} {
-									variable Exit 0
-									return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev
+					switch -glob -- $a {
+						{-*} {
+							foreach a [split $a {}] {
+								switch -- $a {
+									{-} { }
+									{n} { set tcldrop(background-mode) 0 }
+									{c} { set tcldrop(channel-stats) 1 }
+									{t} { set tcldrop(simulate-dcc) 1 }
+									{m} { set tcldrop(userfile-create) 1 }
+									{v} {
+										variable Exit 0
+										return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"
+									}
+									{h} - {?} {
+										variable Exit 0
+										return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev
 
 			Command line arguments:
 			  -h   help
@@ -140,20 +141,38 @@ namespace eval ::tcldrop {
 			  -c   (with -n) display channel stats every 10 seconds
 			  -t   (with -n) use terminal to simulate dcc-chat
 			  -m   userfile creation mode
+			  -d   Debug mode.
 			  optional config filename (default 'tcldrop.conf')\n"
-								}
-								{d} {
-									set tcldrop(debug) 1
-									if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
-								}
-								{default} {
-									variable Exit 1
-									return "Unknown option: -$a"
+									}
+									{d} {
+										# Debug mode.
+										set tcldrop(debug) 1
+										if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
+										# Also update the console flags to match:
+										if {![info exists tcldrop(console)] || ![string match {*d*} $tcldrop(console)]} {
+											append tcldrop(console) {1d}
+										}
+									}
+									{default} {
+										variable Exit 1
+										return "Unknown option: -$a"
+									}
 								}
 							}
 						}
-					} else {
-						lappend configs $a
+						{+*} {
+							# If an arg starts with + we treat it as console flags:
+							set tcldrop(console) $a
+							# See if +d (debug) mode was set in the console flags, and update the tcldrop(debug) and ::env(DEBUG) to match:
+							if {[string match {*d*} $a]} {
+								set tcldrop(debug) 1
+								if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
+							}
+						}
+						{default} {
+							# Whatever's left is treated as config filenames:
+							lappend configs $a
+						}
 					}
 				}
 				# If no config was specified, use the default (tcldrop.conf):

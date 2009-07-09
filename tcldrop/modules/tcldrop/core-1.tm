@@ -349,7 +349,7 @@ proc ::tcldrop::core::addlangsection {section {language {}}} {
 	set retval 0
 	# Loading Eggdrop's .lang's first, and then ours, so that ours can override Eggdrops if needed.
 	foreach langfile [list [file join ${lang-path} eggdrop "${section}.${language}.lang"] [file join ${lang-path} "${section}.${language}.lang"]] {
-		if {![catch { open $langfile r } fid]} {
+		if {[file exists $langfile] && ![catch { open $langfile r } fid]} {
 			set continued 0
 			while {[gets $fid line] >= 0} {
 				if {[string equal [string index $line 0] {#}]} {
@@ -721,14 +721,12 @@ proc ::tcldrop::core::getbinds {{typemask {*}} {mask {*}}} {
 }
 
 # Counts how many times a bind has been triggered:
-proc ::tcldrop::core::countbind {type mask proc {priority {*}}} {
+proc ::tcldrop::core::countbind {type mask proc {priority {*}}} { after idle [list ::tcldrop::core::CountBind $type $mask $proc $priority] }
+proc ::tcldrop::core::CountBind {type mask proc {priority {*}}} {
 	global binds lastbind
+	# FixMe: When does ::lastbind need to actually be updated?
 	set lastbind $mask
-	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] {
-		dict incr binds($name) count
-		return 1
-	}
-	return 0
+	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] { dict incr binds($name) count }
 }
 
 # Provides a unique timerID:
@@ -1800,33 +1798,47 @@ proc ::tcldrop::core::start {} {
 			if {{::tcldrop} ni [namespace path]} { namespace path [concat [namespace path] {::tcldrop}] }
 		}
 		# The default console flags:
-		if {[info exists ::console]} { set console $::console } else { set console {oe} }
-		if {([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG))} {
-			# Add debug flag to the console if requested:
-			if {![string match {*d*} $console]} { append console {d} }
-			# Setup a log bind that sends logs to the "screen":
-			bind log $console * ::tcldrop::PutLogLev -priority 0
+		if {[info exists tcldrop(console)]} {
+			# tcldrop(console) may have been set by our parent interp (in ../../tcldrop.tcl)
+			set console $tcldrop(console)
+		} elseif {[info exists ::console]} {
+			# ::console is dual-purpose.. It's the default console flags when adding a user, and it's being used here as the default flags to show to stdout.
+			set console $::console
+		} else {
+			set console {oe}
+		}
+		if {![string match {*d*} $tcldrop(console)] && (([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG)))} {
+			# Add debug flag to the console if set in tcldrop(debug) or env(DEBUG):
+			append console {d}
+		}
+		# log-time must exist before any putlog's can happen:
+		setdefault log-time {2}
+		# Setup a log bind that sends logs to the "screen":
+		bind log $console * ::tcldrop::PutLogLev -priority 0
+		if {[string match {*d*} $console]} {
 			# Setting an error trace, to catch hard to see errors:
 			proc ::tcldrop::core::TraceError {var var2 op} { variable LastError
-				# Prevent error floods by only showing 1 per second:
-				if {![info exists LastError] || [clock seconds] > $LastError} {
-					set LastError [clock seconds]
-					# Try to report the error to the proper place, with lots of fallbacks:
-					if {[catch { putloglev d * [set errorinfo "(TraceError):\n$::errorInfo"] }] && [catch { PutLogLev d - $errorinfo }] && [catch { puts stderr $errorinfo }] && [catch { puts stdout $errorinfo }] && [catch { die $errorinfo }] && [catch { exit 1 }]} {
-						catch { ::tcldrop::core::Exit 1 }
+				# Kludge to ignore package require errors (they'll be seen/noticed anyway if important), and prevent error floods by only showing 1 per second:
+				switch -glob -- $::errorInfo {
+					{couldn't load file *} - {can't find package *} {
+						# These are "package require" errors most likely.
+					}
+					{default} {
+						if {![info exists LastError] || [clock seconds] > $LastError} {
+							set LastError [clock seconds]
+							# Try to report the error to the proper place, with lots of fallbacks:
+							if {[catch { putloglev d * [set errorinfo "(TraceError):\n$::errorInfo"] }] && [catch { PutLogLev d - $errorinfo }] && [catch { puts stderr $errorinfo }] && [catch { puts stdout $errorinfo }] && [catch { die $errorinfo }] && [catch { exit 1 }]} {
+								catch { ::tcldrop::core::Exit 1 }
+							}
+						}
 					}
 				}
 			}
 			variable LastError 0
 			trace add variable ::errorInfo write ::tcldrop::core::TraceError
-			# This happens to be our first putlog, so make sure log-time exists..
-			setdefault log-time {2}
-			# Give notice that we're running in debug mode..
 			putdebuglog {Running in debug mode.}
-		} else {
-			# Setup a log bind that sends logs to the "screen":
-			bind log $console * ::tcldrop::PutLogLev -priority 0
 		}
+		putlog "Console flags are: $console"
 		# Tell restart that it's the "start" (first time to start).
 		restart start
 		# init events are only called after a "start" is complete, and after we've hit the event-loop:
