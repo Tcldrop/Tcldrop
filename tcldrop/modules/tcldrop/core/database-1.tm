@@ -87,7 +87,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This unsets a key (and all it's sub-keys).
 			# Usage: database dbName unset key ?key ...?
 			# Returns: Whatever dict returns.
-			if {![set error [catch { dict $command ::database($database) {*}$arguments] } return]]} {
+			if {![set error [catch { dict $command ::database($database) {*}$arguments } return]]} {
 				calldatabase $database $command $arguments $options
 			}
 			return -code $error $return

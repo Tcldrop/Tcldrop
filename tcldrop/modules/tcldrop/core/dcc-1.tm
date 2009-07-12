@@ -479,6 +479,12 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 			# FixMe: Make it show the laston for the channel:
 			putdcc $idx "[format {   %-11.11s %-28.28s %-12.12s} $c [getuser $text FLAGS $c] {}]"
 		}
+		if {[matchattr $text b]} {
+			lassign [getuser $text botaddr] address botport userport
+			putdcc $idx "  ADDRESS: $address"
+			putdcc $idx "     users: $userport, bots: $botport"
+			unset -nocomplain address botport userport
+		}
 		# Wrap hosts
 		# FixMe: Turn this into a proc if something else uses a similar formatting.
 		set hosts [getuser $text HOSTS]
@@ -496,15 +502,16 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 		putdcc $idx "  HOSTS: [join [lindex $hostsList 0] {, }]"
 		foreach block [lrange $hostsList 1 end] { putdcc $idx "         [join $block {, }]" }
 		unset -nocomplain hosts block pos current hostsList
-		putdcc $idx "  Saved Console Settings:"
-		array set idxinfo [getuser $text CONSOLE]
-		# Channel:
-		putdcc $idx "    [lang 0xb042] $idxinfo(console-channel)"
-		# Console flags:  Strip flags:  Echo:
-		putdcc $idx "    [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
-		# Page setting:  Console channel:
-		putdcc $idx "    [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
-		#~ putdcc $idx "    [getuser $text CONSOLE]"
+		if {[set console [getuser $text CONSOLE]] != {}} {
+			array set idxinfo $console
+			putdcc $idx "  Saved Console Settings:"
+			# Channel:
+			putdcc $idx "    [lang 0xb042] $idxinfo(console-channel)"
+			# Console flags:  Strip flags:  Echo:
+			putdcc $idx "    [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
+			# Page setting:  Console channel:
+			putdcc $idx "    [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
+		}
 		if {[set comment [getuser $text COMMENT]] != {}} { putdcc $idx "  COMMENT: $comment" }
 	} else {
 		putdcc $idx {Can't find anyone matching that.}
