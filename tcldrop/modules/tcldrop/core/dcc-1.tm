@@ -481,8 +481,8 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 		}
 		if {[matchattr $text b]} {
 			lassign [getuser $text botaddr] address botport userport
-			putdcc $idx "  ADDRESS: $address"
-			putdcc $idx "     users: $userport, bots: $botport"
+			putdcc $idx "  ADDRESS: $address"
+			putdcc $idx "     users: $userport, bots: $botport"
 			unset -nocomplain address botport userport
 		}
 		# Wrap hosts
