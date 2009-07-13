@@ -38,15 +38,15 @@ namespace eval ::tcldrop::core::users {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all userfile-related Tcl commands.}
 	variable rcsid {$Id$}
-	variable commands [list adduser countusers validuser finduser matchattr matchchanattr userlist passwdok getuser setuser getinfo getchaninfo getting-users chhandle chattr botattr chflags addbot deluser delhost addchanrec delchanrec haschanrec save backup reload chpass setlaston addhost]
-	variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser +bot addbot -host delhost +host addhost]
-	namespace ensemble create -command ::users -map $aliases -subcommands $commands
-	namespace ensemble create -command ::user -map $aliases -subcommands $commands
-	namespace ensemble create -map $aliases -subcommands $commands
-	namespace ensemble create -command [namespace parent]::user -map $aliases -subcommands $commands
-	namespace ensemble create -command ::tcldrop::users -map $aliases -subcommands $commands
-	namespace ensemble create -command ::tcldrop::user -map $aliases -subcommands $commands
-	namespace ensemble create -command user -map $aliases -subcommands $commands
+	variable commands [list adduser countusers validuser finduser matchattr matchchanattr userlist passwdok getuser setuser getinfo getchaninfo getting-users chhandle chattr botattr chflags deluser delhost addchanrec delchanrec haschanrec save backup reload chpass setlaston addhost]
+	#variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser -host delhost +host addhost]
+	#namespace ensemble create -command ::users -map $aliases -subcommands $commands
+	#namespace ensemble create -command ::user -map $aliases -subcommands $commands
+	#namespace ensemble create -map $aliases -subcommands $commands
+	#namespace ensemble create -command [namespace parent]::user -map $aliases -subcommands $commands
+	#namespace ensemble create -command ::tcldrop::users -map $aliases -subcommands $commands
+	#namespace ensemble create -command ::tcldrop::user -map $aliases -subcommands $commands
+	#namespace ensemble create -command user -map $aliases -subcommands $commands
 	namespace export {*}$commands
 }
 
@@ -286,8 +286,13 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			}
 		}
 		{} {
-			# Delete the $lowerhandle account:
-			database users unset $lowerhandle
+			if {[database users exists $lowerhandle]} {
+				# Delete the $lowerhandle account:
+				database users unset $lowerhandle
+				return 1
+			} else {
+				return 0
+			}
 		}
 		{default} {
 			if {$setting eq {}} {
@@ -373,23 +378,7 @@ proc ::tcldrop::core::users::adduser {handle {hostmask {}}} {
 	}
 }
 
-# Adds a bot to the user database, with the optional address and hostmask:
-# Returns 1 for success, 0 for failure.
-proc ::tcldrop::core::users::addbot {handle {address {}} {hostmask {}} args} {
-	if {$handle ne {} && ![validuser $handle]} {
-		setuser $handle
-		setuser $handle hosts $hostmask
-		setuser $handle flags {b}
-		setuser $handle console {}
-		setuser $handle botaddr [list [lindex [split $address :] 0] [lindex [split $address :/] 1] [lindex [split $address /] end]]
-		setlaston $handle 0 {never}
-		return 1
-	} else {
-		return 0
-	}
-}
-
-# Deletes a user (or bot) from the user database:
+# Deletes a user from the user database:
 # Returns 1 for success, 0 for failure.
 proc ::tcldrop::core::users::deluser {handle} {
 	# Renaming handle to {} tells setuser to remove the account:
