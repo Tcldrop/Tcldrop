@@ -460,7 +460,7 @@ namespace eval pubsafetcl {
 			# by Pixelz:
 			proc fudd {args} { set subs [list {[rl]} w {[RL]} W qu qw Qu Qw {th\y} f {Th\y} F th d Th D {n[.]} {n, uh-hah-hah-hah.}]; foreach word $args { foreach {exp subSpec} $subs { set word [regsub -all -- $exp $word $subSpec] }; lappend retval $word }; return [join $retval] }
 			proc pig args { foreach w $args { if {[string match -nocase {[aeiou]*} $w]} { lappend o ${w}ay } elseif {[regexp -nocase -- {([^aeiou]+[aeiou]*)([aeiou]{1}.*)} $w - 1 2]} { lappend o ${2}${1}ay } }; puts unknown [join $o] }
-			proc chef {args} { set subs [list {a([nu])} {u\1} {A([nu])} {U\1} {a\Y} e {A\Y} E {en\y} ee {\Yew} oo {\Ye\y} e-a {\ye} i {\yE} I {\Yf} ff {\Yir} ur {(\w+?)i(\w+?)$} {\1ee\2} {\yow} oo {\yo} oo {\yO} Oo {^the$} zee {^The$} Zee {th\y} t {\Ytion} shun {\Yu} {oo} {\YU} {Oo} v f V F w w W W {([a-z])[.]} {\1. Bork Bork Bork!}]
+			proc chef {args} { set subs [list {a([nu])} {u\1} {A([nu])} {U\1} {a\Y} e {A\Y} E {en\y} ee {\Yew} oo {\Ye\y} e-a {\ye} i {\yE} I {\Yf} ff {\Yir} ur {(\w+?)i(\w+?)$} {\1ee\2} {\Yow} oo {\yo} oo {\yO} Oo {^the$} zee {^The$} Zee {th\y} t {\Ytion} shun {\Yu} {oo} {\YU} {Oo} v f V F w w W W {([a-z])[.]} {\1. Bork Bork Bork!}]
 				foreach word $args { foreach {exp subSpec} $subs { set word [regsub -all -- $exp $word $subSpec] } ; lappend retval $word } ; puts unknown [join $retval]
 			}
 
@@ -653,7 +653,7 @@ namespace eval pubsafetcl {
 		interp alias $interp info {} [namespace current]::Info $interp
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
-		catch { interp hide $interp file }
+		if {[lsearch -exact [interp hidden $interp] file] == -1} { catch { interp hide $interp file } }
 		proc File {interp option name args} {
 			switch -glob -- [string tolower "$option"] {
 				{ch*} { set option channels }
@@ -908,7 +908,7 @@ namespace eval pubsafetcl {
 		interp alias $interp array {} [namespace current]::Array $interp
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
-		catch { namespace delete [namespace current]::$interp }
+		if {[namespace exists [namespace current]::$interp]} { catch { namespace delete [namespace current]::$interp } }
 		namespace eval [namespace current]::$interp {
 			variable minclicks [clock clicks]
 			variable Count 0
@@ -975,7 +975,7 @@ namespace eval pubsafetcl {
 					# FixMe: Increase the recursionlimit as necessary:
 					catch { pubsafetcl recursionlimit 7 }
 					# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
-					catch { pubsafetcl limit time -granularity 1 -milliseconds 2499 -seconds [clock seconds] }
+					catch { pubsafetcl limit time -granularity 1 -milliseconds 1000 -seconds [clock seconds] }
 					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval [join $args] } out]
 					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
 					variable Cancel
