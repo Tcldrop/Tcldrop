@@ -1,6 +1,6 @@
 # pubsafetcl.tcl --
 #
-# Copyright (C) 2004,2005,2006,2007,2008 by Philip Moore <FireEgl@Tcldrop.US>
+# Copyright (C) 2004,2005,2006,2007,2008,2009 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
 # RCS: @(#) $Id$
@@ -348,7 +348,7 @@ namespace eval pubsafetcl {
 				format "\\u%04.4X" $t
 			}
 			# This is escapes "special" characters, especially ones special to mysql:
-			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text }
+			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text }; #" <- fix broken syntax highlighting
 			proc unhtml {text} { regsub -all -- {(<.+?>)} $text {} }
 			proc unhtml2 {text} { regsub -all -- {<([^<])*>} $text {} }
 			proc unixtime {} { clock seconds }
@@ -785,6 +785,8 @@ namespace eval pubsafetcl {
 		proc Rename {interp oldName newName} {
 			if {[lsearch -exact [set ${interp}::InitialCommands] [string trimleft $oldName :]] != -1} {
 				return -code error "Attempt to rename command DENIED!  =P"
+			} elseif {[set size [string length $newName]] > 400} {
+				return -code error "You can't have a proc name that long!  (Needed: $size Allowed: 400)"
 			} else {
 				interp invokehidden $interp rename $oldName $newName
 			}
@@ -805,6 +807,8 @@ namespace eval pubsafetcl {
 		proc Proc {interp name arguments body} {
 			if {[lsearch -exact [set ${interp}::InitialCommands] [string trimleft $name :]] != -1} {
 				error "Attempt to (re)define command DENIED!  =P"
+			} elseif {[set size [string length $name]] > 400} {
+				return -code error "You can't have a proc name that long!  (Needed: $size Allowed: 400)"
 			} else {
 				interp invokehidden $interp proc $name $arguments "timeout ; $body"
 			}
@@ -872,6 +876,36 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp time {} [namespace current]::Time $interp
+		
+		interp hide $interp set
+		proc Set {interp varName {newValue {}}} {
+			if {[set size [string length $varName]] > 100} {
+				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
+			} elseif {[set size [string length $newValue]] > 2048} {
+				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
+			} else {
+				if {[llength [info level 0]] <= 3} {
+					interp invokehidden $interp set $varName
+				} else {
+					interp invokehidden $interp set $varName $newValue
+				}
+			}
+		}
+		interp alias $interp set {} [namespace current]::Set $interp
+		
+		interp hide $interp array
+		proc Array {interp option arrayName args} {
+			if {[string match -nocase {se*} $option]} {
+				if {[set size [string length $arrayName]] > 100} {
+					return -code error "You can't have an array name that long!  (Needed: $size Allowed: 100)"
+				} elseif {[set size [string length [join $args]]] > 2048} {
+					# FixMe: check each key & value pair on their own?
+					return -code error "You can't set an array that large!  (Needed: $size Allowed: 2048)"
+				}
+			}
+			eval [linsert $args 0 interp invokehidden $interp array $option $arrayName]
+		}
+		interp alias $interp array {} [namespace current]::Array $interp
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
 		catch { namespace delete [namespace current]::$interp }
