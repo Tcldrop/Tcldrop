@@ -41,7 +41,7 @@ namespace eval ::tcldrop::core::dcc {
 	variable author {Tcldrop-Dev}
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}
-	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle getdccaway setdccaway getchan setchan calldcc callchon callchof dccdumpfile dccsimul]
+	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle getdccaway setdccaway getchan setchan calldcc callfilt callchon callchof dccdumpfile dccsimul]
 	# putdccall getdccaway dccbroadcast putdccbut
 	namespace export {*}$commands
 }
@@ -119,27 +119,37 @@ proc ::tcldrop::core::dcc::killdcc {idx {reason {}}} {
 #    Returns: nothing
 #    Module: core
 proc ::tcldrop::core::dcc::dccsimul {idx line} {
-	array set chatinfo [idxinfo $idx]
-	# Do the FILT binds:
-	foreach {type flags mask proc} [bindlist filt] {
-		if {$line eq {}} { break }
-		if {[string match -nocase $mask $line] && [matchattr $chatinfo(handle) $flags]} {
-			countbind $type $mask $proc
-			if {[catch { set line [$proc $idx $line] } err]} {
-				putlog "Error in script: $proc: $err"
-				puterrlog "$::errorInfo"
+	if {[set line [callfilt $idx $line]] ne {}} {
+		if {[string index $line 0] eq {.}} {
+			# Do the DCC binds:
+			calldcc [getidxinfo $idx handle] $idx $line
+		} else {
+			# Talk on the partyline:
+			# FixMe: We need to check if chat is off (.chat off) (That's chat channel -1) rather than blindly sending it to the partyline:
+			callparty chat ${idx}:[getidxinfo $idx handle]@${::botnet-nick} line $line
+		}
+		# Update their laston info:
+		# FixMe: Should this be done here? (Probably not, because a killdcc/killidx could happen in one of the binds triggered above) Or at all? How often should laston be updated? Only when they join the dcc? Only when they join the partyline? And/Or when they leave the dcc/partyline?
+		#setlaston $handle [clock seconds] [getidxinfo $idx traffictype]
+	}
+}
+
+# Call FILT binds (Taken from Eggdrop):
+proc ::tcldrop::core::dcc::callfilt {idx line} {
+	# Do the FILT binds, if $line actually contains something::
+	if {[string trim $line] ne {}} {
+		set handle [getidxinfo $idx handle]
+		foreach {type flags mask proc} [bindlist filt] {
+			if {[string match -nocase $mask $line] && [matchattr $handle $flags]} {
+				countbind $type $mask $proc
+				if {[catch { set line [$proc $idx $line] } err]} {
+					putlog "Error in script: $proc: $err"
+					puterrlog "$::errorInfo"
+				}
 			}
 		}
+		return $line
 	}
-	if {[string index $line 0] eq {.}} {
-		# Do the DCC binds:
-		calldcc $chatinfo(handle) $idx $line
-	} elseif {[string trim $line] != {}} {
-		# Talk on the partyline:
-		callparty chat $chatinfo(idx):$chatinfo(handle)@${::botnet-nick} line $line
-	}
-	# Update their laston info:
-	setlaston $chatinfo(handle) [clock seconds] $chatinfo(traffictype)
 }
 
 # Returns the idx that $handle is on:
