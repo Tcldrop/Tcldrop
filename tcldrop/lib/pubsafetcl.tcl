@@ -459,7 +459,7 @@ namespace eval pubsafetcl {
 
 			# by Pixelz:
 			proc fudd {args} { set subs [list {[rl]} w {[RL]} W qu qw Qu Qw {th\y} f {Th\y} F th d Th D {n[.]} {n, uh-hah-hah-hah.}]; foreach word $args { foreach {exp subSpec} $subs { set word [regsub -all -- $exp $word $subSpec] }; lappend retval $word }; return [join $retval] }
-			proc pig args { foreach w $args { if {[string match -nocase {[aeiou]*} $w]} { lappend o ${w}ay } elseif {[regexp -nocase -- {([^aeiou]+[aeiou]*)([aeiou]{1}.*)} $w - 1 2]} { lappend o ${2}${1}ay } }; puts unknown [join $o] }
+			proc pig args { foreach w $args { if {[string match -nocase {[aeiou]*} $w]} { lappend o ${w}way } elseif {[regexp -nocase -- {((?:qu|y)*[^aeiouy]*)(.*)} $w - 1 2]} { lappend o ${2}${1}ay } else { lappend o $w } } ; puts unknown [join $o] }
 			proc chef {args} { set subs [list {a([nu])} {u\1} {A([nu])} {U\1} {a\Y} e {A\Y} E {en\y} ee {\Yew} oo {\Ye\y} e-a {\ye} i {\yE} I {\Yf} ff {\Yir} ur {(\w+?)i(\w+?)$} {\1ee\2} {\Yow} oo {\yo} oo {\yO} Oo {^the$} zee {^The$} Zee {th\y} t {\Ytion} shun {\Yu} {oo} {\YU} {Oo} v f V F w w W W {([a-z])[.]} {\1. Bork Bork Bork!}]
 				foreach word $args { foreach {exp subSpec} $subs { set word [regsub -all -- $exp $word $subSpec] } ; lappend retval $word } ; puts unknown [join $retval]
 			}
