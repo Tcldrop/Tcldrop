@@ -33,6 +33,7 @@ namespace eval pubsafetcl {
 			# Prefer to use safe::interpDelete but fall back to interp delete if safe::interpDelete happens to be broken:
 			if {[catch { safe::interpDelete $interp }]} { catch { interp delete $interp } }
 		}
+		variable LastCmdCount 0
 		# This is a hack to make it search sub directories.. (Cuz doing -nestedLoadOk doesn't work..)
 		set subpaths $::auto_path
 		if {[set p [lsearch -exact $subpaths {/usr/lib}]] != -1} { set subpaths [lreplace $subpaths $p $p] }
@@ -50,7 +51,7 @@ namespace eval pubsafetcl {
 		foreach c {after vwait trace} { catch { $interp hide $c } }
 		$interp eval {
 			# Make some dummy variables:
-			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0]
+			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0 pubsafetcl-rcsid {$Id}]
 			array set env [list HOME {.} NAME $tcl_platform(user) LOGNAME $tcl_platform(user) USER $tcl_platform(user) USERNAME $tcl_platform(user) TMP {.} PATH {.} HOSTNAME [info hostname] GROUP {nogroup} SHELL {tclsh}]
 			set uptime [set server-online [clock seconds]]
 			set botname "SafeTcl!$tcl_platform(user)@$env(HOSTNAME)"
@@ -61,6 +62,7 @@ namespace eval pubsafetcl {
 			set numversion {1062003}
 			set lastbind {tcl}
 			set config {eggdrop.conf}
+			set rcsid {$Id$}
 			# Make some fake commands that don't really do anything:
 			if {[info commands load] == {}} { proc load {fileName {packageName {}} {interp {}}} { return -code error "couldn't load file \"$fileName\": [pwd]$fileName: cannot open shared object file: No such file or directory" } }
 			if {[info commands source] == {}} { proc source {fileName} { return -code error {source is disabled.} } }
@@ -876,7 +878,7 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp time {} [namespace current]::Time $interp
-		
+
 		interp hide $interp set
 		proc Set {interp varName {newValue {}}} {
 			if {[set size [string length $varName]] > 100} {
@@ -892,7 +894,7 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp set {} [namespace current]::Set $interp
-		
+
 		interp hide $interp array
 		proc Array {interp option arrayName args} {
 			if {[string match -nocase {se*} $option]} {
@@ -976,6 +978,10 @@ namespace eval pubsafetcl {
 					catch { pubsafetcl recursionlimit 7 }
 					# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
 					catch { pubsafetcl limit time -granularity 1 -milliseconds 1000 -seconds [clock seconds] }
+					pubsafetcl limit commands -value {}
+					# 250 here is the number of commands we'll allow at a time:
+					variable CmdCount [expr { [pubsafetcl eval {info cmdcount}] + 250 }]
+					catch { pubsafetcl limit commands -value $CmdCount }
 					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval [join $args] } out]
 					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
 					variable Cancel
