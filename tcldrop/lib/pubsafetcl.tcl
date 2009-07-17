@@ -51,7 +51,7 @@ namespace eval pubsafetcl {
 		foreach c {after vwait trace} { catch { $interp hide $c } }
 		$interp eval {
 			# Make some dummy variables:
-			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0 pubsafetcl-rcsid {$Id}]
+			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0 pubsafetcl-rcsid {$Id$}]
 			array set env [list HOME {.} NAME $tcl_platform(user) LOGNAME $tcl_platform(user) USER $tcl_platform(user) USERNAME $tcl_platform(user) TMP {.} PATH {.} HOSTNAME [info hostname] GROUP {nogroup} SHELL {tclsh}]
 			set uptime [set server-online [clock seconds]]
 			set botname "SafeTcl!$tcl_platform(user)@$env(HOSTNAME)"
@@ -811,6 +811,10 @@ namespace eval pubsafetcl {
 				error "Attempt to (re)define command DENIED!  =P"
 			} elseif {[set size [string length $name]] > 400} {
 				return -code error "You can't have a proc name that long!  (Needed: $size Allowed: 400)"
+			} elseif {[set size [string length [join $arguments]]] > 400} {
+				return -code error "You can't have that many arguments!  (Needed: $size Allowed: 400)"
+			} elseif {[set size [string length $body]] > 2048} {
+				return -code error "You can't have a body that large!  (Needed: $size Allowed: 2048)"
 			} else {
 				interp invokehidden $interp proc $name $arguments "timeout ; $body"
 			}
@@ -909,6 +913,64 @@ namespace eval pubsafetcl {
 		}
 		interp alias $interp array {} [namespace current]::Array $interp
 
+		interp hide $interp append
+		proc Append {interp varName args} {
+			variable $varName
+			if {[info exists $varName]} { set oldLen [string length $varName] } else { set oldLen 0 }
+			if {[set size [string length $varName]] > 100} {
+				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
+			} elseif {[set size [expr {[string length [join $args]]+$oldLen}]] > 2048} {
+				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
+			} else {
+				eval [linsert $args 0 interp invokehidden $interp append $varName]
+			}
+		}
+		interp alias $interp append {} [namespace current]::Append $interp
+		
+		interp hide $interp lappend
+		proc Lappend {interp varName args} {
+			if {[info exists $varName]} { set oldLen [string length [join $varName]] } else { set oldLen 0 }
+			if {[set size [string length $varName]] > 100} {
+				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
+			} elseif {[set size [expr {[string length [join $args]]+$oldLen}]] > 2048} {
+				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
+			} else {
+				eval [linsert $args 0 interp invokehidden $interp lappend $varName]
+			}
+		}
+		interp alias $interp lappend {} [namespace current]::Lappend $interp
+		
+		#~ interp hide $interp regsub
+		# FixMe: multiple switches doesn't work
+		proc Regsub {args} {
+			switch -- [llength $args] {
+				{4} { lassign $args interp exp string subSpec; set switches {--}; set varName {} }
+				{5} {
+					if {[string index [lindex [split $args] 1] 0] == {-}} {
+						lassign $args interp switches exp string subSpec
+						set varName {}
+					} else {
+						lassign $args interp exp string subSpec varName
+						set switches {--}
+					}
+				}
+				{6} { lassign $args interp switches exp string subSpec varName }
+				{default} {
+					return -code error {wrong # args: should be "regsub ?switches? exp string subSpec ?varName?"}
+				}
+			}
+			if {[set size [string length $varName]] > 100} {
+				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
+			} elseif {[set size [string length [regsub $switches $exp $string $subSpec]]] > 2048} {
+				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
+			} else {
+				eval [linsert $varName 0 interp invokehidden $interp regsub $switches $exp $string $subSpec]
+			}
+		}
+		#~ interp alias $interp regsub {} [namespace current]::Regsub $interp
+		
+		# FixMe: Add wrappers for dict, lassign
+		
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
 		if {[namespace exists [namespace current]::$interp]} { catch { namespace delete [namespace current]::$interp } }
 		namespace eval [namespace current]::$interp {
