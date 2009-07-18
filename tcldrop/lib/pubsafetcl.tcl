@@ -940,34 +940,37 @@ namespace eval pubsafetcl {
 		}
 		interp alias $interp lappend {} [namespace current]::Lappend $interp
 		
-		#~ interp hide $interp regsub
-		# FixMe: multiple switches doesn't work
+		interp hide $interp regsub
 		proc Regsub {args} {
-			switch -- [llength $args] {
-				{4} { lassign $args interp exp string subSpec; set switches {--}; set varName {} }
-				{5} {
-					if {[string index [lindex [split $args] 1] 0] == {-}} {
-						lassign $args interp switches exp string subSpec
-						set varName {}
-					} else {
-						lassign $args interp exp string subSpec varName
-						set switches {--}
-					}
+			set pos 1
+			foreach arg [lrange $args 1 end] {
+				if {[string index $arg 0] != {-}} {
+					break
+				} elseif {$arg == {--}} {
+					incr pos
+					break
+				} else {
+					incr pos
+					lappend switches $arg
 				}
-				{6} { lassign $args interp switches exp string subSpec varName }
+			}
+			if {![info exists switches]} { set switches {--} }
+			switch -exact -- [llength [set list [lrange $args $pos end]]] {
+				{3} { lassign $list exp string subSpec; set interp [lindex $args 0]; set varName {} }
+				{4} { lassign $list exp string subSpec varName; set interp [lindex $args 0] }
 				{default} {
 					return -code error {wrong # args: should be "regsub ?switches? exp string subSpec ?varName?"}
 				}
 			}
 			if {[set size [string length $varName]] > 100} {
 				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
-			} elseif {[set size [string length [regsub $switches $exp $string $subSpec]]] > 2048} {
+			} elseif {[set size [string length [eval [concat [linsert $switches 0 regsub] [linsert $varName 0 $exp $string $subSpec]]]]] > 2048} {
 				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
 			} else {
-				eval [linsert $varName 0 interp invokehidden $interp regsub $switches $exp $string $subSpec]
+				eval [concat [linsert $switches 0 interp invokehidden $interp regsub] [linsert $varName 0 $exp $string $subSpec]]
 			}
 		}
-		#~ interp alias $interp regsub {} [namespace current]::Regsub $interp
+		interp alias $interp regsub {} [namespace current]::Regsub $interp
 		
 		# FixMe: Add wrappers for dict, lassign
 		
