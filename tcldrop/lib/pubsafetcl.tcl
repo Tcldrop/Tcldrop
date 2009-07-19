@@ -63,6 +63,7 @@ namespace eval pubsafetcl {
 			set lastbind {tcl}
 			set config {eggdrop.conf}
 			set rcsid {$Id$}
+			proc rcsid {args} { puts unknown {$Id$} }
 			# Make some fake commands that don't really do anything:
 			if {[info commands load] == {}} { proc load {fileName {packageName {}} {interp {}}} { return -code error "couldn't load file \"$fileName\": [pwd]$fileName: cannot open shared object file: No such file or directory" } }
 			if {[info commands source] == {}} { proc source {fileName} { return -code error {source is disabled.} } }
@@ -926,7 +927,7 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp append {} [namespace current]::Append $interp
-		
+
 		interp hide $interp lappend
 		proc Lappend {interp varName args} {
 			if {[info exists $varName]} { set oldLen [string length [join $varName]] } else { set oldLen 0 }
@@ -939,7 +940,7 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp lappend {} [namespace current]::Lappend $interp
-		
+
 		interp hide $interp regsub
 		proc Regsub {args} {
 			set pos 1
@@ -971,9 +972,9 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp regsub {} [namespace current]::Regsub $interp
-		
+
 		# FixMe: Add wrappers for dict, lassign
-		
+
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
 		if {[namespace exists [namespace current]::$interp]} { catch { namespace delete [namespace current]::$interp } }
 		namespace eval [namespace current]::$interp {
