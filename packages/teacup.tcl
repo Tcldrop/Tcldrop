@@ -54,10 +54,9 @@ namespace eval ::tcl::teacup {
 	proc TEACUP_Install {name ver arch} {
 		puts "GETTING: http://teapot.activestate.com/package/name/${name}/ver/${ver}/arch/${arch}/file"
 		variable local-repository
-		# The name "dir" for this variable is important, don't change it..
-		file mkdir [set dir [file join ${local-repository} $arch [file dirname [string map {{::} {/}} $name]]]]
-		# $filepath is the $dir/$filename (minus the extension for now):
-		set filepath [file join $dir "[file tail [string map {{::} {/}} $name]]-${ver}"]
+		file mkdir [set path [file join ${local-repository} $arch [file dirname [string map {{::} {/}} $name]]]]
+		# $filepath is the $path/$filename (minus the extension for now):
+		set filepath [file join $path "[file tail [string map {{::} {/}} $name]]-${ver}"]
 		# Add a .tmp extension because we don't know what kind of file it is yet:
 		set fid [open "${filepath}.tmp" w]
 		set token [::http::geturl "http://teapot.activestate.com/package/name/${name}/ver/${ver}/arch/${arch}/file" -timeout 99999 -channel $fid]
@@ -75,19 +74,22 @@ namespace eval ::tcl::teacup {
 				{application/x-zip} {
 					# zip file = application/x-zip
 					# We don't know it's a .zip file until just now, so rename the file we got:
-					file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.zip"]
-					if {[Unzip $filepath $dir] && [file exists [file join $dir pkgIndex.tcl]]} {
-						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again):
-						lappend ::auto_path $dir
+					file rename -force -- "${filepath}.tmp" "${filepath}.zip"
+					if {[Unzip "${filepath}.zip" $filepath] && [file exists [file join $filepath pkgIndex.tcl]]} {
+						# The name "dir" for this variable is important, don't change it..
+						set dir $filepath
+						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
+						# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
+						if {[lsearch -exact $::auto_path $path] == -1} { lappend ::auto_path $path }
 						# Source the pkgIndex.tcl to replace the existing ifneeded script for this package:
-						source [file join $dir pkgIndex.tcl]
-						# eval the new ifneeded script:
+						source [file join $filepath pkgIndex.tcl]
+						# eval the new ifneeded script (must be done using uplevel #0):
 						uplevel #0 [package ifneeded $name $ver]
 					} else {
 						puts "Unzip failed, or pkgIndex.tcl missing!"
 					}
 					# Delete the .zip file, we don't need it anymore:
-					file delete -force -- $filepath
+					file delete -force -- "${filepath}.zip"
 				}
 				{default} {
 					puts "Unhandled Content-Type: [dict get [::http::meta $token] Content-Type]"
@@ -106,6 +108,9 @@ namespace eval ::tcl::teacup {
 		variable local-repository
 		::tcl::tm::add [file join ${local-repository} tcl]
 		# FixMe: Add the paths to the pkgIndex.tcl files to the ::auto_path list.
+		foreach p [glob -nocomplain -dir ${local-repository} *] {
+			lappend ::auto_path $p
+		}
 	}
 
 	proc SupportedArch {{arch {tcl}}} {
@@ -121,6 +126,7 @@ namespace eval ::tcl::teacup {
 
 	proc Unzip {file dest} {
 		if {![catch { uplevel #0 package require vfs::zip }] && ![catch { uplevel #0 ::vfs::zip::Mount $file $file } mnt]} {
+			file mkdir $dest
 			file copy -force -- {*}[glob -directory $file *] $dest
 			::vfs::zip::Unmount $mnt $file
 			puts "vfs::zip $file $dest"
@@ -160,7 +166,9 @@ teacup set local-repository [file join $env(HOME) svn packages teapot]
 # Load our local (cached) list:
 teacup load
 
+# FixMe: Find the bug in Tcl that makes it not look for existing packages until AFTER we package require something (it should know what packages are available before they're package required):
+catch { package require asjsdjsdjdfs }
+
 # Update packages list from http://teapot.activestate.com/:
 teacup update
 
-catch { package require asjsdjsdjdfs }
