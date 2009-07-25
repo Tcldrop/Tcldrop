@@ -82,7 +82,7 @@ namespace eval ::tcl::teacup {
 						# Source the pkgIndex.tcl to replace the existing ifneeded script for this package:
 						source [file join $dir pkgIndex.tcl]
 						# eval the new ifneeded script:
-						eval [package ifneeded $name $ver]
+						uplevel #0 [package ifneeded $name $ver]
 					} else {
 						puts "Unzip failed, or pkgIndex.tcl missing!"
 					}
@@ -121,13 +121,12 @@ namespace eval ::tcl::teacup {
 
 	proc Unzip {file dest} {
 		if {![catch { uplevel #0 package require vfs::zip }] && ![catch { uplevel #0 ::vfs::zip::Mount $file $file } mnt]} {
-			puts "vfs::zip $file $dest"
 			file copy -force -- {*}[glob -directory $file *] $dest
 			::vfs::zip::Unmount $mnt $file
+			puts "vfs::zip $file $dest"
 			return 1
-		} elseif {[auto_execok unzip] ne {}} {
+		} elseif {[auto_execok unzip] ne {} && ![catch { exec unzip -o $file -d $dest }]} {
 			puts "exec unzip -o $file -d $dest"
-			exec unzip -o $file -d $dest
 			return 1
 		} else {
 			puts "Can't Unzip: $file -> $dest"
