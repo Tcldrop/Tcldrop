@@ -54,27 +54,46 @@ namespace eval ::tcl::teacup {
 	proc TEACUP_Install {name ver arch} {
 		puts "GETTING: http://teapot.activestate.com/package/name/${name}/ver/${ver}/arch/${arch}/file"
 		variable local-repository
-		if {$arch eq {tcl}} { set ext {tm} } else { set ext {zip} }
-		set subdir [file dirname [string map {{::} {/}} $name]]
-		file mkdir [file join ${local-repository} $arch $subdir]
-		set filepath [file join ${local-repository} $arch $subdir "[file tail [string map {{::} {/}} $name]]-${ver}.$ext"]
-		set fid [open $filepath w]
+		# The name "dir" for this variable is important, don't change it..
+		file mkdir [set dir [file join ${local-repository} $arch [file dirname [string map {{::} {/}} $name]]]]
+		# $filepath is the $dir/$filename (minus the extension for now):
+		set filepath [file join $dir "[file tail [string map {{::} {/}} $name]]-${ver}"]
+		# Add a .tmp extension because we don't know what kind of file it is yet:
+		set fid [open "${filepath}.tmp" w]
 		set token [::http::geturl "http://teapot.activestate.com/package/name/${name}/ver/${ver}/arch/${arch}/file" -timeout 99999 -channel $fid]
 		close $fid
 		if {[::http::ncode $token] eq {200}} {
-			if {[string match -nocase {text/plain*} [dict get [::http::meta $token] Content-Type]]} {
-				# tcl file = text/plain; charset=UTF-8
-				uplevel #0 [list source $filepath]
-			} elseif {$arch eq {tcl}} {
-				# This is a temporary check to make sure there's nothing that matches this situation..
-				puts "ERROR!  Arch = tcl and Content-Type != text/plain -- $name $ver $arch"
-				exit 1
-			} else {
-				# zip file = application/x-zip
-				# If it's not text/plain then it's a damn .zip file!  We can't use .zip files, because there's no pure-Tcl way of unzipping them.
-				# FixMe: Extract the contents of this .zip and add the directory to the ::auto_path.
-				puts "Unhandled: $filepath"
-				file delete -force -- $filepath
+			switch -glob -- [dict get [::http::meta $token] Content-Type] {
+				{text/plain; charset=UTF-8} {
+					# tcl file = text/plain; charset=UTF-8
+					if {$arch eq {tcl}} {
+						# We don't know that it's a .tcl file until just now, so rename the file we got:
+						file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.tm"]
+						uplevel #0 [list source -encoding utf-8 $filepath]
+					}
+				}
+				{application/x-zip} {
+					# zip file = application/x-zip
+					# We don't know it's a .zip file until just now, so rename the file we got:
+					file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.zip"]
+					if {[Unzip $filepath $dir] && [file exists [file join $dir pkgIndex.tcl]]} {
+						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again):
+						lappend ::auto_path $dir
+						# Source the pkgIndex.tcl to replace the existing ifneeded script for this package:
+						source [file join $dir pkgIndex.tcl]
+						# eval the new ifneeded script:
+						eval [package ifneeded $name $ver]
+					} else {
+						puts "Unzip failed, or pkgIndex.tcl missing!"
+					}
+					# Delete the .zip file, we don't need it anymore:
+					file delete -force -- $filepath
+				}
+				{default} {
+					puts "Unhandled Content-Type: [dict get [::http::meta $token] Content-Type]"
+					file delete -force -- $filepath
+					exit 1
+				}
 			}
 		} else {
 			# ncode was something other than 200, so delete the file (if it exists):
@@ -100,10 +119,19 @@ namespace eval ::tcl::teacup {
 		}
 	}
 
-	# FixMe: ...
 	proc Unzip {file dest} {
-		if {![catch { package require Trf }]} {
-		} elseif {![catch { package require vfs::zip }]} {
+		if {![catch { uplevel #0 package require vfs::zip }] && ![catch { uplevel #0 ::vfs::zip::Mount $file $file } mnt]} {
+			puts "vfs::zip $file $dest"
+			file copy -force -- {*}[glob -directory $file *] $dest
+			::vfs::zip::Unmount $mnt $file
+			return 1
+		} elseif {[auto_execok unzip] ne {}} {
+			puts "exec unzip -o $file -d $dest"
+			exec unzip -o $file -d $dest
+			return 1
+		} else {
+			puts "Can't Unzip: $file -> $dest"
+			return 0
 		}
 	}
 
@@ -128,10 +156,12 @@ namespace import ::tcl::teacup::teacup
 
 # Change the defaults for..testing purposes:
 teacup set local-repository [file join $env(HOME) svn packages teapot]
-teacup set platforms {*}
+#teacup set platforms {*}
 
 # Load our local (cached) list:
 teacup load
 
 # Update packages list from http://teapot.activestate.com/:
 teacup update
+
+catch { package require asjsdjsdjdfs }
