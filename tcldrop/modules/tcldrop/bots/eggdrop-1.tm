@@ -527,7 +527,7 @@ proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
 	variable Linked
 	foreach colonpath [array names Linked *:[set colonpath [string tolower $uplink]]] { set tracepath $Linked($colonpath) }
 	set Linked(${colonpath}:[set lowerbot [string tolower $bot]]) [concat $tracepath [list $bot]]
-	registerbot $lowerbot [list handle $bot id $lowerbot type eggdrop tracepath $tracepath uplink $uplink numversion $numversion icon $icon peer $handle peeridx $idx]
+	registerbot $lowerbot handle $bot id $lowerbot type eggdrop tracepath $tracepath uplink $uplink numversion $numversion icon $icon peer $handle peeridx $idx
 	calllink $bot $uplink
 	return 0
 }

@@ -1019,6 +1019,22 @@ proc ::tcldrop::core::ClearFlood {id} {
 	}
 }
 
+if {[::package unknown] eq {}} {
+	# This is the "last resort" method of loading packages:
+	proc ::tcldrop::PkgUnknown {{name {}} {version {1}}} {
+		# FixMe: The limitation here is that we have to know the version in advance.. There's no way for the server to tell us what the latest version is.
+		set token [::http::geturl http://tcldrop.svn.sourceforge.net/viewvc/tcldrop/tcldrop/modules/[string map {{::} {/}} $name]-${version}.tm]
+		if {[::http::status $token] eq {ok}} {
+			::uplevel #0 [::http::data $token]
+		} else {
+			set token [::http::geturl http://tcldrop.svn.sourceforge.net/viewvc/tcldrop/tcldrop/lib/[string map {{::} {/}} $name].tcl]
+		}
+		::http::cleanup $token
+		return $version
+	}
+	#::package unknown ::tcldrop::PkgUnknown
+}
+
 # The loadmodule and unloadmodule commands MUST be defined here.
 # Because package require loads the packages from the global namespace (I think).
 # And because [namespace import] imports into the current namespace.
@@ -1201,12 +1217,12 @@ proc ::tcldrop::core::callevent {event} {
 
 # Loads a .help file.
 proc ::tcldrop::core::loadhelp {filename {type {dcc}}} {
-	if {![file readable [set filepath [file join ${::help-path} $filename]]] && ![file readable [append filepath .help]]} { return 0 }
-	set flags {-}
-	set command {unknown}
+	if {![file exists [set filepath [file join ${::help-path} $filename]]] && ![file exists [append filepath .help]]} { return 0 }
 	global help-path help help-files
 	if {![catch { open $filepath r } fid]} {
 		putlog "Loading help $filename ..."
+		set flags {-}
+		set command {unknown}
 		while {[gets $fid line] >= 0} {
 			foreach {remove code} [regexp -all -inline -- {\%\{(.*)*?\}} $line] {
 				# Process the code inside the %{*}:

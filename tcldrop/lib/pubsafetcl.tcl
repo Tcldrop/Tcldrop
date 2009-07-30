@@ -33,7 +33,6 @@ namespace eval pubsafetcl {
 			# Prefer to use safe::interpDelete but fall back to interp delete if safe::interpDelete happens to be broken:
 			if {[catch { safe::interpDelete $interp }]} { catch { interp delete $interp } }
 		}
-		variable LastCmdCount 0
 		# This is a hack to make it search sub directories.. (Cuz doing -nestedLoadOk doesn't work..)
 		set subpaths $::auto_path
 		if {[set p [lsearch -exact $subpaths {/usr/lib}]] != -1} { set subpaths [lreplace $subpaths $p $p] }

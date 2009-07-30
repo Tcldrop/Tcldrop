@@ -219,6 +219,19 @@ namespace eval ::tcldrop {
 						$interpname eval [list package require http]
 						if {![info exists mod-paths]} { set mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $tcldrop(dirname) modules] ./modules] }
 						$interpname eval [list ::tcl::tm::path add {*}${mod-paths}]
+						$interpname eval {
+							# This is the "last resort" method of loading packages, it allows the modules to be loaded from a remote location:
+							# Note: There's also a ::tcldrop::PkgUnknown proc inside modules/tcldrop/core-1.tm that will replace this one once it's loaded.
+							proc ::tcldrop::PkgUnknown {{name {}} {version {1}}} {
+								# FixMe: The limitation here is that we have to know the version in advance.. There's no way for the server to tell us what the latest version is.
+								set token [::http::geturl http://tcldrop.svn.sourceforge.net/viewvc/tcldrop/tcldrop/modules/[string map {{::} {/}} $name]-${version}.tm]
+								if {[::http::status $token] eq {ok}} { ::uplevel #0 [::http::data $token] } else { set version {} }
+								::http::cleanup $token
+								return $version
+							}
+							#::package unknown ::tcldrop::PkgUnknown
+						}
+						# Load the "core" module now:
 						$interpname eval [list package require tcldrop::core]
 					} error]} {
 					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]

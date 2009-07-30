@@ -34,7 +34,7 @@ namespace eval ::tcldrop::bots {
 	variable depends {core::conn core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Core bot related components.}
-	variable commands [list bots putbot putallbots islinked botids link unlink addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
+	variable commands [list bots putbot putallbots islinked botids link unlink addbot addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
 	variable rcsid {$Id$}
 	namespace export {*}$commands
 	namespace ensemble create -command Bots -subcommands $commands
@@ -304,6 +304,23 @@ proc ::tcldrop::bots::unlink {botname {type {}}} {
 		}
 	}
 	return 0
+}
+
+
+# Adds a bot to the user database, with the optional address and hostmask:
+# Returns 1 for success, 0 for failure.
+proc ::tcldrop::core::users::addbot {handle {address {}} {hostmask {}} args} {
+	if {$handle ne {} && ![validuser $handle]} {
+		setuser $handle
+		setuser $handle hosts $hostmask
+		setuser $handle flags {b}
+		setuser $handle console {}
+		setuser $handle botaddr [list [lindex [split $address :] 0] [lindex [split $address :/] 1] [lindex [split $address /] end]]
+		setlaston $handle 0 {never}
+		return 1
+	} else {
+		return 0
+	}
 }
 
 #bind time - {* * * * *} ::tcldrop::bots::AutoLinkBots

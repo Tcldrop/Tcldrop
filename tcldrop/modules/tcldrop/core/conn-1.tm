@@ -52,9 +52,7 @@ namespace eval ::tcldrop::core::conn {
 	namespace ensemble create -command ::conn -subcommands $commands
 }
 
-proc ::tcldrop::core::conn::ip2decimal {ip} { lassign [split $ip .] a b c d
-	format %u 0x[format %02X%02X%02X%02X $a $b $c $d]
-}
+proc ::tcldrop::core::conn::ip2decimal {ip} { format %u 0x[format %02X%02X%02X%02X {*}[split $ip .]] }
 proc ::tcldrop::core::conn::decimal2ip {ip} { set ip [format %08X $ip]
 	return "[format %u 0x[string range $ip 0 1]].[format %u 0x[string range $ip 2 3]].[format %u 0x[string range $ip 4 5]].[format %u 0x[string range $ip 6 7]]"
 }
@@ -754,7 +752,7 @@ proc ::tcldrop::core::conn::LOAD {module} {
 	if {{idxlist} ni $::protected(globals)} { lappend ::protected(globals) {idxlist} }
 	variable IDXCount
 	if {![info exists IDXCount]} { variable IDXCount 1 }
-	::package require ident 1
+	::package require ident 1.0
 	::uplevel #0 [list ::namespace import -force [namespace current]::*]
 }
 

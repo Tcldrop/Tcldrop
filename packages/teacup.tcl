@@ -20,7 +20,7 @@ namespace eval ::tcl::teacup {
 	# Default values, these can be changed with the [teacup set] command:
 	variable teacup
 	set teacup(local-repository) [file join $env(HOME) .teacup-cache]
-	if {$::tcl_platform(os) eq {Linux} && $::tcl_platform(wordSize) == 4} {
+	if {$::tcl_platform(os) eq {Linux} && $::tcl_platform(wordSize) == 4 && [string match {i*86*} $::tcl_platform(machine)]} {
 		# hard-coded to avoid an annoying bug in the platform package..
 		set teacup(platforms) [list linux-glibc2.9-ix86 linux-glibc2.8-ix86 linux-glibc2.7-ix86 linux-glibc2.6-ix86 linux-glibc2.5-ix86 linux-glibc2.4-ix86 linux-glibc2.3-ix86 linux-glibc2.2-ix86 linux-glibc2.1-ix86 linux-glibc2.0-ix86 tcl]
 	} elseif {![catch { ::package require platform }]} {
@@ -45,9 +45,8 @@ namespace eval ::tcl::teacup {
 			tclLog "local status file doesn't (yet) exist."
 			set status {}
 		}
-		set token []
 		if {![catch { ::http::geturl $teacup(status-url) -timeout 99999 } token]} {
-			if {[regexp {<pre>(.*)</pre>} [::http::data $token] - newstatus] && $status ne [set newstatus [lindex $newstatus 1]]} {
+			if {[regexp {<pre>(.*)</pre>} [::http::data $token] - newstatus] && [set newstatus [lindex $newstatus 1]] > $status} {
 				set fid [open [file join $teacup(local-repository) status] w]
 				puts -nonewline $fid $newstatus
 				close $fid
@@ -68,35 +67,41 @@ namespace eval ::tcl::teacup {
 		variable teacup
 		set ifneeded {}
 		if {[TEACUP_NeedUpdates]} {
-			# Download the /package/list because I don't know how to decipher the /db/index ...
-			set token [::http::geturl $teacup(list-url) -timeout 99999]
-			foreach l [split [::http::data $token] \n] {
-				#tclLog "RAW: $l"
-				if {[regexp {<a href="/package/name/(.*)/ver/(.*)/arch/(.*)/details">.*</a>} $l - name ver arch]} {
-					if {[SupportedArch $arch]} {
-						# Note: $arch = source is unsupported.
-						if {![VSatisfies $name $ver]} {
-							append ifneeded "package ifneeded $name $ver \[list ::tcl::teacup::TEACUP_Install $name $ver $arch\]\n"
-							#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
-						} else {
-							#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
-						}
-					}
+			if {![catch { open [file join $teacup(local-repository) list.html] w+ } fid]} {
+				# Download the /package/list because I don't know how to decipher the /db/index ...
+				tclLog "Downloading packages list: $teacup(list-url)"
+				set token [::http::geturl $teacup(list-url) -timeout 99999 -channel $fid]
+				seek $fid 0
+				set data [read $fid]
+				close $fid
+				::http::cleanup $token
+				tclLog "downloaded list size: [string length $data]"
+			}
+		} elseif {![catch { open [file join $teacup(local-repository) list.html r] } fid]} {
+			set data [read $fid]
+			close $fid
+			tclLog "cached list size: [string length $data]"
+		} else {
+			tclLog "can't read or write to [file join $teacup(local-repository) list.html]"
+		}
+		foreach {html name ver arch} [regexp -all -inline -line -- {<a href="/package/name/([^/]+)/ver/([^/]+)/arch/([^/]+)/details">.*</a>} $data] {
+			#tclLog "PROCESSING: $name $ver $arch"
+			if {[SupportedArch $arch]} {
+				# Note: $arch = source is unsupported.
+				if {![VSatisfies $name $ver]} {
+					append ifneeded "package ifneeded $name $ver \[list ::tcl::teacup::TEACUP_Install $name $ver $arch\]\n"
+					#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
+				} else {
+					#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
 				}
 			}
-			::http::cleanup $token
-		} else {
-			# FixMe: Load local copy.
-			tclLog "FixMe: Need to load the local cached copy of the package list (or a list of our own format)."
-			# Remove next 2 lines once fixed:
-			file delete -force -- [file join $teacup(local-repository) status]
-			TEACUP_Update
 		}
 		if {[string length $ifneeded] == 0} {
 			# Temporary check.  Remove or replace with something else in the final code.
 			tclLog "\$ifneeded is [string length $ifneeded] in length!  o_O"
 		} else {
 			# Do the package ifneeded commands last, so only our local packages will be found when doing the VSatisfies command above:
+			tclLog "eval'ing \$ifneeded ..."
 			eval $ifneeded
 		}
 	}
@@ -164,7 +169,7 @@ namespace eval ::tcl::teacup {
 			lappend ::auto_path $p
 		}
 		# FixMe: Find the bug in Tcl that makes it not look for existing packages until AFTER we package require something (it should know what packages are available before they're package required):
-		catch { package require asjsdjsdjdfs }
+		catch { package require UpdateAvailablePackages }
 	}
 
 	proc SupportedArch {{arch {tcl}}} {
@@ -217,7 +222,7 @@ namespace import ::tcl::teacup::teacup
 # Change the defaults for..testing purposes:
 teacup set local-repository [file join $env(HOME) svn packages teapot]
 #teacup set platforms {*}
-teacup set status-url {http://teapot.activestate.com/db/status}
+teacup set status-url {http://teapot.activestate.com.nyud.net/db/status}
 teacup set list-url {http://teapot.activestate.com/package/list}
 teacup set package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
 
