@@ -347,7 +347,10 @@ proc ::tcldrop::dcc::irc::Putidx {idx text {opts {}}} {
 }
 
 proc ::tcldrop::dcc::irc::PutidxFilter {idx text opts} {
-	return ":${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. PRIVMSG %${::botnet-nick} :$text"
+	foreach line [split $text \n] {
+		lappend retVal ":${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. PRIVMSG %${::botnet-nick} :$line"
+	}
+	 return [join $retVal \n]
 }
 
 proc ::tcldrop::dcc::irc::PutRAW {idx msg} {

@@ -139,18 +139,37 @@ proc ::tcldrop::irc::msg::JUMP {nick host hand text} {
 
 }
 
+# FixMe: Either figure out a way to know how much memory we're using or remove this command, or return some other related statistic
 # MEMORY <password>
 proc ::tcldrop::irc::msg::MEMORY {nick host hand text} {
+	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
+		puthelp "NOTICE $nick :I've no idea how much memory I'm using, but I'm happy anyway!"
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed MEMORY"
+		return 0
+	}
 }
 
 # SAVE <password>
 proc ::tcldrop::irc::msg::SAVE {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
+		puthelp "NOTICE $nick :Saving user file..."
+		save
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed SAVE"
+		return 0
+	}
 }
 
 # REHASH <password>
 proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
+		puthelp "NOTICE $nick :[lang 0x40f]"; # Rehashing...
+		rehash
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed REHASH"
+		return 0
+	}
 }
 
 # RESET <password> [channel]
@@ -169,8 +188,7 @@ proc ::tcldrop::irc::msg::STATUS {nick host hand text} {
 		puthelp "NOTICE $nick :Channels: [join [channels] {, }]"; # FixMe: split this into several lines if it's too long
 		return 1
 	} else {
-		# FixMe: this should be logged as the line below, and not show up in the msg log.
-		# putcmdlog "(${nick}!${host}) !${hand}! failed STATUS"
+		putcmdlog "(${nick}!${host}) !${hand}! failed STATUS"
 		return 0
 	}
 }
