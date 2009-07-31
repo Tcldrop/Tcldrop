@@ -957,6 +957,8 @@ proc ::tcldrop::irc::NOTICE {from key arg} {
 	}
 }
 
+# FixMe: pubm & msgm should be triggered _before_ pub & msg. If a line matches,
+# it should only be passed along to pub or msg if exclusive-binds is 1
 bind raw - PRIVMSG ::tcldrop::irc::PRIVMSG -priority 1000
 proc ::tcldrop::irc::PRIVMSG {from key arg} {
 	set nick [lindex [split $from !] 0]
@@ -979,15 +981,17 @@ proc ::tcldrop::irc::PRIVMSG {from key arg} {
 			if {![::tcldrop::irc::callmsg $nick $uhost $handle $command $args]} {
 				# If callmsg returned 0, do the MSGM binds:
 				::tcldrop::irc::callmsgm $nick $uhost $handle $text
+				# Only do the msg log if a msg bind wasn't triggered
+				putloglev m - "\[$nick!$uhost\] $text"
 			}
-			putloglev m - "\[$nick!$uhost\] $text"
 		} elseif {[validchan $dest]} {
 			# All PUB binds are called:
 			if {![::tcldrop::irc::callpub $nick $uhost $handle $dest $command $args]} {
 				# If callpub returned 0, do the PUBM binds:
 				::tcldrop::irc::callpubm $nick $uhost $handle $dest $text
+				# Only do the pub log if a pub bind wasn't triggered
+				putloglev p $dest "<${nick}> $text"
 			}
-			putloglev p $dest "<${nick}> $text"
 		}
 	}
 }
