@@ -130,7 +130,7 @@ proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 				puterrlog "$::errorInfo"
 			} else {
 				if {[string equal {1} $err]} {
-					putcmdlog "($nick@$uhost) !$handle! $text"
+					putcmdlog "(${nick}!${uhost}) !$handle! $command $text"
 				}
 				set retval 1
 			}
@@ -149,7 +149,7 @@ proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 				puterrlog "$::errorInfo"
 			} else {
 				if {[string equal {1} $err]} {
-					putcmdlog "($nick@$uhost) !$handle! $text" $channel
+					putcmdlog "(${nick}!${uhost}) !$handle! $command $text" $channel
 				}
 				set retval 1
 			}
