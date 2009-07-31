@@ -1,13 +1,11 @@
-#! /usr/bin/tclsh8.6
+#! /usr/bin/tclsh8.5
 
 # This is my teacup client, written in pure-Tcl.
 
 # Usage:
 # source teacup.tcl
 #
-# Then just [package require] any package you want to load, it will be downloaded and sourced.
-
-# Note/FixMe: This is only working for arch=tcl right now..
+# Then just [package require] any package(s) you want to load, they will be downloaded and sourced on-the-fly.
 
 package require Tcl 8.5
 package require http
@@ -47,6 +45,7 @@ namespace eval ::tcl::teacup {
 		}
 		if {![catch { ::http::geturl $teacup(status-url) -timeout 99999 } token]} {
 			if {[regexp {<pre>(.*)</pre>} [::http::data $token] - newstatus] && [set newstatus [lindex $newstatus 1]] > $status} {
+				file mkdir $teacup(local-repository)
 				set fid [open [file join $teacup(local-repository) status] w]
 				puts -nonewline $fid $newstatus
 				close $fid
@@ -75,10 +74,10 @@ namespace eval ::tcl::teacup {
 				set data [read $fid]
 				close $fid
 				::http::cleanup $token
-				tclLog "downloaded list size: [string length $data]"
+				tclLog "downloaded package list size: [string length $data]"
 			}
-		} elseif {![catch { open [file join $teacup(local-repository) list.html r] } fid]} {
-			set data [read $fid]
+		} elseif {![catch { open [file join $teacup(local-repository) list.html] r } fid]} {
+			set data [read -nonewline $fid]
 			close $fid
 			tclLog "cached list size: [string length $data]"
 		} else {
@@ -89,20 +88,19 @@ namespace eval ::tcl::teacup {
 			if {[SupportedArch $arch]} {
 				# Note: $arch = source is unsupported.
 				if {![VSatisfies $name $ver]} {
-					append ifneeded "package ifneeded $name $ver \[list ::tcl::teacup::TEACUP_Install $name $ver $arch\]\n"
+					lappend ifneeded "package ifneeded $name $ver \[list ::tcl::teacup::TEACUP_Install $name $ver $arch\]"
 					#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
 				} else {
 					#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
 				}
 			}
 		}
-		if {[string length $ifneeded] == 0} {
-			# Temporary check.  Remove or replace with something else in the final code.
-			tclLog "\$ifneeded is [string length $ifneeded] in length!  o_O"
+		if {[llength $ifneeded]} {
+			# Doing the package ifneeded commands last, so only our local packages will be found when doing the VSatisfies command above:
+			tclLog "eval'ing \$ifneeded ... ([llength $ifneeded] packages available to us.)"
+			eval [join $ifneeded \n]
 		} else {
-			# Do the package ifneeded commands last, so only our local packages will be found when doing the VSatisfies command above:
-			tclLog "eval'ing \$ifneeded ..."
-			eval $ifneeded
+			tclLog "\$ifneeded is [string length $ifneeded] in length!  o_O  \$data empty/unknown format?"
 		}
 	}
 
@@ -132,7 +130,7 @@ namespace eval ::tcl::teacup {
 					# zip file = application/x-zip
 					# We don't know it's a .zip file until just now, so rename the file we got:
 					file rename -force -- "${filepath}.tmp" "${filepath}.zip"
-					if {[Unzip "${filepath}.zip" $filepath] && [file exists [file join $filepath pkgIndex.tcl]]} {
+					if {([Unzip "${filepath}.zip" $filepath] || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
 						# The name "dir" for this variable is important, don't change it..
 						set dir $filepath
 						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
@@ -172,15 +170,18 @@ namespace eval ::tcl::teacup {
 		catch { package require UpdateAvailablePackages }
 	}
 
-	proc SupportedArch {{arch {tcl}}} {
+	proc SupportedArch {{arch {unknown}}} {
+		if {$arch eq {source}} {
+			# "source" is unsupported.  (source = source code, which means we'd have to compile it to use it..and that's unlikely.)
+			return 0
+		}
 		variable teacup
 		if {[lsearch -exact $teacup(platforms) $arch] != -1} {
 			return 1
 		} elseif {[string match -nocase $teacup(platforms) $arch]} {
 			return 1
-		} else {
-			return 0
 		}
+		return 0
 	}
 
 	proc Unzip {file dest} {
@@ -194,9 +195,34 @@ namespace eval ::tcl::teacup {
 			tclLog "exec unzip -o $file -d $dest"
 			return 1
 		} else {
-			tclLog "Can't Unzip: $file -> $dest"
+			tclLog "Can't Unzip locally: $file -> $dest"
 			return 0
 		}
+	}
+
+	# Uses wobzip.org to get the .zip file and present a list of download links for the files contained in the .zip, and downloads all the files individually to $outDir
+	# returns 1 on complete success (all files downloaded), or 0 on error(s) (some or all files failed to download).
+	proc Wobzip {url {outDir {.}}} {
+		tclLog "Wobzip: Retrieving $url"
+		if {![catch { ::http::geturl "http://wobzip.org/?type=url&url=${url}" -timeout 99999 } token]} {
+			foreach {link file} [regexp -all -inline -- {/get/save_file\.php[^&]+&f=([^']+)} [::http::data $token][::http::cleanup $token]] {
+				file mkdir [file dirname [set file [file join $outDir [string trimleft $file {/}]]]]
+				if {![catch { set fid [open $file w] ; ::http::geturl "http://wobzip.org${link}" -timeout 99999 -channel $fid } token]} {
+					close $fid
+					::http::cleanup $token
+					tclLog "Wobzip: Got $file"
+					# Only set retVal to 1 once, so that it'll only be 1 if we're able to get ALL the files:
+					if {![info exists retVal]} { set retVal 1 }
+				} else {
+					if {[info exists fid]} { close $fid }
+					tclLog "Wobzip: Failed to get $file"
+					set retVal 0
+				}
+			}
+		} else {
+			tclLog "Wobzip: Failed to get zip file list."
+		}
+		if {[info exists retVal]} { return $retVal } else { return 0 }
 	}
 
 	# Checks to see if our local package is equal to or _NEWER_ than the remote:
@@ -220,15 +246,14 @@ namespace eval ::tcl::teacup {
 namespace import ::tcl::teacup::teacup
 
 # Change the defaults for..testing purposes:
-teacup set local-repository [file join $env(HOME) svn packages teapot]
+#teacup set local-repository [file join $env(HOME) svn packages teapot]
 #teacup set platforms {*}
-teacup set status-url {http://teapot.activestate.com.nyud.net/db/status}
-teacup set list-url {http://teapot.activestate.com/package/list}
-teacup set package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
+#teacup set status-url {http://teapot.activestate.com.nyud.net/db/status}
+#teacup set list-url {http://teapot.activestate.com/package/list}
+#teacup set package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
 
-# Load our local (cached) list:
+# Load our local (cached) list (This actually just sets the auto_path and tm paths for now):
 teacup load
 
 # Update packages list from http://teapot.activestate.com/:
 teacup update
-
