@@ -887,8 +887,8 @@ namespace eval pubsafetcl {
 		proc Set {interp varName {newValue {}}} {
 			if {[set size [string length $varName]] > 100} {
 				return -code error "You can't have a variable name that long!  (Needed: $size Allowed: 100)"
-			} elseif {[set size [string length $newValue]] > 2048} {
-				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2048)"
+			} elseif {[set size [string length $newValue]] > 2700} {
+				return -code error "You can't set a variable that long!  (Needed: $size Allowed: 2700)"
 			} else {
 				if {[llength [info level 0]] <= 3} {
 					interp invokehidden $interp set $varName
