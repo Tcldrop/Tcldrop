@@ -116,12 +116,10 @@ proc ::tcldrop::irc::msg::OP {nick host hand text} {
 
 # INVITE <password> <channel>
 proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
-		if {([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])} {
-			putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
-			putserv "INVITE $nick $chan"
-			return 0
-		}
+	if {(![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]) && (([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan]))} {
+		putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
+		putserv "INVITE $nick $chan"
+		return 0
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed INVITE"
 		return 0
@@ -130,7 +128,7 @@ proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
 
 # GO <channel>
 proc ::tcldrop::irc::msg::GO {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+	if {$hand ne {*}} {
 		if {[set chan [lindex $text 1]] eq {}} {
 			putcmdlog "(${nick}!${host}) !${hand}! failed GO"
 			puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick go <channel>";# Usage
@@ -225,6 +223,7 @@ proc ::tcldrop::irc::msg::JUMP {nick host hand text} {
 proc ::tcldrop::irc::msg::MEMORY {nick host hand text} {
 	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
 		puthelp "NOTICE $nick :I've no idea how much memory I'm using, but I'm happy anyway!"
+		return 1
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed MEMORY"
 		return 0
@@ -236,6 +235,7 @@ proc ::tcldrop::irc::msg::SAVE {nick host hand text} {
 	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
 		puthelp "NOTICE $nick :Saving user file..."
 		save
+		return 1
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed SAVE"
 		return 0
@@ -247,6 +247,7 @@ proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
 	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
 		puthelp "NOTICE $nick :[lang 0x40f]"; # Rehashing...
 		rehash
+		return 1
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed REHASH"
 		return 0

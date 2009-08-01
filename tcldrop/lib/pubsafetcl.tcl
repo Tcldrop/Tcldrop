@@ -16,6 +16,7 @@
 if {![info exists ::auto_path]} { set ::auto_path [list] }
 
 namespace eval pubsafetcl {
+	package require Tcl 8.5
 	variable version {2.2.0}
 	variable name {pubsafetcl}
 	variable author {FireEgl}
@@ -492,12 +493,12 @@ namespace eval pubsafetcl {
 			}
 
 			# forward-compatible lset:
-			if {[package vcompare [package provide Tcl] 8.4] < 0} {
-				proc ::tcl::K {a b} { set a }
-				proc lset {listName index val} { upvar $listName list
-					set list [lreplace [::tcl::K $list [set list {}]] $index $index $val]
-				}
-			}
+			# if {[package vcompare [package provide Tcl] 8.4] < 0} {
+				# proc ::tcl::K {a b} { set a }
+				# proc lset {listName index val} { upvar $listName list
+					# set list [lreplace [::tcl::K $list [set list {}]] $index $index $val]
+				# }
+			# }
 			# forward-compatible dict:
 			# Poor man's dict -- a pure tcl [dict] emulation
 			# Source: http://wiki.Tcl.Tk/10609  (March 1, 2004)
@@ -507,119 +508,119 @@ namespace eval pubsafetcl {
 			# e.g. [dict create odd arguments here] will work
 			#
 			# Implementation is based on lists, [array set/get] and recursion
-			if {![llength [info commands dict]]} {
-				namespace eval ::tcl {}
-				proc dict {cmd args} { uplevel 1 [linsert $args 0 "::tcl::dict_$cmd"] }
-				proc ::tcl::dict_get {dv args} {
-					if {![llength $args]} { return $dv } else {
-						array set dvx $dv
-						eval [linsert [lrange $args 1 end] 0 ::tcl::dict_get $dvx([lindex $args 0])]
-					}
-				}
-				proc ::tcl::dict_exists {dv key args} {
-					array set dvx $dv
-					if {![info exists dvx($key)]} {
-						return 0
-					} elseif {[llength $args]} {
-						eval [linsert $args 0 ::tcl::dict_exists $dvx($key)]
-					} else {
-						return 1
-					}
-				}
-				proc ::tcl::dict_set {dvar key value args} {
-					upvar 1 $dvar dv
-					lappend dv
-					array set dvx $dv
-					if {![llength $args]} {
-						set dvx($key) $value
-					} else {
-						eval [linsert $args 0 ::tcl::dict_set dvx($key) $value]
-					}
-					set dv [array get dvx]
-				}
-				proc ::tcl::dict_unset {dvar key args} {
-					upvar 1 $dvar mydvar
-					if {![info exists mydvar]} { return }
-					array set dv $mydvar
-					if {![llength $args]} {
-						if {[info exists dv($key)]} { unset dv($key) }
-					} else {
-						eval [linsert $args 0 ::tcl::dict_unset dv($key)]
-					}
-					set mydvar [array get dv]
-					return {}
-				}
-				proc ::tcl::dict_keys {dv {pat {*}}} {
-					array set dvx $dv
-					array names dvx $pat
-				}
-				proc ::tcl::dict_append {dvar key args} {
-					upvar 1 $dvar dv
-					lappend dv
-					array set dvx $dv
-					eval [linsert $args 0 append dvx($key)]
-					set dv [array get dvx]
-				}
-				proc ::tcl::dict_create {args} { set args }
-				proc ::tcl::dict_filter {dv ftype args} {
-					set r [list]
-					foreach {globpattern} $args { break }
-					foreach {varlist script} $args { break }
-					switch $ftype {
-						key { foreach {key value} $dv { if {[string match $globpattern $key]} { lappend r $key $value } } }
-						value { foreach {key value} $dv { if {[string match $globpattern $value]} { lappend r $key $value } } }
-						script {
-							foreach {Pkey Pval} $varlist { break }
-							upvar 1 $Pkey key $Pval value
-							foreach {key value} $dv { if {[uplevel 1 $script]} { lappend r $key $value } }
-						}
-						default { return -code error {Wrong filter type} }
-					}
-					set r
-				}
-				proc ::tcl::dict_for {kv dict body} { uplevel 1 [list foreach $kv $dict $body] }
-				proc ::tcl::dict_incr {dvar key {incr 1}} {
-					upvar 1 $dvar dv
-					lappend dv
-					array set dvx $dv
-					if {![info exists dvx($key)]} { set dvx($key) 0 }
-					incr dvx($key) $incr
-					set dv [array get dvx]
-				}
-				proc ::tcl::dict_info {dv} { return {Dictionary is represented as plain list} }
-				proc ::tcl::dict_lappend {dvar key args} {
-					upvar 1 $dvar dv
-					lappend dv
-					array set dvx $dv
-					eval [linsert $args 0 lappend dvx($key)]
-					set dv [array get dvx]
-				}
-				proc ::tcl::dict_replace {dv args} {
-					foreach {k v} $args { ::tcl::dict_set dv $k $v }
-					set dv
-				}
-				proc ::tcl::dict_remove {dv args} {
-					foreach k $args { ::tcl::dict_unset dv $k }
-					set dv
-				}
-				proc ::tcl::dict_size {dv} { expr { [llength $dv] / 2 } }
-				proc ::tcl::dict_values {dv {gp *}} {
-					set r [list]
-					foreach {k v} $dv { if {[string match $gp $v]} { lappend r $v } }
-					set r
-				}
-			}
+			# if {![llength [info commands dict]]} {
+				# namespace eval ::tcl {}
+				# proc dict {cmd args} { uplevel 1 [linsert $args 0 "::tcl::dict_$cmd"] }
+				# proc ::tcl::dict_get {dv args} {
+					# if {![llength $args]} { return $dv } else {
+						# array set dvx $dv
+						# eval [linsert [lrange $args 1 end] 0 ::tcl::dict_get $dvx([lindex $args 0])]
+					# }
+				# }
+				# proc ::tcl::dict_exists {dv key args} {
+					# array set dvx $dv
+					# if {![info exists dvx($key)]} {
+						# return 0
+					# } elseif {[llength $args]} {
+						# eval [linsert $args 0 ::tcl::dict_exists $dvx($key)]
+					# } else {
+						# return 1
+					# }
+				# }
+				# proc ::tcl::dict_set {dvar key value args} {
+					# upvar 1 $dvar dv
+					# lappend dv
+					# array set dvx $dv
+					# if {![llength $args]} {
+						# set dvx($key) $value
+					# } else {
+						# eval [linsert $args 0 ::tcl::dict_set dvx($key) $value]
+					# }
+					# set dv [array get dvx]
+				# }
+				# proc ::tcl::dict_unset {dvar key args} {
+					# upvar 1 $dvar mydvar
+					# if {![info exists mydvar]} { return }
+					# array set dv $mydvar
+					# if {![llength $args]} {
+						# if {[info exists dv($key)]} { unset dv($key) }
+					# } else {
+						# eval [linsert $args 0 ::tcl::dict_unset dv($key)]
+					# }
+					# set mydvar [array get dv]
+					# return {}
+				# }
+				# proc ::tcl::dict_keys {dv {pat {*}}} {
+					# array set dvx $dv
+					# array names dvx $pat
+				# }
+				# proc ::tcl::dict_append {dvar key args} {
+					# upvar 1 $dvar dv
+					# lappend dv
+					# array set dvx $dv
+					# eval [linsert $args 0 append dvx($key)]
+					# set dv [array get dvx]
+				# }
+				# proc ::tcl::dict_create {args} { set args }
+				# proc ::tcl::dict_filter {dv ftype args} {
+					# set r [list]
+					# foreach {globpattern} $args { break }
+					# foreach {varlist script} $args { break }
+					# switch $ftype {
+						# key { foreach {key value} $dv { if {[string match $globpattern $key]} { lappend r $key $value } } }
+						# value { foreach {key value} $dv { if {[string match $globpattern $value]} { lappend r $key $value } } }
+						# script {
+							# foreach {Pkey Pval} $varlist { break }
+							# upvar 1 $Pkey key $Pval value
+							# foreach {key value} $dv { if {[uplevel 1 $script]} { lappend r $key $value } }
+						# }
+						# default { return -code error {Wrong filter type} }
+					# }
+					# set r
+				# }
+				# proc ::tcl::dict_for {kv dict body} { uplevel 1 [list foreach $kv $dict $body] }
+				# proc ::tcl::dict_incr {dvar key {incr 1}} {
+					# upvar 1 $dvar dv
+					# lappend dv
+					# array set dvx $dv
+					# if {![info exists dvx($key)]} { set dvx($key) 0 }
+					# incr dvx($key) $incr
+					# set dv [array get dvx]
+				# }
+				# proc ::tcl::dict_info {dv} { return {Dictionary is represented as plain list} }
+				# proc ::tcl::dict_lappend {dvar key args} {
+					# upvar 1 $dvar dv
+					# lappend dv
+					# array set dvx $dv
+					# eval [linsert $args 0 lappend dvx($key)]
+					# set dv [array get dvx]
+				# }
+				# proc ::tcl::dict_replace {dv args} {
+					# foreach {k v} $args { ::tcl::dict_set dv $k $v }
+					# set dv
+				# }
+				# proc ::tcl::dict_remove {dv args} {
+					# foreach k $args { ::tcl::dict_unset dv $k }
+					# set dv
+				# }
+				# proc ::tcl::dict_size {dv} { expr { [llength $dv] / 2 } }
+				# proc ::tcl::dict_values {dv {gp *}} {
+					# set r [list]
+					# foreach {k v} $dv { if {[string match $gp $v]} { lappend r $v } }
+					# set r
+				# }
+			# }
 			# forward-compatible lrepeat:
-			if {![llength [info commands lrepeat]]} { proc lrepeat {count args} {string repeat "$args " $count} }
+			# if {![llength [info commands lrepeat]]} { proc lrepeat {count args} {string repeat "$args " $count} }
 			# forward-compatible lassign:
-			if {![llength [info commands lassign]]} {
-				proc lassign {values args} {
-					while {[llength $values] < [llength $args]} { lappend values {} }
-					uplevel 1 [list foreach $args $values {break}]
-					lrange $values [llength $args] end
-				}
-			}
-		}
+			# if {![llength [info commands lassign]]} {
+				# proc lassign {values args} {
+					# while {[llength $values] < [llength $args]} { lappend values {} }
+					# uplevel 1 [list foreach $args $values {break}]
+					# lrange $values [llength $args] end
+				# }
+			# }
+		# }
 
 		# We want to make some harmless Eggdrop Tcl commands available:
 		foreach c {duration ctime strftime encrypt decrypt encpass unames md5 sha1 getchanlaston dccused getchanidle myip flushmode queuesize traffic inchain haschanrec wasop getting-users botisvoice modules islinked countusers validchan validuser finduser ischanjuped isban ispermban isexempt ispermexempt isinvite isperminvite isbansticky isexemptsticky isinvitesticky matchban matchexempt matchinvite isignore channame2dname chandname2name isbotnick botonchan isop isvoice onchan nick2hand hand2nick handonchan ischanban ischanexempt ischaninvite getchanjoin onchansplit valididx idx2hand maskhost hand2idx washalfop topic getchanhost isdynamic isbotnetnick getinfo realtime stripcodes} {
@@ -656,7 +657,7 @@ namespace eval pubsafetcl {
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
 		if {[lsearch -exact [interp hidden $interp] file] == -1} { catch { interp hide $interp file } }
-		proc File {interp option name args} {
+		proc File {interp option args} {
 			switch -glob -- [string tolower "$option"] {
 				{ch*} { set option channels }
 				{di*} { set option dirname }
@@ -670,7 +671,7 @@ namespace eval pubsafetcl {
 				{ta*} { set option tail }
 				{default} { return -code error "file $option is not allowed!" }
 		}
-			eval [linsert [split $args] 0 interp invokehidden $interp file $option $name]
+			eval [linsert [split $args] 0 interp invokehidden $interp file $option]
 		}
 		interp alias $interp file {} [namespace current]::File $interp
 
@@ -972,7 +973,9 @@ namespace eval pubsafetcl {
 		}
 		interp alias $interp regsub {} [namespace current]::Regsub $interp
 
-		# FixMe: Add wrappers for dict, lassign
+		# FixMe: Add wrappers for dict, lassign, incr <- possible to increase the size of something with these
+		# regexp, scan <- possible to set variables, not possible to increase the size of something
+		# subst, eval <- possible to eval/subst $a$a$a inside $b$b$b inside $c$c$c etc to create a huge string
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
 		if {[namespace exists [namespace current]::$interp]} { catch { namespace delete [namespace current]::$interp } }
