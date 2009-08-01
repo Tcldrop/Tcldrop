@@ -560,6 +560,10 @@ The optional arguments will be documented here (when they're generally useful).
     Returns: nothing
     Module: channels
 
+  channel exists <name>
+    Returns: 1 if a channel record exists for the channel, 0 if not.
+    Module: channels
+
   savechannels
     Description: saves the channel settings to the channel-file if one is
       defined.

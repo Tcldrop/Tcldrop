@@ -165,6 +165,13 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 				return -code error "no such channel record: $channel"
 			}
 		}
+		{exists} - {exist} {
+			if {[dict exists $database(channels) $lowerchannel]} {
+				return 1
+			} else {
+				return 0
+			}
+		}
 		{default} { return -code error "Unknown channel sub-command \"$command\"." }
 	}
 }

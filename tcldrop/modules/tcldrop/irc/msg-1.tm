@@ -120,6 +120,7 @@ proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
 		if {([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])} {
 			putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
 			putserv "INVITE $nick $chan"
+			return 0
 		}
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed INVITE"
@@ -134,15 +135,18 @@ proc ::tcldrop::irc::msg::GO {nick host hand text} {
 			putcmdlog "(${nick}!${host}) !${hand}! failed GO"
 			puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick go <channel>";# Usage
 			return 0
+		} elseif {![channel exists $chan]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO $chan (no such channel)"
+			return 0
 		} elseif {[channel get $chan inactive]} {
-			putcmdlog "(${nick}!${host}) !${hand}! failed GO (channel is +inactive)"
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO $chan (channel is +inactive)"
 			return 0
 		} elseif {![validchan $chan] || ![botonchan $chan]} {
-			putcmdlog "(${nick}!${host}) !${hand}! failed GO (i'm blind)"
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO $chan (i'm blind)"
 			return 0
 		# FixMe: do we want to check for halfop here?
 		} elseif {[botisop $chan] || [botishalfop $chan]} {
-			putcmdlog "(${nick}!${host}) !${hand}! failed GO (i'm chop)"
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO $chan (i'm chop)"
 			return 0
 		} else {
 			putcmdlog "(${nick}!${host}) !${hand}! GO $chan"
