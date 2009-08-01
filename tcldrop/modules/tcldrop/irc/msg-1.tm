@@ -116,27 +116,104 @@ proc ::tcldrop::irc::msg::OP {nick host hand text} {
 
 # INVITE <password> <channel>
 proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		if {([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])} {
+			putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
+			putserv "INVITE $nick $chan"
+		}
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INVITE"
+		return 0
+	}
 }
 
 # GO <channel>
 proc ::tcldrop::irc::msg::GO {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		if {[set chan [lindex $text 1]] eq {}} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO"
+			puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick go <channel>";# Usage
+			return 0
+		} elseif {[channel get $chan inactive]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO (channel is +inactive)"
+			return 0
+		} elseif {![validchan $chan] || ![botonchan $chan]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO (i'm blind)"
+			return 0
+		# FixMe: do we want to check for halfop here?
+		} elseif {[botisop $chan] || [botishalfop $chan]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed GO (i'm chop)"
+			return 0
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! GO $chan"
+			putserv "PART $chan"
+			return 0
+		}
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed GO"
+		return 0
+	}
 }
 
 # KEY <password> <channel>
 proc ::tcldrop::irc::msg::KEY {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		if {![botonchan [set chan [lindex $text 1]]]} {
+			puthelp "NOTICE $nick :[lang 0x001]: /MSG $::botnick key <pass> <channel>";# Usage
+			putcmdlog "(${nick}!${host}) !${hand}! failed KEY"
+			return 0
+		} else {
+			# FixMe: This should only return the key, fix when we figure out a way to parse RAW 005.
+			puthelp "NOTICE $nick :${chan} modes: [getchanmode $chan]"
+			# puthelp "NOTICE $nick :${chan}: key is $key"
+			# puthelp "NOTICE $nick :${chan}: no key set for this channel"
+			putcmdlog "(${nick}!${host}) !${hand}! KEY $chan"
+			return 0
+		}
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed KEY"
+		return 0
+	}
 }
 
 # DIE <password> [message]
 proc ::tcldrop::irc::msg::DIE {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		set CmdLog ""
+		if {[set message [lrange $text 1 end]] ne {}} { append CmdLog " $message" } else { append CmdLog " [set message {nyoooooooo...}]" }
+		putcmdlog "(${nick}!${host}) !${hand}! DIE${CmdLog}"
+		puthelp "NOTICE $nick :[lang 0xb18]";# Bot shut down beginning....
+		die $message
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed DIE"
+		return 0
+	}
 }
 
 # JUMP <password> [server [port [server password]]]
 proc ::tcldrop::irc::msg::JUMP {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		lassign $text - server port password
+		set CmdLog ""
+		if {$server ne {}} {
+			append CmdLog " $server"
+			if {$port ne {}} {
+				append CmdLog " $port"
+				if {$password ne {}} {
+					append CmdLog " ..."
+				}
+			}
+		}
+		putcmdlog "(${nick}!${host}) !${hand}!JUMP${CmdLog}"
+		puthelp "NOTICE $nick :[lang 0x62b]";# Jumping servers...
+		# there's no danger in calling jump with empty args
+		jump $server $port $password
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed JUMP"
+		return 0
+	}
 }
 
 # FixMe: Either figure out a way to know how much memory we're using or remove this command, or return some other related statistic
