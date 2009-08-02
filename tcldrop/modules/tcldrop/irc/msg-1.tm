@@ -90,9 +90,14 @@ proc ::tcldrop::irc::msg::IDENT {nick host hand text} {
 
 }
 
+# FixMe: do more error checking & logging
 # VOICE <password> <channel>
 proc ::tcldrop::irc::msg::VOICE {nick host hand text} {
-
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
+		foreach chan [lrange $text 1 end] { if {[validchan $chan]} { lappend channels $chan } }
+		if {![info exists channels]} { set channels [channels] }
+		foreach chan $channels { if {[onchan $nick $chan] && [matchattr $hand nmolv|nmolv $chan]} { pushmode $chan +v $nick } }
+	}
 }
 
 # WHOIS <hand>
@@ -101,10 +106,41 @@ proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
 }
 
 # PASS <password>
+# PASS <oldpass> <newpass>
 proc ::tcldrop::irc::msg::PASS {nick host hand text} {
-
+	if {$hand eq {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (no such user)"
+		return 0
+	} elseif {![passwdok $hand -] {
+		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (already set)"
+		puthelp "PRIVMSG $nick :[lang 0x615]";# You already have a password set.
+		return 0
+	} elseif {([set numArgs [llength [set arg [split $text]]]] == 1 && [string length $text] < 6) || ($numArgs == 2 && [string length [set newPass [lindex $arg 1]]] < 6)} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (too short)"
+		puthelp "PRIVMSG $nick :[lang 0x616]";# Please use at least 6 characters.
+		return 0
+	} elseif {$numArgs == 1} {
+		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
+		chpass $hand $text
+		puthelp "PRIVMSG $nick :[lang 0x617] $text";# Password set to:
+		return 0
+	} elseif {$numArgs == 2 && ![passwdok $hand [lindex $arg 0]]
+		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (old password incorrect)"
+		puthelp "PRIVMSG $nick :[lang 0x618]";# Incorrect password.
+		# return 0
+	} elseif {$numArgs == 2} {
+		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
+		chpass $hand $newPass
+		puthelp "PRIVMSG $nick :[lang 0x619] $newPass";# Password changed to:
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed PASS"
+		puthelp "PRIVMSG $nick :Usage: /msg $::botnick \[oldpass\] <newpass>"
+		return 0
+	}
 }
 
+# FixMe: do more error checking & logging
 # OP <password> [channel]
 proc ::tcldrop::irc::msg::OP {nick host hand text} {
 	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
