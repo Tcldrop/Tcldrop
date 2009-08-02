@@ -9,7 +9,7 @@
 
 package require Tcl 8.5
 package require http
-namespace eval ::tcl::teacup {
+namespace eval ::teacup {
 	# Create a teacup ensemble command:
 	namespace ensemble create -command teacup -subcommands [list update install load set help] -map [dict create update TEACUP_Update install TEACUP_Install load TEACUP_Load set TEACUP_Set help TEACUP_Help]
 	# Export the teacup command:
@@ -17,7 +17,7 @@ namespace eval ::tcl::teacup {
 
 	# Default values, these can be changed with the [teacup set] command:
 	variable teacup
-	set teacup(local-repository) [file join $env(HOME) .teacup-cache]
+	set teacup(local-repository) [file join $env(HOME) .teacup cache]
 	if {$::tcl_platform(os) eq {Linux} && $::tcl_platform(wordSize) == 4 && [string match {i*86*} $::tcl_platform(machine)]} {
 		# hard-coded to avoid an annoying bug in the platform package..
 		set teacup(platforms) [list linux-glibc2.9-ix86 linux-glibc2.8-ix86 linux-glibc2.7-ix86 linux-glibc2.6-ix86 linux-glibc2.5-ix86 linux-glibc2.4-ix86 linux-glibc2.3-ix86 linux-glibc2.2-ix86 linux-glibc2.1-ix86 linux-glibc2.0-ix86 tcl]
@@ -27,6 +27,7 @@ namespace eval ::tcl::teacup {
 		set teacup(platforms) {tcl}
 	}
 	array set teacup {
+		geturl-timeout {99999}
 		status-url {http://teapot.activestate.com/db/status}
 		list-url {http://teapot.activestate.com/package/list}
 		package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
@@ -39,20 +40,20 @@ namespace eval ::tcl::teacup {
 		if {![catch { open [file join $teacup(local-repository) status] r } fid]} {
 			set status [read -nonewline $fid]
 			close $fid
-			tclLog "Old status loaded: $status"
+			tclLog "Status: [clock format $status]  ([file join $teacup(local-repository) status])"
 		} else {
-			tclLog "local status file doesn't (yet) exist."
 			set status 0
 		}
-		if {![catch { ::http::geturl $teacup(status-url) -timeout 99999 } token] && [regexp {<pre>(.*)</pre>} [::http::data $token][::http::cleanup $token] - newstatus]} {
+		if {![catch { ::http::geturl $teacup(status-url) -timeout $teacup(geturl-timeout) } token] && [::http::ncode $token] eq {200} && [regexp {<pre>(.*)</pre>} [::http::data $token][::http::cleanup $token] - newstatus]} {
+			tclLog "Status: [clock format [lindex $newstatus 1]]  ($teacup(status-url))"
 			if {[set newstatus [lindex $newstatus 1]] > $status} {
+				# Update our local status file to match the remote:
 				if {![catch { file mkdir $teacup(local-repository) }] && ![catch { open [file join $teacup(local-repository) status] w } fid]} {
 					puts -nonewline $fid $newstatus
 					close $fid
-					tclLog "Wrote new status: $newstatus"
 				}
 			} else {
-				tclLog "No need for update."
+				tclLog "No need for package list update."
 				return 0
 			}
 		}
@@ -61,114 +62,90 @@ namespace eval ::tcl::teacup {
 
 	proc TEACUP_Update {} {
 		variable teacup
-		set ifneeded {}
-		if {[TEACUP_NeedUpdates]} {
-			# Download the /package/list because I don't know how to decipher the /db/index ...
-			tclLog "Downloading packages list: $teacup(list-url)"
-			if {![catch { open [file join $teacup(local-repository) list.html] w+ } fid]} {
-				if {![catch { ::http::geturl $teacup(list-url) -timeout 99999 -channel $fid } token]} {
-					seek $fid 0
-					set data [read -nonewline $fid]
-					close $fid
-					::http::cleanup $token
-					tclLog "downloaded package list size: [string length $data]"
-				} else {
-					close $fid
-					file delete -force -- [file join $teacup(local-repository) list.html]
-				}
-			}
-		} elseif {![catch { open [file join $teacup(local-repository) list.html] r } fid]} {
+		# Only download the package list if the status file has been updated:
+		if {[TEACUP_NeedUpdates] || ![file exists [file join $teacup(local-repository) list.html]]} { Download $teacup(list-url) [file join $teacup(local-repository) list.html] }
+		if {![catch { open [file join $teacup(local-repository) list.html] r } fid]} {
 			set data [read -nonewline $fid]
 			close $fid
-			tclLog "cached list size: [string length $data]"
-		} else {
-			tclLog "can't read or write to [file join $teacup(local-repository) list.html]"
-		}
-		foreach {html name ver arch} [regexp -all -inline -line -- {<a href="/package/name/([^/]+)/ver/([^/]+)/arch/([^/]+)/details">.*</a>} $data] {
-			#tclLog "PROCESSING: $name $ver $arch"
-			if {[SupportedArch $arch]} {
-				# Note: $arch = source is unsupported.
-				if {![VSatisfies $name $ver]} {
-					lappend ifneeded "package ifneeded $name $ver \[list ::tcl::teacup::TEACUP_Install $name $ver $arch\]"
-					#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
-				} else {
-					#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
+			# FixMe: Need unset all the currently set ifneeded's referencing the remote here, which means we'll have to track which ifneeded's are to the remote.
+			set ifneeded {}
+			foreach {html name ver arch} [regexp -all -inline -line -- {<a href="/package/name/([^/]+)/ver/([^/]+)/arch/([^/]+)/details">.*</a>} $data] {
+				#tclLog "PROCESSING: $name $ver $arch"
+				if {[SupportedArch $arch]} {
+					# Note: $arch = source is unsupported.
+					if {![VSatisfies $name $ver]} {
+						lappend ifneeded "package ifneeded $name $ver \[list ::teacup::TEACUP_Install $name $ver $arch\]"
+						#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
+					} else {
+						#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
+					}
 				}
 			}
-		}
-		if {[llength $ifneeded]} {
-			# Doing the package ifneeded commands last, so only our local packages will be found when doing the VSatisfies command above:
-			tclLog "eval'ing \$ifneeded ... ([llength $ifneeded] packages available to us from remote.)"
-			eval [join $ifneeded \n]
+			if {[llength $ifneeded]} {
+				# Doing the package ifneeded commands last, so only our local packages will be found when doing the VSatisfies command above:
+				eval [join $ifneeded \n]
+				tclLog "[llength $ifneeded] packages are available from remote (if needed)."
+			} else {
+				tclLog "\$ifneeded is [llength $ifneeded] in length!"
+			}
 		} else {
-			tclLog "\$ifneeded is [llength $ifneeded] in length!  o_O  \$data empty/unknown format?"
+			tclLog "Can't read from [file join $teacup(local-repository) list.html]"
 		}
 	}
 
 	# Install a package.  This will also update our cached copy of the package:
 	proc TEACUP_Install {name ver arch} {
 		variable teacup
-		set url [string map [list {@NAME@} $name {@VER@} $ver {@ARCH@} $arch] $teacup(package-url)]
-		tclLog "GETTING: $url"
-		file mkdir [set path [file join $teacup(local-repository) $arch [file dirname [string map {{::} {/}} $name]]]]
-		# $filepath is the $path/$filename (minus the extension for now):
-		set filepath [file join $path "[file tail [string map {{::} {/}} $name]]-${ver}"]
+		# $path is the directory the file will be put in.
+		# $filepath is the $path/$filename (minus the extension for now).
+		set filepath [file join [set path [file normalize [file join $teacup(local-repository) $arch [file dirname [string map {{::} {/}} $name]]]]] "[file tail [string map {{::} {/}} $name]]-${ver}"]
 		# Add a .tmp extension because we don't know what kind of file it is yet:
-		if {![catch { open "${filepath}.tmp" w } fid]} {
-			if {![catch { ::http::geturl "$url" -timeout 99999 -channel $fid } token]} {
-				close $fid
-				if {[::http::ncode $token] eq {200}} {
-					switch -- [dict get [::http::meta $token] Content-Type] {
-						{text/plain; charset=UTF-8} {
-							# tcl file = text/plain; charset=UTF-8
-							if {$arch eq {tcl}} {
-								# We don't know that it's a .tcl file until just now, so rename the file we got:
-								file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.tm"]
-								uplevel #0 [list source -encoding utf-8 $filepath]
-							}
-						}
-						{application/x-zip} {
-							# zip file = application/x-zip
-							# We don't know it's a .zip file until just now, so rename the file we got:
-							file rename -force -- "${filepath}.tmp" "${filepath}.zip"
-							if {([Unzip "${filepath}.zip" $filepath] || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
-								# The name "dir" for this variable is important, don't change it..
-								set dir $filepath
-								# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
-								# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
-								if {[lsearch -exact $::auto_path $path] == -1} { lappend ::auto_path $path }
-								# Source the pkgIndex.tcl to replace the existing ifneeded script for this package:
-								source [file join $filepath pkgIndex.tcl]
-								# eval the new ifneeded script (must be done using uplevel #0):
-								uplevel #0 [package ifneeded $name $ver]
-							} else {
-								tclLog "Unzip failed, or pkgIndex.tcl missing!"
-							}
-							# Delete the .zip file, we don't need it anymore:
-							file delete -force -- "${filepath}.zip"
-						}
-						{default} {
-							tclLog "Unhandled Content-Type: [dict get [::http::meta $token] Content-Type]"
-							file delete -force -- "${filepath}.tmp"
-							exit 1
-						}
+		if {![catch { Download [set url [string map [list {@NAME@} $name {@VER@} $ver {@ARCH@} $arch] $teacup(package-url)]] "${filepath}.tmp" } code options] && $code} {
+			switch -- [dict get $options Content-Type] {
+				{text/plain; charset=UTF-8} {
+					# tcl file = text/plain; charset=UTF-8
+					if {$arch eq {tcl}} {
+						# We don't know that it's a .tcl file until just now, so rename the file we got:
+						file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.tm"]
+						uplevel #0 [list source -encoding utf-8 $filepath]
 					}
-				} else {
-					close $fid
-					# ncode was something other than 200, so delete the file (if it exists):
+				}
+				{application/x-zip} {
+					# zip file = application/x-zip
+					# We don't know it's a .zip file until just now, so rename the file we got:
+					file rename -force -- "${filepath}.tmp" "${filepath}.zip"
+					if {([Unzip "${filepath}.zip" $filepath] || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
+						# The name "dir" for this variable is important, don't change it..
+						set dir $filepath
+						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
+						# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
+						if {[lsearch -exact $::auto_path $path] == -1} {
+							tclLog "Adding $path to ::auto_path"
+							lappend ::auto_path $path
+						}
+						# Source the pkgIndex.tcl to replace the existing ifneeded script for this package:
+						source [file join $filepath pkgIndex.tcl]
+						# eval the new ifneeded script (must be done using uplevel #0):
+						uplevel #0 [package ifneeded $name $ver]
+					} else {
+						tclLog "Unzip failed, or pkgIndex.tcl missing!"
+					}
+					# Delete the .zip file, we don't need it anymore:
+					file delete -force -- "${filepath}.zip"
+				}
+				{default} {
+					tclLog "Unhandled Content-Type: [dict get $options Content-Type]  (Report this as a bug in teacup.tcl)"
 					file delete -force -- "${filepath}.tmp"
 				}
-				::http::cleanup $token
 			}
 		}
 	}
 
 	proc TEACUP_Load {} {
 		variable teacup
-		::tcl::tm::add [file join $teacup(local-repository) tcl]
-		# FixMe: Add the paths to the pkgIndex.tcl files to the ::auto_path list.
+		::tcl::tm::add [file normalize [file join $teacup(local-repository) tcl]]
 		foreach p [glob -nocomplain -dir $teacup(local-repository) *] {
-			lappend ::auto_path $p
+			lappend ::auto_path [file normalize $p]
 		}
 		# FixMe: Find the bug in Tcl that makes it not look for existing packages until AFTER we package require something (it should know what packages are available before they're package required):
 		catch { package require UpdateAvailablePackages }
@@ -188,43 +165,74 @@ namespace eval ::tcl::teacup {
 		return 0
 	}
 
-	proc Unzip {file dest} {
-		if {![catch { uplevel #0 {package require vfs::zip} }] && ![catch { uplevel #0 [list ::vfs::zip::Mount $file $file] } mnt]} {
-			file mkdir $dest
-			file copy -force -- {*}[glob -directory $file *] $dest
-			::vfs::zip::Unmount $mnt $file
-			tclLog "vfs::zip $file $dest"
-			return 1
-		} elseif {[auto_execok unzip] ne {} && ![catch { exec unzip -o $file -d $dest }]} {
-			tclLog "exec unzip -o $file -d $dest"
-			return 1
-		} else {
-			tclLog "Can't Unzip locally: $file -> $dest"
-			return 0
+	# Downloads $url to $destfile, returns 1 for success, 0 for error.
+	proc Download {url destfile} {
+		if {![catch { file mkdir [file dirname $destfile] ; open ${destfile}.dl wb } fid]} {
+			variable DownloadCount
+			tclLog "Get:[incr DownloadCount] $url"
+			variable teacup
+			set downloadtime [clock milliseconds]
+			if {![catch { ::http::geturl $url -timeout $teacup(geturl-timeout) -channel $fid } token]} {
+				close $fid
+				# If successful, rename to the requested filename:
+				if {[::http::ncode $token] eq {200}} {
+					file rename -force -- ${destfile}.dl $destfile
+					tclLog "Fetched [set size [::http::size $token]] bytes in [set downloadtime [expr { ([clock milliseconds] - $downloadtime) / 1000.0 }]] seconds ([format {%.4f} [expr { ($size / 1024.0) / $downloadtime }]]kB/s)."
+				}
+				return -options "[::http::meta $token][::http::cleanup $token]" 1
+			} else {
+				close $fid
+				file delete -force -- ${destfile}.dl
+			}
 		}
+		return 0
+	}
+
+	# Try to unzip $file to $dest by trying different methods:
+	proc Unzip {file dest} {
+		foreach method {vfs::zip unzip default} {
+			switch -- $method {
+				{vfs::zip} {
+					if {![catch { uplevel #0 {package require vfs::zip} }] && ![catch { uplevel #0 [list ::vfs::zip::Mount $file $file] } mnt]} {
+						if {![catch { file mkdir $dest ; file copy -force -- {*}[glob -directory $file *] $dest }]} {
+							::vfs::zip::Unmount $mnt $file
+							tclLog "vfs::zip $file $dest"
+							return 1
+						} else {
+							::vfs::zip::Unmount $mnt $file
+						}
+					}
+				}
+				{unzip} {
+					if {[auto_execok unzip] ne {} && ![catch { exec unzip -o $file -d $dest }]} {
+						tclLog "exec unzip -o $file -d $dest"
+						return 1
+					}
+				}
+				{Trf} {
+					# FixMe: Add this method.
+				}
+				{default} {
+					tclLog "Can't Unzip locally: $file -> $dest"
+				}
+			}
+		}
+		return 0
 	}
 
 	# Uses wobzip.org to get the .zip file and present a list of download links for the files contained in the .zip, and downloads all the files individually to $outDir
 	# returns 1 on complete success (all files downloaded), or 0 on error(s) (some or all files failed to download).
 	proc Wobzip {url {outDir {.}}} {
 		tclLog "Wobzip: Retrieving $url"
-		if {![catch { ::http::geturl "http://wobzip.org/?type=url&url=${url}" -timeout 99999 } token]} {
-			foreach {link file} [regexp -all -inline -- {/get/save_file\.php[^&]+&f=([^']+)} [::http::data $token][::http::cleanup $token]] {
-				if {[catch { file mkdir [file dirname [set file [file join $outDir [string trimleft $file {/}]]]] }]} {
-					tclLog "Failed to create directory: [file dirname $file]"
-					set retVal 0
-				} elseif {[catch { open $file w } fid]} {
-					tclLog "Failed to open $file for writing."
-					set retVal 0
-				} elseif {![catch { ::http::geturl "http://wobzip.org${link}" -timeout 99999 -channel $fid } token][close $fid]} {
-					::http::cleanup $token
-					tclLog "Wobzip: Got $file"
-					# Only set retVal to 1 once, so that it'll only be 1 if we're able to get ALL the files:
-					if {![info exists retVal]} { set retVal 1 }
-				} else {
-					file delete -force -- $file
+		variable teacup
+		if {![catch { ::http::geturl "http://wobzip.org/?type=url&url=${url}" -timeout $teacup(geturl-timeout) } token] && [::http::ncode $token] eq {200}} {
+			foreach {link file} [regexp -all -inline -- {/get/save_file\.php[^&]+&f=([^']+)} "[::http::data $token][::http::cleanup $token]"] {
+				if {![Download "http://wobzip.org${link}" [set file [file join $outDir [string trimleft $file {/}]]]]} {
 					tclLog "Wobzip: Failed to get $file"
 					set retVal 0
+				} elseif {![info exists retVal]} {
+					# Only set retVal to 1 once, so that it'll only be 1 if we're able to get ALL the files:
+					set retVal 1
 				}
 			}
 			if {[info exists retVal]} {
@@ -251,13 +259,15 @@ namespace eval ::tcl::teacup {
 		variable teacup
 		set teacup($var) $value
 	}
+	variable ifneeded
+	if {![info exists ifneeded]} { variable ifneeded {} }
 }
 package provide teacup 1.0
 
 
 # Note: These commands will be removed from here later on and left for the end-user to run...
 
-namespace import ::tcl::teacup::teacup
+namespace import ::teacup::teacup
 
 # Change the defaults for..testing purposes:
 #teacup set local-repository [file join $env(HOME) svn packages teapot]
