@@ -1704,17 +1704,12 @@ proc ::tcldrop::core::counter {command {id {default}} {incr {1}}} {
 	}
 }
 
-# FixMe: do this some other way? / request exempts & invites for relevant net-types
 proc ::tcldrop::core::EVNT_loaded {event} {
 	putdebuglog "::tcldrop::core::EVNT_loaded $event"
 	# resynch channels after a restart
 	foreach chan [channels] {
 		if {![botonchan $chan]} {
-			putserv "JOIN $chan"
-			putquick "MODE $chan +b"
-			putquick "MODE $chan"
-			putquick "WHO $chan"
-			puthelp "TOPIC $chan"
+			resetchan $chan
 		}
 	}
 }

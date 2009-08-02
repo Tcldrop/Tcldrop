@@ -256,7 +256,17 @@ proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
 
 # RESET <password> [channel]
 proc ::tcldrop::irc::msg::RESET {nick host hand text} {
-
+	# don't check for botonchan, since that might return 0 on a desynch
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [channel exists [set chan [lindex $text 1]]]} {
+		putcmdlog "(${nick}!${host}) !${hand}! RESET $chan"
+		# reply put in server queue or Tcldrop won't reply until after resetchan sends /who /topic etc
+		putserv "NOTICE $nick :[lang 0x62a]"; # Resetting channel info.
+		resetchan $chan
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! failed RESET"
+		return 0
+	}
 }
 
 # STATUS <password>
