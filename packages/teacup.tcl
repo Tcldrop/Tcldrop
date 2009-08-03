@@ -17,7 +17,7 @@ namespace eval ::teacup {
 
 	# Default values, these can be changed with the [teacup set] command:
 	variable teacup
-	set teacup(local-repository) [file join $env(HOME) .teacup cache]
+	set teacup(local-repository) [file join $env(HOME) .teacup]
 	if {$::tcl_platform(os) eq {Linux} && $::tcl_platform(wordSize) == 4 && [string match {i*86*} $::tcl_platform(machine)]} {
 		# hard-coded to avoid an annoying bug in the platform package..
 		set teacup(platforms) [list linux-glibc2.9-ix86 linux-glibc2.8-ix86 linux-glibc2.7-ix86 linux-glibc2.6-ix86 linux-glibc2.5-ix86 linux-glibc2.4-ix86 linux-glibc2.3-ix86 linux-glibc2.2-ix86 linux-glibc2.1-ix86 linux-glibc2.0-ix86 tcl]
@@ -32,6 +32,7 @@ namespace eval ::teacup {
 		list-url {http://teapot.activestate.com/package/list}
 		package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
 		index-url {http://teapot.activestate.com/db/index}
+		autoupdate-interval {0}
 	}
 
 	# Returns 1 when we need to get an updated packages list, 0 when we don't.
@@ -44,9 +45,9 @@ namespace eval ::teacup {
 		} else {
 			set status 0
 		}
-		if {![catch { ::http::geturl $teacup(status-url) -timeout $teacup(geturl-timeout) } token] && [::http::ncode $token] eq {200} && [regexp {<pre>(.*)</pre>} [::http::data $token][::http::cleanup $token] - newstatus]} {
-			tclLog "Status: [clock format [lindex $newstatus 1]]  ($teacup(status-url))"
-			if {[set newstatus [lindex $newstatus 1]] > $status} {
+		if {![catch { ::http::geturl $teacup(status-url) -timeout $teacup(geturl-timeout) } token] && [::http::ncode $token] eq {200} && [regexp -- {<pre>\d+ (\d+) } "[::http::data $token][::http::cleanup $token]" - newstatus]} {
+			tclLog "Status: [clock format $newstatus]  ($teacup(status-url))"
+			if {$newstatus > $status} {
 				# Update our local status file to match the remote:
 				if {![catch { file mkdir $teacup(local-repository) }] && ![catch { open [file join $teacup(local-repository) status] w } fid]} {
 					puts -nonewline $fid $newstatus
@@ -60,21 +61,20 @@ namespace eval ::teacup {
 		return 1
 	}
 
-	proc TEACUP_Update {} {
+	proc TEACUP_Update {{force {0}}} {
 		variable teacup
 		# Only download the package list if the status file has been updated:
-		if {[TEACUP_NeedUpdates] || ![file exists [file join $teacup(local-repository) list.html]]} { Download $teacup(list-url) [file join $teacup(local-repository) list.html] }
+		if {$force || ![file exists [file join $teacup(local-repository) list.html]] || [TEACUP_NeedUpdates]} { Download $teacup(list-url) [file join $teacup(local-repository) list.html] }
 		if {![catch { open [file join $teacup(local-repository) list.html] r } fid]} {
 			set data [read -nonewline $fid]
 			close $fid
-			# FixMe: Need unset all the currently set ifneeded's referencing the remote here, which means we'll have to track which ifneeded's are to the remote.
 			set ifneeded {}
 			foreach {html name ver arch} [regexp -all -inline -line -- {<a href="/package/name/([^/]+)/ver/([^/]+)/arch/([^/]+)/details">.*</a>} $data] {
 				#tclLog "PROCESSING: $name $ver $arch"
 				if {[SupportedArch $arch]} {
-					# Note: $arch = source is unsupported.
-					if {![VSatisfies $name $ver]} {
+					if {([dict exists $teacup(packages) $name $ver $arch downloaded] && ![dict get $teacup(packages) $name $ver $arch downloaded]) || ![VSatisfies $name $ver]} {
 						lappend ifneeded "package ifneeded $name $ver \[list ::teacup::TEACUP_Install $name $ver $arch\]"
+						dict set teacup(packages) $name $ver $arch downloaded 0
 						#tclLog "IFNEEDED: Name: $name Ver: $ver Arch: $arch"
 					} else {
 						#tclLog "HAVELOCAL: Name: $name Ver: $ver Arch: $arch"
@@ -93,6 +93,8 @@ namespace eval ::teacup {
 		}
 	}
 
+	# FixMe: Find out why packages like tcllibc don't have their .zip files deleted after extraction.
+
 	# Install a package.  This will also update our cached copy of the package:
 	proc TEACUP_Install {name ver arch} {
 		variable teacup
@@ -101,6 +103,7 @@ namespace eval ::teacup {
 		set filepath [file join [set path [file normalize [file join $teacup(local-repository) $arch [file dirname [string map {{::} {/}} $name]]]]] "[file tail [string map {{::} {/}} $name]]-${ver}"]
 		# Add a .tmp extension because we don't know what kind of file it is yet:
 		if {![catch { Download [set url [string map [list {@NAME@} $name {@VER@} $ver {@ARCH@} $arch] $teacup(package-url)]] "${filepath}.tmp" } code options] && $code} {
+			dict set teacup(packages) $name $ver $arch downloaded 1
 			switch -- [dict get $options Content-Type] {
 				{text/plain; charset=UTF-8} {
 					# tcl file = text/plain; charset=UTF-8
@@ -116,7 +119,7 @@ namespace eval ::teacup {
 					file rename -force -- "${filepath}.tmp" "${filepath}.zip"
 					if {([Unzip "${filepath}.zip" $filepath] || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
 						# The name "dir" for this variable is important, don't change it..
-						set dir $filepath
+						set dir $path
 						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
 						# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
 						if {[lsearch -exact $::auto_path $path] == -1} {
@@ -172,18 +175,19 @@ namespace eval ::teacup {
 			tclLog "Get:[incr DownloadCount] $url"
 			variable teacup
 			set downloadtime [clock milliseconds]
-			if {![catch { ::http::geturl $url -timeout $teacup(geturl-timeout) -channel $fid } token]} {
+			if {![catch { ::http::geturl $url -timeout $teacup(geturl-timeout) -channel $fid } token] && [::http::ncode $token] eq {200}} {
 				close $fid
 				# If successful, rename to the requested filename:
-				if {[::http::ncode $token] eq {200}} {
-					file rename -force -- ${destfile}.dl $destfile
-					tclLog "Fetched [set size [::http::size $token]] bytes in [set downloadtime [expr { ([clock milliseconds] - $downloadtime) / 1000.0 }]] seconds ([format {%.4f} [expr { ($size / 1024.0) / $downloadtime }]]kB/s)."
-				}
+				file rename -force -- ${destfile}.dl $destfile
+				tclLog "Fetched [set size [::http::size $token]] bytes in [set downloadtime [expr { ([clock milliseconds] - $downloadtime) / 1000.0 }]] seconds ([format {%.4f} [expr { ($size / 1024.0) / $downloadtime }]]kB/s)."
 				return -options "[::http::meta $token][::http::cleanup $token]" 1
 			} else {
 				close $fid
 				file delete -force -- ${destfile}.dl
+				tclLog "Failed to get: $url"
 			}
+		} else {
+			tclLog "Failed to mkdir for or open for writing: ${destfile}.dl"
 		}
 		return 0
 	}
@@ -227,8 +231,7 @@ namespace eval ::teacup {
 		variable teacup
 		if {![catch { ::http::geturl "http://wobzip.org/?type=url&url=${url}" -timeout $teacup(geturl-timeout) } token] && [::http::ncode $token] eq {200}} {
 			foreach {link file} [regexp -all -inline -- {/get/save_file\.php[^&]+&f=([^']+)} "[::http::data $token][::http::cleanup $token]"] {
-				if {![Download "http://wobzip.org${link}" [set file [file join $outDir [string trimleft $file {/}]]]]} {
-					tclLog "Wobzip: Failed to get $file"
+				if {![Download "http://wobzip.org${link}" [file join $outDir [string trimleft $file {/}]]]} {
 					set retVal 0
 				} elseif {![info exists retVal]} {
 					# Only set retVal to 1 once, so that it'll only be 1 if we're able to get ALL the files:
@@ -238,7 +241,7 @@ namespace eval ::teacup {
 			if {[info exists retVal]} {
 				return $retVal
 			} else {
-				tclLog "Wobzip: No files to download from archive @ $url (regexp may need updating)."
+				tclLog "Wobzip: No files downloaded from archive @ $url  (regexp may need updating)."
 			}
 		} else {
 			tclLog "Wobzip: Failed to get zip file list."
@@ -259,8 +262,27 @@ namespace eval ::teacup {
 		variable teacup
 		set teacup($var) $value
 	}
-	variable ifneeded
-	if {![info exists ifneeded]} { variable ifneeded {} }
+
+	if {![info exists teacup(packages)]} { set teacup(packages) [dict create] }
+
+	# Note: autoupdate-interval should be in seconds.
+	if {$teacup(autoupdate-interval) > 0} {
+		proc DoAutoUpdate {{lastupdate {0}}} {
+			variable teacup
+			# Keep doing autoupdates as long as this is > zero:
+			if {$teacup(autoupdate-interval) > 0} {
+				if {[clock seconds] - $lastupdate >= $teacup(autoupdate-interval)} {
+					# Time for another update:
+					if {[TEACUP_NeedUpdates]} { TEACUP_Update 1 }
+					after [expr { $teacup(autoupdate-interval) * 1001 }] [list ::teacup::DoAutoUpdate [clock seconds]]
+				} else {
+					# We didn't wait long enough, try again in a little while:
+					after [expr { ([clock seconds] - $lastupdate) * 1001 }] [list ::teacup::DoAutoUpdate $lastupdate]
+				}
+			}
+		}
+		after [expr { $teacup(autoupdate-interval) * 1000 }] [list ::teacup::DoAutoUpdate 1]
+	}
 }
 package provide teacup 1.0
 
@@ -269,15 +291,11 @@ package provide teacup 1.0
 
 namespace import ::teacup::teacup
 
-# Change the defaults for..testing purposes:
-#teacup set local-repository [file join $env(HOME) svn packages teapot]
-#teacup set platforms {*}
-#teacup set status-url {http://teapot.activestate.com.nyud.net/db/status}
-#teacup set list-url {http://teapot.activestate.com/package/list}
-#teacup set package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
-
 # Load our local (cached) list (This actually just sets the auto_path and tm paths for now):
 teacup load
 
 # Update packages list from http://teapot.activestate.com/:
 teacup update
+
+after 9999999 [list set ::forever 1]
+vwait ::forever
