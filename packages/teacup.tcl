@@ -296,6 +296,3 @@ teacup load
 
 # Update packages list from http://teapot.activestate.com/:
 teacup update
-
-after 9999999 [list set ::forever 1]
-vwait ::forever
