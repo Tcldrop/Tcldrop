@@ -63,8 +63,7 @@ namespace eval ::teacup {
 
 	proc TEACUP_Update {{force {0}}} {
 		variable teacup
-		# Only download the package list if the status file has been updated:
-		if {$force || ![file exists [file join $teacup(local-repository) list.html]] || [TEACUP_NeedUpdates]} { Download $teacup(list-url) [file join $teacup(local-repository) list.html] }
+		if {$force || [TEACUP_NeedUpdates] || ![file exists [file join $teacup(local-repository) list.html]]} { Download $teacup(list-url) [file join $teacup(local-repository) list.html] }
 		if {![catch { open [file join $teacup(local-repository) list.html] r } fid]} {
 			set data [read -nonewline $fid]
 			close $fid
@@ -93,8 +92,6 @@ namespace eval ::teacup {
 		}
 	}
 
-	# FixMe: Find out why packages like tcllibc don't have their .zip files deleted after extraction.
-
 	# Install a package.  This will also update our cached copy of the package:
 	proc TEACUP_Install {name ver arch} {
 		variable teacup
@@ -107,19 +104,17 @@ namespace eval ::teacup {
 			switch -- [dict get $options Content-Type] {
 				{text/plain; charset=UTF-8} {
 					# tcl file = text/plain; charset=UTF-8
-					if {$arch eq {tcl}} {
+					if {$arch eq {tcl} && ![catch { file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.tm"] }]} {
 						# We don't know that it's a .tcl file until just now, so rename the file we got:
-						file rename -force -- "${filepath}.tmp" [set filepath "${filepath}.tm"]
 						uplevel #0 [list source -encoding utf-8 $filepath]
 					}
 				}
 				{application/x-zip} {
 					# zip file = application/x-zip
 					# We don't know it's a .zip file until just now, so rename the file we got:
-					file rename -force -- "${filepath}.tmp" "${filepath}.zip"
-					if {([Unzip "${filepath}.zip" $filepath] || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
+					if {((![catch { file rename -force -- "${filepath}.tmp" "${filepath}.zip" }] && [Unzip "${filepath}.zip" $filepath]) || [Wobzip "${url}.zip" $filepath]) && [file exists [file join $filepath pkgIndex.tcl]]} {
 						# The name "dir" for this variable is important, don't change it..
-						set dir $path
+						set dir $filepath
 						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
 						# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
 						if {[lsearch -exact $::auto_path $path] == -1} {
@@ -133,12 +128,10 @@ namespace eval ::teacup {
 					} else {
 						tclLog "Unzip failed, or pkgIndex.tcl missing!"
 					}
-					# Delete the .zip file, we don't need it anymore:
-					file delete -force -- "${filepath}.zip"
 				}
 				{default} {
 					tclLog "Unhandled Content-Type: [dict get $options Content-Type]  (Report this as a bug in teacup.tcl)"
-					file delete -force -- "${filepath}.tmp"
+					catch { file delete -force -- "${filepath}.tmp" }
 				}
 			}
 		}
@@ -148,6 +141,7 @@ namespace eval ::teacup {
 		variable teacup
 		::tcl::tm::add [file normalize [file join $teacup(local-repository) tcl]]
 		foreach p [glob -nocomplain -dir $teacup(local-repository) *] {
+			tclLog "Adding $p to ::auto_path (in load)."
 			lappend ::auto_path [file normalize $p]
 		}
 		# FixMe: Find the bug in Tcl that makes it not look for existing packages until AFTER we package require something (it should know what packages are available before they're package required):
@@ -179,11 +173,11 @@ namespace eval ::teacup {
 				close $fid
 				# If successful, rename to the requested filename:
 				file rename -force -- ${destfile}.dl $destfile
-				tclLog "Fetched [set size [::http::size $token]] bytes in [set downloadtime [expr { ([clock milliseconds] - $downloadtime) / 1000.0 }]] seconds ([format {%.4f} [expr { ($size / 1024.0) / $downloadtime }]]kB/s)."
+				tclLog "Fetched [set size [::http::size $token]] bytes in [set downloadtime [expr { ([clock milliseconds] - $downloadtime) / 1000.0 }]] seconds ([format {%.3f} [expr { ($size / 1024.0) / $downloadtime }]]kB/s)."
 				return -options "[::http::meta $token][::http::cleanup $token]" 1
 			} else {
 				close $fid
-				file delete -force -- ${destfile}.dl
+				catch { file delete -force -- ${destfile}.dl }
 				tclLog "Failed to get: $url"
 			}
 		} else {
@@ -200,6 +194,7 @@ namespace eval ::teacup {
 					if {![catch { uplevel #0 {package require vfs::zip} }] && ![catch { uplevel #0 [list ::vfs::zip::Mount $file $file] } mnt]} {
 						if {![catch { file mkdir $dest ; file copy -force -- {*}[glob -directory $file *] $dest }]} {
 							::vfs::zip::Unmount $mnt $file
+							catch { file delete -force -- $file }
 							tclLog "vfs::zip $file $dest"
 							return 1
 						} else {
@@ -209,6 +204,7 @@ namespace eval ::teacup {
 				}
 				{unzip} {
 					if {[auto_execok unzip] ne {} && ![catch { exec unzip -o $file -d $dest }]} {
+						catch { file delete -force -- $file }
 						tclLog "exec unzip -o $file -d $dest"
 						return 1
 					}
@@ -221,6 +217,7 @@ namespace eval ::teacup {
 				}
 			}
 		}
+		catch { file delete -force -- $file }
 		return 0
 	}
 
@@ -259,6 +256,11 @@ namespace eval ::teacup {
 
 	# Sets a var in the teacup array:
 	proc TEACUP_Set {var value} {
+		switch -- $var {
+			{autoupdate-interval} {
+				after [expr { $value * 1000 }] [list ::teacup::DoAutoUpdate 1]
+			}
+		}
 		variable teacup
 		set teacup($var) $value
 	}
