@@ -67,7 +67,7 @@ proc ::tcldrop::console::store {idx} {
 # FixMe: Add support for setting console idx * which should turn on everything and -* which turns off everything
 proc ::tcldrop::console::console {idx args} {
 	foreach whatever $args {
-		if {![validchan $whatever]} {
+		if {![validchan $whatever] && $whatever ne {*} && $whatever ne {-}} {
 			switch -- [string index $whatever 0] {
 				{ } {}
 				{#} - {&} - {!} - {@} - {$} - {%} - {^} - {[} - {]} - {:} - "\"" - "\{" - "\}" { return -code error "Invalid channel/flag: $whatever" }
@@ -83,10 +83,10 @@ proc ::tcldrop::console::console {idx args} {
 					setconsole $idx levels $levels
 				}
 			}
-		#} elseif {$whatever == {*} || $whatever == {-} || [validchan $whatever] || [haschanrec [idx2hand $idx] $whatever]} {
-		} else {
-			# Note: * means all channels, - means no channels.
+		} elseif {$whatever ne {}} {
+			# Ignore $whatever if it's "" (meaning, leave the console channel as it currently is)
 			# They want to change their IRC console channel..
+			# Note: * means all channels, - means no channels.
 			setconsole $idx channel $whatever
 		}
 	}
