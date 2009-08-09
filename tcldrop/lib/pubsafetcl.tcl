@@ -68,7 +68,7 @@ namespace eval pubsafetcl {
 			if {[info commands load] == {}} { proc load {fileName {packageName {}} {interp {}}} { return -code error "couldn't load file \"$fileName\": [pwd]$fileName: cannot open shared object file: No such file or directory" } }
 			if {[info commands source] == {}} { proc source {fileName} { return -code error {source is disabled.} } }
 			proc cd {args} { update }
-			proc timeout {args} { update }
+			proc timeout {args} { update idletasks }
 			proc pwd {args} { set args {/} }
 			proc glob {args} {
 				switch -- $args {
@@ -351,7 +351,7 @@ namespace eval pubsafetcl {
 				format "\\u%04.4X" $t
 			}
 			# This is escapes "special" characters, especially ones special to mysql:
-			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text }; #" <- fix broken syntax highlighting
+			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text }; #"" <- fix broken syntax highlighting.  Now you broke my syntax highlighting. hehe
 			proc unhtml {text} { regsub -all -- {(<.+?>)} $text {} }
 			proc unhtml2 {text} { regsub -all -- {<([^<])*>} $text {} }
 			proc unixtime {} { clock seconds }
@@ -817,7 +817,7 @@ namespace eval pubsafetcl {
 			} elseif {[set size [string length $body]] > 2048} {
 				return -code error "You can't have a body that large!  (Needed: $size Allowed: 2048)"
 			} else {
-				interp invokehidden $interp proc $name $arguments "timeout ; $body"
+				interp invokehidden $interp proc $name $arguments "update idletasks ; $body"
 			}
 		}
 		interp alias $interp proc {} [namespace current]::Proc $interp
@@ -993,7 +993,7 @@ namespace eval pubsafetcl {
 
 		namespace eval [namespace current]::$interp [list variable InitialCommands [$interp eval {info commands}]]
 		# Prevent abuse/confusion by not allowing commands with certain names:
-		namespace eval [namespace current]::$interp [list lappend InitialCommands hi fu i it a the it you hello re wb thx see hey well but or please plz pls how what you are of that can do kthx boring yes no may where is typo muaha rtfm google www search com exe ask okay come op voice q it o k ok in thanks thank thx lol jk nah or in bye nn night stfu wtf omg get go howdy example could give me I Hi How Hello What like nah but well If hmm lmao and he eh heh hehe heheh hehehe heheheh ah ha hah haha hahah hahaha hahahah hes You ffs o_O O_o O_O o_o just Oo oO on off oh but yea yeah like u ah aha ask err wow that it lmfao asdf asd as er uh um umm uhm gee duh http www db blah its bleh save timer utimer :) =) =P :P :p =p tcl .tcl safetcl .safetcl .eval im {I'm} {} { } {	} "\n" {?} {:} {;} {/} {.} {..} {...}]
+		namespace eval [namespace current]::$interp [list lappend InitialCommands hi fu i it a the it you hello re wb thx see hey well but or please plz pls how what you are of that can do kthx boring yes no may where is typo muaha rtfm google www search com exe ask okay come op voice q it o k ok in thanks thank thx lol jk nah or in bye nn night stfu wtf omg get go howdy example could give me I Hi How Hello What like nah but well If hmm lmao and he eh heh hehe heheh hehehe heheheh ah ha hah haha hahah hahaha hahahah hes You ffs o_O O_o O_O o_o just Oo oO on off oh but yea yeah like u ah aha ask err wow that it lmfao as er uh um umm uhm gee duh http www db blah its bleh save timer utimer :) =) =P :P :p =p tcl .tcl safetcl .safetcl .eval im {I'm} {} { } {	} "\n" {?} {:} {;} {/} {.} {..} {...}]
 		namespace eval [namespace current]::$interp [list namespace export $interp]
 
 		proc [namespace current]::${interp}::extraCommands {command {extraCommands {}}} {
@@ -1050,7 +1050,7 @@ namespace eval pubsafetcl {
 					# 250 here is the number of commands we'll allow at a time:
 					variable CmdCount [expr { [pubsafetcl eval {info cmdcount}] + 250 }]
 					catch { pubsafetcl limit commands -value $CmdCount }
-					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval [join $args] } out]
+					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval {*}$args } out]
 					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
 					variable Cancel
 					if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
@@ -1066,7 +1066,7 @@ namespace eval pubsafetcl {
 					set timerid [after $timeLimit [list set ${namespace}::Cancel $timeLimit]]
 					ResourceReset
 					# set arg [encoding convertto iso8859-1 $arg]
-					set errlev [catch { pubsafetcl eval [join $args] } out]
+					set errlev [catch { pubsafetcl eval {*}$args] } out]
 					variable Cancel
 					if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
 					if {$errlev == 1} { return -code error [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { return $out }
