@@ -111,7 +111,7 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 	if {$hand eq {*}} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (no such user)"
 		return 0
-	} elseif {![passwdok $hand -] {
+	} elseif {![passwdok $hand -]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (already set)"
 		puthelp "PRIVMSG $nick :[lang 0x615]";# You already have a password set.
 		return 0
@@ -124,7 +124,7 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 		chpass $hand $text
 		puthelp "PRIVMSG $nick :[lang 0x617] $text";# Password set to:
 		return 0
-	} elseif {$numArgs == 2 && ![passwdok $hand [lindex $arg 0]]
+	} elseif {$numArgs == 2 && ![passwdok $hand [lindex $arg 0]]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (old password incorrect)"
 		puthelp "PRIVMSG $nick :[lang 0x618]";# Incorrect password.
 		# return 0
