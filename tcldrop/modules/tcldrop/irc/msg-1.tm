@@ -102,7 +102,55 @@ proc ::tcldrop::irc::msg::VOICE {nick host hand text} {
 
 # WHOIS <hand>
 proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
-
+	if {$hand eq {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHOIS $text (no access)"
+		return 0
+	} elseif {$text eq {}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHOIS (no handle specified)"
+		puthelp "PRIVMSG $nick :[lang 0x001]: /msg $::botnick whois <handle>";# Usage
+		return 0
+	} elseif {![validuser $text]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHOIS $text (no such user)"
+		puthelp "PRIVMSG $nick :[lang 0x411]";# No such user record.
+		return 0
+	} else {
+		set target [getuser $text handle]
+		putcmdlog "(${nick}!${host}) !${hand}! WHOIS $target"
+		foreach chan [channels] {
+			if {[onchan [hand2nick $hand] $chan]} {
+				# only show +secret chans to users who have access to them
+				if {![channel get $chan secret] || [matchattr $hand nmol|nmolf $chan]} { lappend onchans $chan }
+			}
+		}
+		# FixMe: truncate or split into several lines if there's too many channels
+		if {[info exists onchans]} {
+			puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62d]: [join [lsort $onchans] {, }]";# Now on channel
+		} else {
+			lassign [getuser $text laston] seenTime seenLoc
+			if {$seenTime != 0} {
+				# FixMe: better time format for this
+				puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62f]: [clock format $seenTime]";# Last seen at
+			} else {
+				puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62e]";# Never seen on channel.
+			}
+		}
+		if {[matchattr $text b]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: bot"
+		} elseif {[matchattr $text n]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: global owner"
+		} elseif {[matchattr $text m]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: global master"
+		} elseif {[matchattr $text t]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: botnet master"
+		} elseif {[matchattr $text o]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: global op"
+		} elseif {[matchattr $text l]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: global halfop"
+		} elseif {[matchattr $text v]} {
+			puthelp "PRIVMSG $nick :\[${target}\] Status: global voice"
+		}
+		return 0
+	}
 }
 
 # PASS <password>
@@ -111,18 +159,18 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 	if {$hand eq {*}} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (no such user)"
 		return 0
-	} elseif {![passwdok $hand -]} {
+	} elseif {[set numArgs [llength [set arg [split $text]]]] == 1 && ![passwdok $hand -]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (already set)"
 		puthelp "PRIVMSG $nick :[lang 0x615]";# You already have a password set.
 		return 0
-	} elseif {([set numArgs [llength [set arg [split $text]]]] == 1 && [string length $text] < 6) || ($numArgs == 2 && [string length [set newPass [lindex $arg 1]]] < 6)} {
+	} elseif {($numArgs == 1 && [string length $text] < 6) || ($numArgs == 2 && [string length [set newPass [lindex $arg 1]]] < 6)} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (too short)"
 		puthelp "PRIVMSG $nick :[lang 0x616]";# Please use at least 6 characters.
 		return 0
 	} elseif {$numArgs == 1} {
 		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
 		chpass $hand $text
-		puthelp "PRIVMSG $nick :[lang 0x617] $text";# Password set to:
+		puthelp "PRIVMSG $nick :[lang 0x617] '${text}'.";# Password set to:
 		return 0
 	} elseif {$numArgs == 2 && ![passwdok $hand [lindex $arg 0]]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (old password incorrect)"
@@ -131,11 +179,11 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 	} elseif {$numArgs == 2} {
 		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
 		chpass $hand $newPass
-		puthelp "PRIVMSG $nick :[lang 0x619] $newPass";# Password changed to:
+		puthelp "PRIVMSG $nick :[lang 0x619] '${newPass}'.";# Password changed to:
 		return 0
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS"
-		puthelp "PRIVMSG $nick :Usage: /msg $::botnick \[oldpass\] <newpass>"
+		puthelp "PRIVMSG $nick :[lang 0x001]: /msg $::botnick pass \[oldpass\] <newpass>";# Usage
 		return 0
 	}
 }
@@ -188,7 +236,7 @@ proc ::tcldrop::irc::msg::GO {nick host hand text} {
 			return 0
 		}
 	} else {
-		putcmdlog "(${nick}!${host}) !${hand}! failed GO"
+		putcmdlog "(${nick}!${host}) !${hand}! failed GO (no access)"
 		return 0
 	}
 }
