@@ -57,6 +57,7 @@
 
 
 namespace eval ::tcldrop {
+	if {[catch {package require Tcl 8.5}]} { puts "Error! Tcldrop requires Tcl 8.5 or above to run."; exit}
 	variable version {0.6.1}
 	variable numversion {00060100}
 	variable script [info script]
