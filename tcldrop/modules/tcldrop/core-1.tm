@@ -737,26 +737,33 @@ proc ::tcldrop::core::TimerID {args} { variable TimerIDCount
 # Executes a command that was set with timer/utimer, and does a killtimer on it (to remove the data from the array)
 # Also, if the -repeat option was given to timer/utimer, then we start another timer for it.
 proc ::tcldrop::core::DoTimer {timerid} {
-	if {[info exists ::timers($timerid)]} {
-		foreach initcmd [dict get $::timers($timerid) initcommands] {
+	global timers errorInfo
+	if {[info exists timers($timerid)]} {
+		foreach initcmd [dict get $timers($timerid) initcommands] {
 			if {[catch { uplevel #0 $initcmd } err]} {
 				putlog "Tcl error while running initcmd for '$timerid': $err"
-				puterrlog $::errorInfo
+				puterrlog $errorInfo
 			}
 		}
-		if {[catch { uplevel #0 [dict get $::timers($timerid) fullcommand] } err]} {
+		if {[catch { uplevel #0 [dict get $timers($timerid) fullcommand] } err]} {
 			putlog "Tcl error in script for '$timerid':\n$err"
-			puterrlog $::errorInfo
+			puterrlog $errorInfo
 			killtimer $timerid
-		} else {
-			if {[dict get $::timers($timerid) repeat] == 0} {
+		} elseif {[dict exists $timers($timerid) repeat]} {
+			# There's no reason "repeat" wouldn't exist if ::timers($timerid) does exist..  In fact, it does always exist, it's just that Tcl in some cases doesn't see that it exists.
+			# You don't actually need to check if it exists above, a simple putlog or something that just READS ::timers($timerid) will also fix the bug and convince Tcl that "repeat" does actually exist.
+			# This is an old bug in Tcl that I've ran across only a few times over the years.  It's impossible to simplify the code to narrow down exactly when it happens, because as soon as you start to do that the problem dissapears.
+			if {[dict get $timers($timerid) repeat] == 0} {
 				# It's not set to repeat, so remove the timers data:
 				killtimer $timerid
 			} else {
-				if {[dict get $::timers($timerid) repeat] > 0} { dict incr ::timers($timerid) repeat -1 }
-				dict set ::timers($timerid) executetime [expr {[clock seconds] + ([dict get $::timers($timerid) interval] / 1000)}]
-				dict set ::timers($timerid) afterid [after [dict get $::timers($timerid) interval] [list ::tcldrop::core::DoTimer $timerid]]
+				if {[dict get $timers($timerid) repeat] > 0} { dict incr timers($timerid) repeat -1 }
+				dict set timers($timerid) executetime [expr {[clock seconds] + ([dict get $timers($timerid) interval] / 1000)}]
+				dict set timers($timerid) afterid [after [dict get $timers($timerid) interval] [list ::tcldrop::core::DoTimer $timerid]]
 			}
+		} else {
+			# You'll never see this putlog.  If you do, then I'm mistaken in regard to the previous comments.
+			putlog "DOTIMERDEBUG: ::timers($timerid) repeat doesn't exist.  Please report this as a bug."
 		}
 	}
 }
