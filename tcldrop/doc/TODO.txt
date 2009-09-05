@@ -84,4 +84,6 @@ http://code.google.com/p/tclsysdns/
 X-Chat Tcl plugin commands:
 http://www.scriptkitties.com/tclplugin/tclplugin.shtml
 
+http://www.mirc.net/raws/
+
 --

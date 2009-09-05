@@ -41,6 +41,7 @@ namespace eval ::tcldrop::dns {
 	namespace export {*}$commands
 }
 
+# FixMe: Need IPv6 support.
 proc ::tcldrop::dns::testip {ip} { regexp {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
 
 bind load - dns ::tcldrop::dns::LOAD -priority 0
@@ -82,10 +83,11 @@ if {![catch { package require dns }]} {
 	proc ::tcldrop::dns::Results {token} {
 		# FixMe: This proc could be done better.
 		variable Lookups
-		foreach {address proc args} $Lookups($token) {break}
+		lassign $Lookups($token) address proc args
 		unset Lookups($token)
 		if {![set status [string equal [::dns::status $token] {ok}]]} {
 			# Status wasn't "ok".  =(
+			putloglev d - "DNS resolve failed for $address"
 			if {[testip $address]} {
 				set ip [set hostname $address]
 			} else {
@@ -110,6 +112,9 @@ if {![catch { package require dns }]} {
 		}
 		::dns::cleanup $token
 		after idle [list $proc $ip $hostname $status {*}$args]
+		if {$status} { putloglev d - "DNS resolved $hostname to $ip" }
+		# FixMe: This whole proc seems screwy and should be rewritten.  Like [::dns::name] returns the nameserver (according to the docs)..why does it care about that?
+		# See: http://tcllib.sourceforge.net/doc/tcllib_dns.html
 	}
 } elseif {![catch { package require Tclx }] && [info commands host_info] != {}} {
 	putlog {Using TclX for [dnslookup].  (non-asynchronous.)}

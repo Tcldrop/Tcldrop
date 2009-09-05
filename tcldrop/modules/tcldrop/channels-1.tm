@@ -259,6 +259,7 @@ proc ::tcldrop::channels::setudef {type name {default {}}} {
 	# Store the udef itself:
 	variable Udefs
 	set Udefs($name) $type
+	putloglev d - "UDEF: $name (${type}) defined.  Default: $UdefDefaults($name)"
 	# Apply the default to all channels that don't already have it set:
 	SetUdefDefaults $name
 }
