@@ -48,7 +48,7 @@ do \
   fi; \
 done; \
 # Use the latest tclsh version found, otherwise fall back to 'tclsh' \
-echo "Using tclsh detected in $lastfullpath" \
+echo "Using tclsh detected in $lastfullpath"; \
 exec $lastfullpath "$0" ${1+"$@"}
 
 # Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
