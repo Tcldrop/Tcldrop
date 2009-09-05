@@ -739,7 +739,7 @@ proc ::tcldrop::core::TimerID {args} { variable TimerIDCount
 proc ::tcldrop::core::DoTimer {timerid} {
 	global timers errorInfo
 	if {[info exists timers($timerid)]} {
-		foreach initcmd [dict get $timers($timerid) initcommands] {
+		foreach initcmd [dict get $timers($timerid) -initcommands] {
 			if {[catch { uplevel #0 $initcmd } err]} {
 				putlog "Tcl error while running initcmd for '$timerid': $err"
 				puterrlog $errorInfo
@@ -749,19 +749,19 @@ proc ::tcldrop::core::DoTimer {timerid} {
 			putlog "Tcl error in script for '$timerid':\n$err"
 			puterrlog $errorInfo
 			killtimer $timerid
-		} elseif {[info exists timers($timerid)] && [dict exists $timers($timerid) repeat]} {
+		} elseif {[info exists timers($timerid)] && [dict exists $timers($timerid) -repeat]} {
 			# It's possible that the fullcommand above did a killtimer on this timerid.  This check also works around what I (FireEgl) believe to be a bug in Tcl.
-			if {[dict get $timers($timerid) repeat] == 0} {
+			if {[dict get $timers($timerid) -repeat] == 0} {
 				# It's not set to repeat, so remove the timers data:
 				killtimer $timerid
 			} else {
-				if {[dict get $timers($timerid) repeat] > 0} { dict incr timers($timerid) repeat -1 }
-				dict set timers($timerid) executetime [expr {[clock seconds] + ([dict get $timers($timerid) interval] / 1000)}]
-				dict set timers($timerid) afterid [after [dict get $timers($timerid) interval] [list ::tcldrop::core::DoTimer $timerid]]
+				if {[dict get $timers($timerid) -repeat] > 0} { dict incr timers($timerid) -repeat -1 }
+				dict set timers($timerid) executetime [expr {[clock seconds] + ([dict get $timers($timerid) -interval] / 1000)}]
+				dict set timers($timerid) afterid [after [dict get $timers($timerid) -interval] [list ::tcldrop::core::DoTimer $timerid]]
 			}
 		} else {
 			# This isn't really a bug, but I would like to know if/when this EVER happens..
-			putloglev d * "DOTIMERDEBUG: ::timers($timerid) repeat doesn't exist.  Please report this as a bug."
+			putloglev d * "DOTIMERDEBUG: ::timers($timerid) -repeat doesn't exist.  Please report this as a bug."
 			#catch { putloglev d * "DOTIMERDEBUG: ::timers($timerid) contains: $::timers($timerid)" }
 		}
 	}
@@ -779,15 +779,29 @@ proc ::tcldrop::core::calltimer {timerinfo} {
 }
 proc ::tcldrop::core::callutimer {timerinfo} { calltimer $timerinfo }
 
-# if $repeat is 0 (the default) then the command only executes once.
-# if $repeat is 1 or higher then the command repeats that many MORE times, every $seconds seconds.
-# if $repeat is -1 then it repeats forever.
-proc ::tcldrop::core::utimer {seconds command {repeat {0}}} {
-	calltimer [set ::timers([set timerid [TimerID $seconds [lindex $command 0] $repeat]]) [dict create timerid $timerid interval [set interval [expr { $seconds * 1000 }]] afterid [after $interval [list ::tcldrop::core::DoTimer $timerid]] executetime [expr { [clock seconds] + $seconds }] repeat $repeat command [lindex $command 0] args [join [lrange $command 1 end]] fullcommand $command initcommands [list]]]
-	return $timerid
+# If -repeat 0 (the default) then the command only executes once.
+# If -repeat 1 or higher then the command repeats that many MORE times, every $seconds seconds.
+# If -repeat -1 then it repeats forever.
+# If -timerid ID is specified, ID will override the default choice of the TimerID.
+proc ::tcldrop::core::utimer {seconds command args} {
+	if {[string is int -strict $args]} {
+		# Deprecated.  We should start using: -repeat -1  (or whatever we want repeat to be set to)
+		set repeat $args
+		# Set args to something else so it'll work with [dict merge]:
+		set args [dict create -repeat $args]
+	} else {
+		set repeat 0
+	}
+	# $args may override the defaults:
+	set timerinfo [dict merge [dict create -timerid [TimerID $seconds [lindex $command 0]] -repeat $repeat -interval [expr { $seconds * 1000 }] -initcommands [list] executetime [expr { [clock seconds] + $seconds }] command [lindex $command 0] args [join [lrange $command 1 end]] fullcommand $command] $args]
+	# In case we're replacing an existing timerid, make sure the after event is cancelled:
+	if {[info exists ::timers([dict get $timerinfo -timerid])]} { after cancel [dict get $::timers([dict get $timerinfo -timerid]) afterid] }
+	set timerinfo [dict merge $timerinfo [dict create afterid [after [dict get $timerinfo -interval] [list ::tcldrop::core::DoTimer [dict get $timerinfo -timerid]]]]]
+	calltimer [set ::timers([dict get $timerinfo -timerid]) $timerinfo]
+	dict get $timerinfo -timerid
 }
 
-proc ::tcldrop::core::timer {minutes command {repeat {0}}} { utimer [expr {$minutes * 60}] $command $repeat }
+proc ::tcldrop::core::timer {minutes command args} { utimer [expr {$minutes * 60}] $command {*}$args }
 
 # Note, timers and utimers are returned together.
 proc ::tcldrop::core::timers {{timerid {*}}} {
