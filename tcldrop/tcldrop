@@ -4,9 +4,9 @@
 # \
 # NOTE: backslash and semicolon placements are important! \
 # \
-# Search for tclsh[0-9].[0-9] in each valid dir in PATH and some other common paths \
+# FixMe: add some way to specify a specific path via an env variable/command arg and use that \
 # \
-# FixMe: add some way to specify/prefer a tclsh installed locally in a users shell \
+# Search for tclsh[0-9].[0-9] in each valid dir in PATH and some other common paths \
 for dir in $(echo $PATH:$HOME/local/bin:$HOME/bin | sed 's/:/ /g'); \
 do \
   if test -d $dir; \
@@ -31,12 +31,10 @@ do \
       lasttmpver=$tmpver; \
       lastfullpath=$fullpath; \
     fi; \
-    # Find the latest version if we find multiple copies of tclsh with the same number \
+    # Prefer installs in a users home dir if we find multiple copies of tclsh with the same version \
     if test "$tmpver" = "$lasttmpver"; \
     then \
-      a=$(echo 'puts [info patchlevel]' | $fullpath | sed 's/\.//g'); \
-      b=$(echo 'puts [info patchlevel]' | $lastfullpath | sed 's/\.//g'); \
-      if test "$a" -gt "$b"; \
+      if test "$(echo $fullpath |grep -o ^$HOME)" = "$HOME"; \
       then \
         lastver=$ver; \
         lasttmpver=$tmpver; \
@@ -50,6 +48,7 @@ do \
   fi; \
 done; \
 # Use the latest tclsh version found, otherwise fall back to 'tclsh' \
+echo "Using tclsh detected in $lastfullpath" \
 exec $lastfullpath "$0" ${1+"$@"}
 
 # Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
