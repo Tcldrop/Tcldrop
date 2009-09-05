@@ -124,7 +124,7 @@ proc ::tcldrop::server::CheckStoned {} {
 			quit "Stoned server..  \xAF\\(o_\xBA)/\xAF  "
 			# Jump to another server, subtracting the time we last heard from the server from the server-cycle-wait time (Let utimer deal with negative numbers):
 			variable ServerCycleTimerID [utimer [expr { ${::server-cycle-wait} - ([clock seconds] - $LastPONG) }] [list ::tcldrop::server::jump]]
-		} elseif {[clock seconds] - $LastPONG > 360} {
+		} elseif {${::server-online} && [clock seconds] - $LastPONG > 360} {
 			# Only send PINGs when we haven't heard from the server in a while.
 			putqueue idle "PING [clock seconds]"
 		}
@@ -245,6 +245,11 @@ proc ::tcldrop::server::jump {args} {
 		}
 	}
 	# Make sure the -port option is valid:
+	if {[string index $options(-port) 0] eq {+}} {
+		# Ports starting with + means use SSL/TLS:
+		set options(-ssl) 1
+		set options(-port) [string range $options(-port) 1 end]
+	}
 	if {![string is int -strict $options(-port)] || 1 > $options(-port) || $options(-port) > 65535 } {
 		set options(-port) ${::default-port}
 	}
@@ -260,6 +265,7 @@ proc ::tcldrop::server::jump {args} {
 	if {$options(-pass) != {} && [string match "*$options(-pass)" $options(-proxychain)]} { set options(-proxychain) [join [lrange [split $options(-proxychain) :] 0 end-1] :] }
 	# Make sure the port is at the end of -proxychain:
 	if {[string match {*:} $options(-proxychain)]} { append options(-proxychain) $options(-port) }
+	putlog "DEBUGJUMP: [array get options]"
 	Server [array get options]
 }
 
@@ -341,7 +347,7 @@ proc ::tcldrop::server::GetPenalty {line} {
 			{TRACE} { set penalty 2000 }
 			{NICK} { set penalty 3000 }
 			{ISON} { set penalty 1000 }
-			{WHOIS} { set penalty 2000 }
+			{WHOIS} { set penalty 8000 }
 			{DNS} { set penalty 2000 }
 			{PING} { set penalty 2000 }
 			{PONG} { set penalty 750 }
