@@ -109,7 +109,7 @@ proc ::tcldrop::server::Write {idx} {
 			# Note: Eggdrop sends a PING every 5 minutes.
 			# This should be higher than the frequency the server PINGs us.
 			# FixMe: Perhaps find out the frequency the server is sending us PINGs and make sure we already have a timer higher than that..
-			timer 14 [list {::tcldrop::server::CheckStoned}] -1
+			timer 16 [list {::tcldrop::server::CheckStoned}] -timerid {timer_::tcldrop::server::CheckStoned} -repeat -1
 		}
 	} else {
 		Error SOCKET {Unknown error}
@@ -119,12 +119,13 @@ proc ::tcldrop::server::Write {idx} {
 proc ::tcldrop::server::CheckStoned {} {
 	variable LastPONG
 	if {$LastPONG} {
-		if {[clock seconds] - $LastPONG > 999} {
+		putlog "in CheckStoned [clock seconds] - $LastPONG"
+		if {[clock seconds] - $LastPONG > 2400} {
 			# It's been too long since we heard anything from the server, assume it's dead:
 			quit "Stoned server..  \xAF\\(o_\xBA)/\xAF  "
 			# Jump to another server, subtracting the time we last heard from the server from the server-cycle-wait time (Let utimer deal with negative numbers):
 			variable ServerCycleTimerID [utimer [expr { ${::server-cycle-wait} - ([clock seconds] - $LastPONG) }] [list ::tcldrop::server::jump]]
-		} elseif {${::server-online} && [clock seconds] - $LastPONG > 360} {
+		} elseif {${::server-online} && [clock seconds] - $LastPONG > 900} {
 			# Only send PINGs when we haven't heard from the server in a while.
 			putqueue idle "PING [clock seconds]"
 		}
@@ -265,7 +266,6 @@ proc ::tcldrop::server::jump {args} {
 	if {$options(-pass) != {} && [string match "*$options(-pass)" $options(-proxychain)]} { set options(-proxychain) [join [lrange [split $options(-proxychain) :] 0 end-1] :] }
 	# Make sure the port is at the end of -proxychain:
 	if {[string match {*:} $options(-proxychain)]} { append options(-proxychain) $options(-port) }
-	putlog "DEBUGJUMP: [array get options]"
 	Server [array get options]
 }
 
