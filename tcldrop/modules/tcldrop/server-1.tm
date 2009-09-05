@@ -119,7 +119,6 @@ proc ::tcldrop::server::Write {idx} {
 proc ::tcldrop::server::CheckStoned {} {
 	variable LastPONG
 	if {$LastPONG} {
-		putlog "in CheckStoned [clock seconds] - $LastPONG"
 		if {[clock seconds] - $LastPONG > 2400} {
 			# It's been too long since we heard anything from the server, assume it's dead:
 			quit "Stoned server..  \xAF\\(o_\xBA)/\xAF  "
