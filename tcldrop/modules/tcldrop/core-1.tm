@@ -749,10 +749,8 @@ proc ::tcldrop::core::DoTimer {timerid} {
 			putlog "Tcl error in script for '$timerid':\n$err"
 			puterrlog $errorInfo
 			killtimer $timerid
-		} elseif {[dict exists $timers($timerid) repeat]} {
-			# There's no reason "repeat" wouldn't exist if ::timers($timerid) does exist..  In fact, it does always exist, it's just that Tcl in some cases doesn't see that it exists.
-			# You don't actually need to check if it exists above, a simple putlog or something that just READS ::timers($timerid) will also fix the bug and convince Tcl that "repeat" does actually exist.
-			# This is an old bug in Tcl that I've ran across only a few times over the years.  It's impossible to simplify the code to narrow down exactly when it happens, because as soon as you start to do that the problem dissapears.
+		} elseif {[info exists timers($timerid)] && [dict exists $timers($timerid) repeat]} {
+			# It's possible that the fullcommand above did a killtimer on this timerid.  This check also works around what I (FireEgl) believe to be a bug in Tcl.
 			if {[dict get $timers($timerid) repeat] == 0} {
 				# It's not set to repeat, so remove the timers data:
 				killtimer $timerid
@@ -762,8 +760,9 @@ proc ::tcldrop::core::DoTimer {timerid} {
 				dict set timers($timerid) afterid [after [dict get $timers($timerid) interval] [list ::tcldrop::core::DoTimer $timerid]]
 			}
 		} else {
-			# You'll never see this putlog.  If you do, then I'm mistaken in regard to the previous comments.
-			putlog "DOTIMERDEBUG: ::timers($timerid) repeat doesn't exist.  Please report this as a bug."
+			# This isn't really a bug, but I would like to know if/when this EVER happens..
+			putloglev d * "DOTIMERDEBUG: ::timers($timerid) repeat doesn't exist.  Please report this as a bug."
+			#catch { putloglev d * "DOTIMERDEBUG: ::timers($timerid) contains: $::timers($timerid)" }
 		}
 	}
 }
