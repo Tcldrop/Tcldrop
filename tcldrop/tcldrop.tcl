@@ -823,10 +823,18 @@ namespace eval ::tcldrop {
 
 	# http://en.wikipedia.org/wiki/Signal_handler#List_of_signals
 
+	# Only attempt to trap signals that are possible to trap on a specific OS:
+	# FixMe: from my testing, both Expect and TclX failed to trap SIGHUP, SIGUSR1, SIGUSR2, SIGXCPU, SIGPWR & SIGWINCH on windows.
+	# If it is possible to trap these in windows, add them to the list. They both also failed to trap SIGBREAK but I know that's a windows-specific signal.
+	# FixMe: Mac OS 8 and 9 identifies as "macintosh". OS X and later as "unix". Add "macintosh" to this list and find out what signals it can trap.
 	# Never add SIGCHLD or SIGALRM to this list, and only list the ones we'll use or expect other people to use in Tcldrop:
-	variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK SIGPWR SIGWINCH}
+	switch -exact -- $::tcl_platform(platform) {
+		{unix} { variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGPWR SIGWINCH} }
+		{windows} { variable trapSignals {SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGABRT SIGBREAK} }
+		default { variable trapSignals {SIGHUP SIGQUIT SIGTERM SIGINT SIGSEGV SIGBUS SIGFPE SIGILL SIGUSR1 SIGUSR2 SIGABRT SIGXCPU SIGBREAK SIGPWR SIGWINCH} }
+	}
 	variable trappedSignals {}
-	# Expect seems able to trap more of them than Tclx (at least on Windows):
+	# Expect seems able to trap more of them than TclX (at least on Windows):
 	if {![catch { package require Expect }] && [info commands trap] != {}} {
 		# Use trap from Expect.
 		proc ::tcldrop::Signal {signal} {
@@ -844,12 +852,13 @@ namespace eval ::tcldrop {
 		}
 		PutLogLev console o - "Using Expect for trapping signals: [join $trappedSignals {, }]."
 	}
-	# If Expect failed to trap any signals we try to trap them using Tclx:
+	# If Expect failed to trap any signals we try to trap them using TclX:
+	# FixMe: Really try to trap signals using TclX if Expect failed to trap _ANY_ signals.
 	if {[llength $trapSignals] > [llength $trappedSignals] && ![catch { package require Tclx }] && [info commands signal] != {}} {
 		# Use signal from TclX.
 		proc ::tcldrop::Signal {{signal {default}}} {
 			set signal [string tolower $signal]
-			PutLogLev console o - "Tclx Caught Signal: $signal"
+			PutLogLev console o - "TclX Caught Signal: $signal"
 			variable Tcldrop
 			foreach t [array names Tcldrop] { catch { tcldrop eval $t callevent $signal } }
 		}
@@ -857,12 +866,13 @@ namespace eval ::tcldrop {
 			if {[lsearch -exact $trappedSignals $Signal] == -1} {
 				if {![catch { signal trap $Signal [list ::tcldrop::Signal %S] } error]} {
 					lappend trappedSignals $Signal
-					PutLogLev console o - "Using Tclx for trapping signal: $Signal."
+					# PutLogLev console o - "Using TclX for trapping signal: $Signal."
 				} else {
-					#PutLogLev console d - "Tclx failed to trap signal $Signal: \"$error\""
+					#PutLogLev console d - "TclX failed to trap signal $Signal: \"$error\""
 				}
 			}
 		}
+		PutLogLev console o - "Using TclX for trapping signals: [join $trappedSignals {, }]."
 	}
 
 	foreach Signal $trapSignals { if {[lsearch -exact $trappedSignals $Signal] == -1} { lappend untrappedSignals $Signal } }
@@ -873,7 +883,7 @@ namespace eval ::tcldrop {
 
 	# Background and foreground modes only apply to tclsh...
 	# If we're running inside an Eggdrop or Wish or some other program then they'll keep us running (no need to do fork or vwait in those cases).
-	# FixMe: If Tclx or Expect is already loaded, they should be tried first, critcl should be last.
+	# FixMe: If TclX or Expect is already loaded, they should be tried first, critcl should be last.
 	if {$tcldrop(host_env) eq {tclsh}} {
 		if {$tcldrop(background-mode)} {
 			# Background mode was requested.
@@ -903,7 +913,7 @@ namespace eval ::tcldrop {
 					exit $Exit
 				}
 			} else {
-				puts "Running in foreground mode.  (pid: [pid])\n(Install Tclx or Expect for background mode support.)"
+				puts "Running in foreground mode.  (pid: [pid])\n(Install TclX, Expect or Critcl for background mode support.)"
 				set tcldrop(background-mode) 0
 			}
 			# FixMe: Make it run in the foreground when receiving a SIGTTIN or SIGTTOU - http://en.wikipedia.org/wiki/SIGTTIN & http://en.wikipedia.org/wiki/SIGTTOU
