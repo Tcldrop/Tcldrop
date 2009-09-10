@@ -30,17 +30,22 @@
 #
 # ::proxy::proxy socket ?option value? ?option value ...?
 #
-
-# Example Usage:
+#
 # The synchronous way is:
-# if {[catch { ::proxy::connect https://http.connect.proxy.com:8080/socks5://user:password@socks5.proxy.com:3128/irc.blessed.net:6667 } id]} {
+# if {[catch { ::proxy::connect https://http.connect.proxy.com:8080/socks5://user:password@socks5.proxy.com:3128/irc.blessed.net:6667 } socket]} {
 #	puts "Failed"
 # } else {
-#	puts "Connected to address:port via the proxies."
-#	set socket [::proxy::socket $id]
+#	puts "Connected to irc.blessed.net:6667 via the proxies on $socket."
 # }
 #
-# set url https://username:password@http1.connect.proxy.com:8080/socks5://someuser:somepass@socks5.proxy.com/https://http2.connect.proxy.com/irc.blessed.net:6667
+#
+# https://username:password@http1.connect.proxy.com:8080/socks5://someuser:somepass@socks5.proxy.com/https://http2.connect.proxy.com/irc.blessed.net:6667
+
+# TODO (when Tcl v8.5 becomes more wide-spread):
+# Use {*} expands where applicable.
+# Use dicts instead of arrays.
+# Convert to a Tcl Module (.tm extension).
+# Try to simplify the splitchain proc.
 
 namespace eval ::proxy {
 	variable version {0.1}
@@ -52,7 +57,7 @@ namespace eval ::proxy {
 }
 
 proc ::proxy::connect {chain args} {
-	array set info [list -command {} -readable {} -writable {} -errors {} -user {} -pass {} socket {} -buffering line -blocking 0 -myaddr {} -async 1 -socket-command [list socket]]
+	array set info [list -command {} -readable {} -writable {} -errors {} -user {} -pass {} socket {} -buffering line -encoding [encoding system] -blocking 0 -myaddr {} -async 1 -ssl 0 -socket-command [list socket]]
 	array set info $args
 	if {$info(-async)} { set async [list {-async}] } else { set async [list] }
 	if {$info(-myaddr) != {} && $info(-myaddr) != {0.0.0.0}} { set myaddr [list {-myaddr} $info(-myaddr)] } else { set myaddr [list] }
@@ -71,7 +76,7 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 		Finish $id {error} $error
 	} elseif {[eof $info(socket)]} {
 		Finish $id {eof} {EOF}
-	} else {
+	} elseif {$status eq {ok}} {
 		fileevent $info(socket) writable {}
 		fileevent $info(socket) readable {}
 		fconfigure $info(socket) -blocking 0 -buffering line
@@ -83,14 +88,29 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 				Finish $id {error} $error
 			}
 		} else {
-			Finish $id $status {Connected}
+			# If SSL/TLS was requested, set it up now:
+			if {$info(-ssl)} {
+				if {[catch {
+					::package require tls
+					::tls::import $info(socket)
+					fconfigure $info(socket) -buffering none -encoding binary -blocking 1
+					::tls::handshake $info(socket)
+					#puts "[tls::status $info(socket)]"
+				} error]} {
+					Finish $id {ssl-error} "TLS/SSL Related Error: $error"
+				} else {
+					Finish $id $status {Connected with SSL}
+				}
+			} else {
+				Finish $id $status {Connected}
+			}
 		}
 	}
 }
 
 proc ::proxy::Finish {id status {reason {}}} {
 	upvar #0 $id info
-	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) }
+	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) -encoding $info(-encoding) }
 	catch { fileevent $info(socket) writable $info(-writable) }
 	catch { fileevent $info(socket) readable $info(-readable) }
 	switch -- $status {

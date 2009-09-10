@@ -132,8 +132,6 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		set options(-port) [string range $options(-port) 1 end]
 		set options(-ssl) 1
 	}
-	# Note/FixMe: I don't know how SSL connections work, so I don't know what happens when you try to use SSL and proxies together. (I haven't tested it)
-	if {$options(-ssl)} { if {[info commands {::tls::socket}] ne {} || ![catch { package require tls }]} { set options(-socket-command) [list ::tls::socket] } else { return -code error {SSL not supported, because the "tls" package is not installed.} } }
 	# We have to pass $options(-proxychain) to the ::proxy::connect command, so make sure it's set to something useful:
 	if {$options(-proxychain) eq {}} { set options(-proxychain) "$options(-address):$options(-port)" }
 	# Prepend the $::proxy chain to the chain we already have:
