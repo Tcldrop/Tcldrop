@@ -13,3 +13,4 @@
 package ifneeded proxy 0.1 [list source [file join $dir proxy.tcl]]
 package ifneeded proxy::https 0.2 [list source [file join $dir https.tcl]]
 package ifneeded proxy::socks5 0.2 [list source [file join $dir socks5.tcl]]
+package ifneeded proxy::socks4 0.2 [list source [file join $dir socks4.tcl]]
