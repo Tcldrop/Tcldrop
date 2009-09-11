@@ -219,12 +219,14 @@ proc ::tcldrop::server::jump {args} {
 		{*:*} {
 			# Proxychain style.
 			array set proxychain [::proxy::splitchain [lindex $args 0]]
-			lappend args -address $proxychain(address) -port $proxychain(port) -pass $proxychain(extra) -proxychain [lindex $args 0] -proxyinfo [array get proxychain]
-			if {[llength [lrange $args 1 end]] % 2} {
-				lappend args -pass [lindex $args 1]
-				array set options [lrange $args 2 end]
-			} else {
+			array set options [list -address $proxychain(address) -port $proxychain(port) -pass $proxychain(extra) -proxychain [lindex $args 0] -proxyinfo [array get proxychain]]
+			if {[string match {-*} [lindex $args 1]]} {
+				# Starts with -* so treat them as more options.
 				array set options [lrange $args 1 end]
+			} elseif {[lindex $args 1] ne {}} {
+				# Password?
+				set options(-pass) [lindex $args 1]
+				array set options [lrange $args 2 end]
 			}
 		}
 		{-*} {
@@ -432,7 +434,7 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 	} elseif {$queue == 0} {
 		# What?!  We didn't wait long enough!?  How is that possible! =/
 		# Anyways, let's wait out the rest of the time, plus a little bit more and try again..
-		after [expr {$SentData(penalty) - $waited + 99 + $a}] [list ::tcldrop::server::Queue 0]
+		after [expr { $SentData(penalty) - $waited + 99 }] [list ::tcldrop::server::Queue 0]
 	}
 }
 

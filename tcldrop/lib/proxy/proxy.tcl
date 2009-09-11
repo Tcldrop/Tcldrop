@@ -96,6 +96,7 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 					fconfigure $info(socket) -buffering none -encoding binary -blocking 1
 					::tls::handshake $info(socket)
 					#puts "[tls::status $info(socket)]"
+					flush $info(socket)
 				} error]} {
 					Finish $id {ssl-error} "TLS/SSL Related Error: $error"
 				} else {
@@ -120,7 +121,7 @@ proc ::proxy::Finish {id status {reason {}}} {
 		{error} - {eof} - {default} {
 			catch { close $info(socket) }
 			if {[info exists info(-errors)] && $info(-errors) != {}} {
-				after idle [list eval $info(-errors) $status $id $reason]
+				after idle [list eval $info(-errors) $status $id [list $reason]]
 			} else {
 				after idle [list eval $info(-command) $info(socket) $status $id]
 			}
@@ -133,18 +134,21 @@ proc ::proxy::splitchain {chain} {
 	# Forgive me, I suck at regexp. =(
 	set count 0
 	set proxychain $chain
-	while {[regexp -nocase {^(([^:]*)://)?([^@]+@)?([^/:]+)(:([0-9]+))?(/.*)?$} [string trim $proxychain /] {} prefix type user address {} port proxychain]} {
-		set info([incr count]) [list type $type pass [join [lrange [split [string range $user 0 end-1] :] 1 end]] user [lindex [split $user :] 0] address $address port [string trimleft $port +]]
+	while {[regexp -nocase {^(([^:]*)://)?([^@]+@)?([^/:]+):(\+[0-9]+|[0-9]+)?(/.*)?$} [string trim $proxychain /] {} prefix type user address port proxychain]} {
+		if {[string match {+*} $port]} { set ssl 1 } else { set ssl 0 }
+		set info([incr count]) [list type $type pass [join [lrange [split [string range $user 0 end-1] :] 1 end]] user [lindex [split $user :] 0] address $address port [string trimleft $port +] ssl $ssl]
 	}
 	# This processes the leftovers that might be in $proxychain:
 	if {[regexp -nocase {^(.*):(.*):(.*)$} [string trim $proxychain /] {} address port extra]} {
-		set info([incr count]) [list type {} pass {} user {} address $address port $port extra $extra]
+		if {[string match {+*} $port]} { set ssl 1 } else { set ssl 0 }
+		set info([incr count]) [list type {} pass {} user {} address $address port [string trimleft $port +] extra $extra ssl $ssl]
 	} else {
 		if {![info exists extra]} { set extra {} }
 		if {![info exists address]} { set address {} }
 		if {![info exists port]} { set port {} }
+		if {![info exists ssl]} { set ssl 0 }
 	}
 	# The last one in the chain is the final destination, so we set the info about it:
-	array set info [list count $count address $address port $port extra $extra chain $chain]
+	array set info [list count $count address $address port $port ssl $ssl extra $extra chain $chain]
 	array get info
 }
