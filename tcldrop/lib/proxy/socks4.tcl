@@ -190,6 +190,10 @@ proc ::proxy::socks4::free {token} {
     unset -nocomplain state
 }
 
+# "cleanup" is my standard command name:
+interp alias {} ::proxy::socks4::cleanup {} ::proxy::socks4::free
+#proc ::proxy::socks4::cleanup {token} { free $token }
+
 proc ::proxy::socks4::finish {token {errormsg ""}} {
     global errorInfo errorCode
     variable $token

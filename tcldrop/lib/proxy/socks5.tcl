@@ -82,7 +82,7 @@ namespace eval ::proxy::socks5 {
 		8 "Address type not supported"
 	}
 
-	variable debug 0
+	variable debug 9
 	variable uid 0
 }
 
@@ -445,7 +445,10 @@ proc ::proxy::socks5::finish {token {errormsg ""}} {
 			uplevel #0 $state(-command) [list $token $errormsg]
 			free $token
 		} else {
+			# unset the token on our own, eventually:
+			after idle [list after 0 [list [namespace current]::free $token]]
 			uplevel #0 $state(-command) [list $token ok]
+
 		}
 	} else {
 		if {[string length $errormsg]} {
@@ -473,6 +476,10 @@ proc ::proxy::socks5::free {token} {
 	upvar 0 $token state
 	unset -nocomplain state
 }
+
+# "cleanup" is my standard command name:
+interp alias {} ::proxy::socks5::cleanup {} ::proxy::socks5::free
+#proc ::proxy::socks5::cleanup {token} { free $token }
 
 # socks5::serverinit --
 #

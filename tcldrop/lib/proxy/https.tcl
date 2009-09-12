@@ -3,7 +3,7 @@
 #	Provides:
 #		* https (HTTP CONNECT) proxy support for Tcl.
 #
-# Copyright (C) 2003,2004,2005 by Philip Moore <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2009 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
 # RCS: @(#) $Id$
@@ -35,11 +35,11 @@ proc ::proxy::https::init {socket address port args} {
 		upvar #0 [set id "::proxy::https::[incr Count]"] info
 		set info(sock) $socket
 		# Set defaults, and store the current writable, readable, and fconfigure for the socket.
-		array set info [list -user {} -pass {} -useragent {Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)} -headers {} -timeout {594321} -command {} -fconfigure [fconfigure $info(sock)] -writable [fileevent $info(sock) writable] -readable [fileevent $info(sock) readable] headers {}]
+		array set info [list -username {} -password {} -useragent {Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)} -headers {} -timeout {594321} -command {} -fconfigure [fconfigure $info(sock)] -writable [fileevent $info(sock) writable] -readable [fileevent $info(sock) readable] headers {}]
 		# Allow $args to override anything set above.
 		array set info $args
-		# If -user or -pass was specified, we'll need to load the base64 package:
-		if {[string length "$info(-user)$info(-pass)"] && [catch { package require base64 } error]} { return -code error "Can't Load Package base64: $error" }
+		# If -username or -password was specified, we'll need to load the base64 package:
+		if {[string length "$info(-username)$info(-password)"] && [catch { package require base64 } error]} { return -code error "Can't Load Package base64: $error" }
 		fconfigure $info(sock) -translation crlf -buffering line -blocking 0
 		fileevent $info(sock) writable [list ::proxy::https::Write $id $address $port]
 		fileevent $info(sock) readable [list ::proxy::https::Read $id]
@@ -62,7 +62,7 @@ proc ::proxy::https::Write {id address port} {
 	}
 	fileevent $info(sock) writable {}
 	set request "CONNECT ${address}:$port HTTP/1.0\n"
-	if {[string length "$info(-user)$info(-pass)"]} { append request "Proxy-Authorization: Basic [set userpass [::base64::encode $info(-user):$info(-pass)]]\nAuthorization: Basic $userpass\n" }
+	if {[string length "$info(-username)$info(-password)"]} { append request "Proxy-Authorization: Basic [set userpass [::base64::encode $info(-username):$info(-password)]]\nAuthorization: Basic $userpass\n" }
 	if {[llength $info(-headers)]} { foreach {h v} $info(-headers) { append request "${h}: $v\n" } }
 	if {![catch { puts $info(sock) "${request}User-Agent: $info(-useragent)\nHost: $address:$port\nContent-Length: 0\nProxy-Connection: Keep-Alive\nConnection: Keep-Alive\nPragma: no-cache\n" } error]} {
 		set info(status) {request-sent}
@@ -153,7 +153,7 @@ proc ::proxy::https::Finish {id status {reason {}}} {
 	after idle [list after 0 [list ::proxy::https::cleanup $id]]
 }
 
-proc ::proxy::https::cleanup {id} { catch { unset $id } }
+proc ::proxy::https::cleanup {id} { unset -nocomplain $id }
 
 # Convenience proc, returns the HTTP headers from the proxy server:
 proc ::proxy::https::headers {id} {

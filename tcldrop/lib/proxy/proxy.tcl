@@ -46,6 +46,7 @@
 # Use dicts instead of arrays.
 # Convert to a Tcl Module (.tm extension).
 # Try to simplify the splitchain proc.
+# Make it work synchronously.  (right now it requires a -command callback)
 
 namespace eval ::proxy {
 	variable version {0.1}
@@ -53,17 +54,17 @@ namespace eval ::proxy {
 	variable rcsid {$Id$}
 	namespace export proxy connect config
 	variable Count
-	if {![info exists Count]} { set Count 0 }
+	if {![info exists Count]} { variable Count 0 }
 }
 
 proc ::proxy::connect {chain args} {
-	array set info [list -command {} -readable {} -writable {} -errors {} -user {} -pass {} socket {} -buffering line -encoding [encoding system] -blocking 0 -myaddr {} -async 1 -ssl 0 -socket-command [list socket]]
+	array set info [list -command {} -readable {} -writable {} -errors {} socket {} -buffering line -encoding [encoding system] -blocking 0 -myaddr {} -async 1 -ssl 0 -timeout 99999 -socket-command [list socket]]
 	array set info $args
 	if {$info(-async)} { set async [list {-async}] } else { set async [list] }
 	if {$info(-myaddr) != {} && $info(-myaddr) != {0.0.0.0}} { set myaddr [list {-myaddr} $info(-myaddr)] } else { set myaddr [list] }
 	array set info [splitchain $chain]
 	array set firstinfo $info(1)
-	variable [set info(socket) [eval $info(-socket-command) $async $myaddr {$firstinfo(address)} {$firstinfo(port)}]]
+	variable [set info(socket) [eval $info(-socket-command) $async $myaddr [list $firstinfo(address) $firstinfo(port)]]]
 	array set $info(socket) [array get info]
 	Chain ::proxy::$info(socket) 1 $info(socket)
 	return $info(socket)
@@ -71,6 +72,9 @@ proc ::proxy::connect {chain args} {
 
 proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message {}}} {
 	upvar #0 $id info
+	array set lastinfo $info($count)
+	# Call the cleanup proc for the last proxy (their cleanup procs should never raise an error, even if the $pid is invalid):
+	::proxy::$lastinfo(type)::cleanup $pid
 	# Check for errors on the socket:
 	if {[catch { fconfigure $info(socket) -error } error] || [string length $error]} {
 		Finish $id {error} $error
@@ -80,11 +84,10 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 		fileevent $info(socket) writable {}
 		fileevent $info(socket) readable {}
 		fconfigure $info(socket) -blocking 0 -buffering line
-		array set lastinfo $info($count)
 		if {[info exists info([incr count])]} {
 			array set nextinfo $info($count)
 			package require proxy::$lastinfo(type)
-			if {[catch { ::proxy::$lastinfo(type)::init $info(socket) $nextinfo(address) $nextinfo(port) -command [list ::proxy::Chain $id $count $info(socket)] -user $lastinfo(user) -pass $lastinfo(pass) } error]} {
+			if {[catch { ::proxy::$lastinfo(type)::init $info(socket) $nextinfo(address) $nextinfo(port) -command [list ::proxy::Chain $id $count $info(socket)] -username $nextinfo(user) -password $nextinfo(pass) } error]} {
 				Finish $id {error} $error
 			}
 		} else {
@@ -92,11 +95,10 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 			if {$info(-ssl)} {
 				if {[catch {
 					::package require tls
-					::tls::import $info(socket)
+					::tls::import $info(socket) -request 0
 					fconfigure $info(socket) -buffering none -encoding binary -blocking 1
 					::tls::handshake $info(socket)
 					#puts "[tls::status $info(socket)]"
-					flush $info(socket)
 				} error]} {
 					Finish $id {ssl-error} "TLS/SSL Related Error: $error"
 				} else {
@@ -110,24 +112,26 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 }
 
 proc ::proxy::Finish {id status {reason {}}} {
-	upvar #0 $id info
-	catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) -encoding $info(-encoding) }
-	catch { fileevent $info(socket) writable $info(-writable) }
-	catch { fileevent $info(socket) readable $info(-readable) }
-	switch -- $status {
-		{ok} {
-			after 0 [list eval $info(-command) $info(socket) $status $id]
-		}
-		{error} - {eof} - {default} {
-			catch { close $info(socket) }
-			if {[info exists info(-errors)] && $info(-errors) != {}} {
-				after idle [list eval $info(-errors) $status $id [list $reason]]
-			} else {
-				after idle [list eval $info(-command) $info(socket) $status $id]
+	if {[info exists $id]} {
+		upvar #0 $id info
+		switch -- $status {
+			{ok} {
+				catch { fconfigure $info(socket) -blocking $info(-blocking) -buffering $info(-buffering) -encoding $info(-encoding) }
+				catch { fileevent $info(socket) writable $info(-writable) }
+				catch { fileevent $info(socket) readable $info(-readable) }
+				after 0 [list eval $info(-command) $info(socket) $status $id]
+			}
+			{error} - {eof} - {default} {
+				catch { close $info(socket) }
+				if {[info exists info(-errors)] && $info(-errors) != {}} {
+					after idle [list eval $info(-errors) $status $id [list $reason]]
+				} else {
+					after idle [list eval $info(-command) $info(socket) $status $id]
+				}
 			}
 		}
+		after 0 [list unset -nocomplain $id]
 	}
-	after idle [list after 0 [list unset -nocomplain $id]]
 }
 
 proc ::proxy::splitchain {chain} {
