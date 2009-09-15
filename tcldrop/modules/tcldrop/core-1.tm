@@ -1809,9 +1809,17 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
-	global restart tcldrop env tcl_interactive
+	global restart tcldrop env tcl_interactive tcl_precision
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
 	if {![info exists restart]} {
+		# This works around a bug in Tcl v8.5+ that gives the wrong results.  We decrease ::tcl_precision until we get the right results...
+		# Set the test expr to a variable rather than hard-coding it, this avoids it being byte-compiled (so that changes to ::tcl_precision won't be ignored in our test code):
+		if {![expr [set expr {1.1 + 2.2 eq 3.3}]]} {
+			# First set it as high as is allowed by Tcl:
+			while {![catch { incr tcl_precision }]} {}
+			# Now back down until it gives the right results:
+			while {![expr $expr]} { incr tcl_precision -1 }
+		}
 		# Import the Tcldrop core commands to the ::tcldrop namespace:
 		namespace eval ::tcldrop { namespace import -force {::tcldrop::core::*} }
 		namespace eval :: {
