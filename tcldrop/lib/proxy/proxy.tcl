@@ -2,7 +2,7 @@
 #
 #	Provides the base proxy support for Tcl.
 #
-# Copyright (C) 2003-2007 by Philip Moore <FireEgl@Tcldrop.US>
+# Copyright (C) 2003-2009 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
 # RCS: @(#) $Id$
@@ -74,7 +74,7 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 	upvar #0 $id info
 	array set lastinfo $info($count)
 	# Call the cleanup proc for the last proxy (their cleanup procs should never raise an error, even if the $pid is invalid):
-	::proxy::$lastinfo(type)::cleanup $pid
+	if {$pid ne {} && $lastinfo(type) ne {}} { ::proxy::$lastinfo(type)::cleanup $pid }
 	# Check for errors on the socket:
 	if {[catch { fconfigure $info(socket) -error } error] || [string length $error]} {
 		Finish $id {error} $error

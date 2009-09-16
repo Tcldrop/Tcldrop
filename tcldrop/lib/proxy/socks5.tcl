@@ -82,7 +82,7 @@ namespace eval ::proxy::socks5 {
 		8 "Address type not supported"
 	}
 
-	variable debug 9
+	variable debug 0
 	variable uid 0
 }
 
