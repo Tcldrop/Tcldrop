@@ -24,14 +24,7 @@ namespace eval pubsafetcl {
 	variable script [info script]
 	package provide pubsafetcl $version
 	variable rcsid {$Id$}
-	# This works around a bug in Tcl v8.5+ that gives the wrong results.  We decrease ::tcl_precision until we get the right results...
-	# Set the test expr to a variable rather than hard-coding it, this avoids it being byte-compiled (so that changes to ::tcl_precision won't be ignored in our test code):
-	if {![expr [set expr {1.1 + 2.2 eq 3.3}]]} {
-		# First set it as high as is allowed by Tcl:
-		while {![catch { incr tcl_precision }]} {}
-		# Now back down until it gives the right results:
-		while {![expr $expr]} { incr tcl_precision -1 }
-	}
+
 	proc Reset {{interp {safetcl}} args} { return "Reset [create $interp]." }
 
 	# This proc initializes/resets the safe interpreter, and basically does stuff to make it even safer or more complete:
