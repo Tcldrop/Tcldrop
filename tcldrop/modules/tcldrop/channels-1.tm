@@ -49,6 +49,10 @@ namespace eval ::tcldrop::channels {
 # Note: - is used in place of a channel name when it applies globally.
 
 proc ::tcldrop::channels::channel {command {channel {}} args} {
+	# FixMe: follow RFC 2812 regarding "2.2 Character codes", http://tools.ietf.org/html/rfc2812
+	# Note that RFC 2812 gets the case of ^ and ~ backwards. ^ = uppercase ~ = lowercase
+	# We should probably not follow the RFC in this instance and instead use the correct case for those two characters.
+	# []\^ == {}|~
 	set lowerchannel [string tolower $channel]
 	global database
 	switch -- [set command [string tolower $command]] {
