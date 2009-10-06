@@ -36,7 +36,7 @@ namespace eval ::tcldrop::channels {
 	variable depends {core::database core}
 	variable rcsid {$Id$}
 	variable script [info script]
-	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores
+	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores lowerchannel upperchannel
 	variable commands [namespace export]
 	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands [namespace export] script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
@@ -49,11 +49,11 @@ namespace eval ::tcldrop::channels {
 # Note: - is used in place of a channel name when it applies globally.
 
 proc ::tcldrop::channels::channel {command {channel {}} args} {
-	# FixMe: follow RFC 2812 regarding "2.2 Character codes", http://tools.ietf.org/html/rfc2812
+	# Note: Follow RFC 2812 regarding "2.2 Character codes", http://tools.ietf.org/html/rfc2812
 	# Note that RFC 2812 gets the case of ^ and ~ backwards. ^ = uppercase ~ = lowercase
 	# We should probably not follow the RFC in this instance and instead use the correct case for those two characters.
-	# []\^ == {}|~
-	set lowerchannel [string tolower $channel]
+	# []\^ (uppers) == {}|~ (lowers)
+	set lowerchannel [lowerchannel $channel]
 	global database
 	switch -- [set command [string tolower $command]] {
 		{add} {
@@ -180,6 +180,12 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 	}
 }
 
+# []\^ (uppers) == {}|~ (lowers)
+# Make sure that's what we use when converting channels to lowercase:
+proc ::tcldrop::channels::lowerchannel {channel} { string map [list \[ \{ \] \} ^ ~ \\ |] [string toupper $channel] }
+# Unused internally, but is here for completeness:
+proc ::tcldrop::channels::upperchannel {channel} { string map [list \{ \[ \} \] ~ ^ | \\] [string tolower $channel] }
+
 # Add the [addchanset] RacBot command:
 # http://www.racbot.org/docs/tclcmds/channel_setting_change_tcl_commands.html
 # + addchanset switch|text|numeric <name>
@@ -232,7 +238,7 @@ proc ::tcldrop::channels::loadchannels {} {
 }
 
 # Returns 1 if a channel exists in the channel database, or 0 if it doesn't:
-proc ::tcldrop::channels::validchan {channel} { dict exists $::database(channels) [string tolower $channel] }
+proc ::tcldrop::channels::validchan {channel} { dict exists $::database(channels) [lowerchannel $channel] }
 
 # Note, types for udef's should be: flag, int, str, and list.
 # In the case of lists, the channel command should provide lappend, lreplace, and lremove commands.
@@ -362,7 +368,7 @@ proc ::tcldrop::channels::newchanbei {bei channel mask creator comment {lifetime
 		{default} { set expires [expr { [clock seconds] + $lifetime }] }
 	}
 	if {[lsearch -exact $options {sticky}] != -1} { set sticky 1 } else { set sticky 0 }
-	database ${bei}s set [string tolower $channel] [string tolower $mask] [dict create channel $channel mask $mask creator $creator comment $comment lifetime $lifetime expires $expires created [clock seconds] lastactive 0 sticky $sticky options $options]
+	database ${bei}s set [lowerchannel $channel] [string tolower $mask] [dict create channel $channel mask $mask creator $creator comment $comment lifetime $lifetime expires $expires created [clock seconds] lastactive 0 sticky $sticky options $options]
 }
 
 proc ::tcldrop::channels::newbei {bei mask creator comment {lifetime {-1}} {options {}}} {
@@ -370,8 +376,8 @@ proc ::tcldrop::channels::newbei {bei mask creator comment {lifetime {-1}} {opti
 }
 
 proc ::tcldrop::channels::stickbei {bei mask {channel {-}}} {
-	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask]]} {
-		if {[catch { database ${bei}s set [string tolower $channel] [string tolower $mask] sticky 1 }]} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask]]} {
+		if {[catch { database ${bei}s set [lowerchannel $channel] [string tolower $mask] sticky 1 }]} {
 			return 0
 		} else {
 			return 1
@@ -382,8 +388,8 @@ proc ::tcldrop::channels::stickbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::unstickbei {bei mask {channel {-}}} {
-	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask]]} {
-		if {[catch { database ${bei}s set [string tolower $channel] [string tolower $mask] sticky 0 }]} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask]]} {
+		if {[catch { database ${bei}s set [lowerchannel $channel] [string tolower $mask] sticky 0 }]} {
 			return 0
 		} else {
 			return 1
@@ -394,8 +400,8 @@ proc ::tcldrop::channels::unstickbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::killchanbei {bei channel mask} {
-	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask]]} {
-		if {[catch { database ${bei}s unset [string tolower $channel] [string tolower $mask] }]} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask]]} {
+		if {[catch { database ${bei}s unset [lowerchannel $channel] [string tolower $mask] }]} {
 			return 0
 		} else {
 			return 1
@@ -410,7 +416,7 @@ proc ::tcldrop::channels::killbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::isbei {bei mask {channel {-}}} {
-	dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask]
+	dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask]
 }
 
 proc ::tcldrop::channels::ischanbei {bei mask {channel {-}}} {
@@ -418,8 +424,8 @@ proc ::tcldrop::channels::ischanbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::ispermbei {bei mask {channel {-}}} {
-	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask] lifetime]} {
-		if {[dict get $::database(${bei}s) [string tolower $channel] [string tolower $mask] lifetime] == {0}} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask] lifetime]} {
+		if {[dict get $::database(${bei}s) [lowerchannel $channel] [string tolower $mask] lifetime] == {0}} {
 			return 1
 		} else {
 			return 0
@@ -430,8 +436,8 @@ proc ::tcldrop::channels::ispermbei {bei mask {channel {-}}} {
 }
 
 proc ::tcldrop::channels::isbeisticky {bei mask {channel {-}}} {
-	if {[dict exists $::database(${bei}s) [string tolower $channel] [string tolower $mask] sticky]} {
-		dict get $::database(${bei}s) [string tolower $channel] [string tolower $mask] sticky
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel] [string tolower $mask] sticky]} {
+		dict get $::database(${bei}s) [lowerchannel $channel] [string tolower $mask] sticky
 	} else {
 		return -code error "No such ${bei} $channel $mask"
 	}
@@ -439,9 +445,9 @@ proc ::tcldrop::channels::isbeisticky {bei mask {channel {-}}} {
 
 proc ::tcldrop::channels::matchbei {bei nuhost {channel {-}}} {
 	if {$channel != {-}} {
-		if {[dict exists $::database(${bei}s) [string tolower $channel]]} {
+		if {[dict exists $::database(${bei}s) [lowerchannel $channel]]} {
 			# Note: $key is the mask and $value (a sub-dict) is all the info known about it.
-			dict for {key value} [dict get $::database(${bei}s) [string tolower $channel]] {
+			dict for {key value} [dict get $::database(${bei}s) [lowerchannel $channel]] {
 				if {[string match -nocase [dict get $value mask] $nuhost]} { return 1 }
 			}
 		}
@@ -456,9 +462,9 @@ proc ::tcldrop::channels::matchbei {bei nuhost {channel {-}}} {
 
 proc ::tcldrop::channels::beilist {bei {channel {-}} {nuhost {}}} {
 	set list [list]
-	if {[dict exists $::database(${bei}s) [string tolower $channel]]} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel]]} {
 		# Note: $key is the mask and $value (a sub-dict) is all the info known about it.
-		dict for {key value} [dict get $::database(${bei}s) [string tolower $channel]] {
+		dict for {key value} [dict get $::database(${bei}s) [lowerchannel $channel]] {
 			if {$nuhost == {} || [string match -nocase [dict get $value mask] $nuhost]} {
 				lappend list [list [dict get $value mask] [dict get $value comment] [dict get $value expires] [dict get $value created] [dict get $value lastactive] [dict get $value creator]]
 			}
@@ -469,9 +475,9 @@ proc ::tcldrop::channels::beilist {bei {channel {-}} {nuhost {}}} {
 
 proc ::tcldrop::channels::listbeis {bei {channel {-}} {nuhost {}}} {
 	set list [list]
-	if {[dict exists $::database(${bei}s) [string tolower $channel]]} {
+	if {[dict exists $::database(${bei}s) [lowerchannel $channel]]} {
 		# Note: $key is the mask and $value (a sub-dict) is all the info known about it.
-		dict for {key value} [dict get $::database(${bei}s) [string tolower $channel]] {
+		dict for {key value} [dict get $::database(${bei}s) [lowerchannel $channel]] {
 			if {$nuhost == {} || [string match -nocase [dict get $value mask] $nuhost]} {
 				lappend list $value
 			}
