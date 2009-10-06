@@ -417,9 +417,10 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 					# Otherwise, we just remove the current line from the queue.
 					set Queue($a) [lreplace $Queue($a) 0 0]
 				}
-				# Flush this line to the server using putnow..
-				putnow $line
-				putloglev v * "\[$a->\] $line"
+				# Flush this line to the server using PutNow..
+				variable PriorityAliases
+				if {[info exists PriorityAliases($a)]} { set q $PriorityAliases($a) } else { set q $a }
+				if {![PutNow $line $q]} { putloglev v * "\[$q->\] $line" }
 				# The time (in milliseconds) before we try again..
 				if {[set SentData(penalty) [GetPenalty $line]] > 0} {
 					# Try again after the penalty expires (plus a tad longer):
@@ -438,10 +439,35 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 	}
 }
 
-# Sends the text to the IRC server.
-# Note: This shouldn't be used by scripters, as it bypasses the queuing and penalty systems completely.
-#       But if they really want to flood the server, there should be no stopping them from their stupidity.
-proc ::tcldrop::server::putnow {text} { if {![putidx ${::server-idx} $text]} { clearqueue all } }
+# Sends the text to the IRC server (bypassing the queue system).
+# I'm calling the extra argument "scope" which can be either -all (the default) or -oneline which means only send the first line of $text.
+proc ::tcldrop::server::putnow {text {scope {-all}}} {
+	if {$scope eq {-oneline}} { set text [lindex [split $text "\n\r"] 0] }
+	if {![PutNow $text noqueue]} { putloglev v * "\[$a->\] $text" }
+}
+
+# Does the actual sending to the server idx:
+proc ::tcldrop::server::PutNow {text {queue {unknown}}} {
+	if {![putidx ${::server-idx} $text]} { clearqueue all }
+	callout $queue $text sent
+}
+
+proc ::tcldrop::server::callout {queue message status} {
+	foreach {type flags mask proc} [bindlist out] {
+		if {[string equal -nocase $mask $status]} {
+			if {[catch { $proc $queue $message $status } err]} {
+				putlog "(callout) Error in script: $proc: $err"
+				puterrlog "$::errorInfo"
+			} elseif {$err == 1} {
+				# Abort processing further binds if they return 1.
+				# Drop the line to the server if the status is "queued".
+				# Or if the status is "sent" the 1 will mean do not log the line.
+				return 1
+			}
+		}
+	}
+	return 0
+}
 
 proc ::tcldrop::server::TraceNick {name1 name2 op} { puthelp "NICK $::nick" }
 trace add variable ::nick write [list ::tcldrop::server::TraceNick]
@@ -452,14 +478,18 @@ trace add variable ::nick write [list ::tcldrop::server::TraceNick]
 proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
 	if {[queuesize] < ${::max-queue-msg}} {
 		variable QueueAliases
-		if {[info exists QueueAliases($queue)]} { set priority $QueueAliases($queue) }
+		# QueueAliases is what turns friendly queue names into their equivalent priority name (numbers).
+		if {[info exists QueueAliases($queue)]} {
+			set priority $QueueAliases($queue)
+		}
 		variable Queue
 		# Unlike Eggdrop, we deal with people sending multiple lines at once..
 		foreach line [split $text \n] {
+			# Only queue the line if the callout binds say we can:
 			if {$line != {}} {
 				if {[info exists Queue($priority)] && [info exists "::double-$queue"] && ![set "::double-$queue"] && [lsearch -exact $Queue($priority) $line] != -1} {
 					putloglev d * "msg already queued. skipping: $line"
-				} else {
+				} else {[callout $queue $line queued] == 0} {
 					Queue $priority $line $option
 					putloglev v * "\[!$queue\] $line"
 				}
@@ -581,7 +611,10 @@ proc ::tcldrop::server::LOAD {module} {
 	array set SentData [list penalty 0 lastclicks [list [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}]]]
 	# These are aliases for the queues, because we use integers to specify queues internally.
 	variable QueueAliases
-	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99 idle 99 i 99]
+	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99 idle 99 i 99 noqueue 1 unknown -1]
+	# These map the priorities (1 to 99) back to their closest Eggdrop friendly names.. This is necessary for better compatibility with Eggdrop's "OUT" binds:
+	variable PriorityAliases
+	array set PriorityAliases [list 10 mode 15 mode 30 server 75 help 99 help -1 noqueue 0 noqueue 1 noqueue]
 	variable ServerCycleTimerID 0
 	# Default server related settings (These are here in case the user doesn't provide them in his/her config):
 	setdefault servers [list]
