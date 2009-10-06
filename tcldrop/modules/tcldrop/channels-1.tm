@@ -182,9 +182,9 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 
 # []\^ (uppers) == {}|~ (lowers)
 # Make sure that's what we use when converting channels to lowercase:
-proc ::tcldrop::channels::lowerchannel {channel} { string map [list \[ \{ \] \} ^ ~ \\ |] [string toupper $channel] }
+proc ::tcldrop::channels::lowerchannel {channel} { string map [list \[ \{ \] \} ^ ~ \\ |] [string tolower $channel] }
 # Unused internally, but is here for completeness:
-proc ::tcldrop::channels::upperchannel {channel} { string map [list \{ \[ \} \] ~ ^ | \\] [string tolower $channel] }
+proc ::tcldrop::channels::upperchannel {channel} { string map [list \{ \[ \} \] ~ ^ | \\] [string toupper $channel] }
 
 # Add the [addchanset] RacBot command:
 # http://www.racbot.org/docs/tclcmds/channel_setting_change_tcl_commands.html
