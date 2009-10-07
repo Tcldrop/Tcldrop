@@ -231,10 +231,15 @@ proc ::tcldrop::core::islist {s} { string is list $s }
 
 # Note: string2list and slindex/slrange/sllength are used so that we can ignore extra white space in strings and still deal with special characters.
 #       Please use this carefully, and don't use it anywhere where you need to preserve whitespace.
-proc ::tcldrop::core::string2list {string} { regexp -inline -all -- {\S+} $string }
-proc ::tcldrop::core::slindex {string index} { lindex [regexp -inline -all -- {\S+} $string] $index }
-proc ::tcldrop::core::slrange {string {start {0}} {end {end}}} { lrange [regexp -inline -all -- {\S+} $string] $start $end }
+#proc ::tcldrop::core::string2list {string} { regexp -inline -all -- {\S+} $string }
+#proc ::tcldrop::core::slindex {string index} { lindex [regexp -inline -all -- {\S+} $string] $index }
+#proc ::tcldrop::core::slrange {string {start {0}} {end {end}}} { lrange [regexp -inline -all -- {\S+} $string] $start $end }
 proc ::tcldrop::core::sllength {string} { regexp -all -- {\S+} $string }
+# These are faster:
+proc ::tcldrop::core::string2list {string} { lsearch -inline -not -all [split $string] {} }
+proc ::tcldrop::core::slindex {string index} { lindex [lsearch -inline -not -all [split $string] {}] $index }
+proc ::tcldrop::core::slrange {string {start {0}} {end {end}}} { lrange [lsearch -inline -not -all [split $string] {}] $start $end }
+
 
 proc ::tcldrop::core::randstring {length {chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}} {
 	set count [string length $chars]
