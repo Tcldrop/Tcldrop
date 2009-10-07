@@ -24,9 +24,10 @@
 # decodes eggdrop compatible base64 encoded strings back to binary
 # data to be then decrypted with blowfish
 #
-# roc (@efnet) 2008-10-18
-# FireEgl@EFNet 2008-10-21  (I only optimized it a bit, roc did all the hard work!  Thank you!)
-# BL4DE@EFnet 2009-06-21 complete rewrite of the encode proc
+# roc@EFnet     2008-10-18 Port from C (eggdrop) to TCL
+# FireEgl@EFNet 2008-10-21 (I only optimized it a bit, roc did all the hard work!  Thank you!)
+# BL4DE@EFnet   2009-06-21 complete rewrite of the encode proc
+# thommey@EFnet 2009-10-07 speedups to BL4DE's encode proc
 
 package require Tcl 8.5
 namespace eval ::eggbase64 {
@@ -90,7 +91,8 @@ proc ::eggbase64::decode {input} {
 	return [string trimright $output "\x00"]
 }
 
-proc ::eggbase64::encode {input} {
+# Legacy encode proc, left for reference purposes
+proc ::eggbase64::encode_v1 {input} {
 	variable EGGDROP_BASE64_SALT
 	set left [set right 0]
 	set k -1
@@ -124,14 +126,8 @@ proc ::eggbase64::encode {input} {
 	return $output
 }
 
-# FixMe: This is BL4DE's rewrite of encode. It needs to be fixed to not be slower than the old proc. 
-#
-# time {::eggbase64::encode {V¬-/R�.¦#¦M+++=ìb}} 10000
-# 55.4778 microseconds per iteration
-# time {::eggbase64::encode2 {V¬-/R�.¦#¦M+++=ìb}} 10000
-# 59.8292 microseconds per iteration
-
-proc ::eggbase64::encode2 {input} {
+# This is BL4DE's rewrite of encode. Left for reference.
+proc ::eggbase64::encode_v2 {input} {
 	variable EGGDROP_BASE64_SALT
 	binary scan [Pad $input] c* input
 	foreach {a b c d} $input {
@@ -146,6 +142,35 @@ proc ::eggbase64::encode2 {input} {
 	foreach {a b} $final { append retval "$b$a" }
 	return $retval
 }
+
+
+# time {::eggbase64::encode_v1 foobarfoobar12345} 100000; # roc's version
+# 24.97128 microseconds per iteration
+# time {::eggbase64::encode_v2 foobarfoobar12345} 100000; # BL4DE's version
+# 28.26738 microseconds per iteration
+# time {::eggbase64::encode foobarfoobar12345} 100000; # thommey's version
+# 23.04662 microseconds per iteration
+
+# Speed up of BL4DE's encode proc by thommey
+#
+# bit shifting, and scanning I* is the optimization
+# I* already takes 4 bytes and forms a long out of it
+# no need to <<24, <<16, <<8, <<0 and add it yourself
+proc ::eggbase64::encode {input} {
+	variable EGGDROP_BASE64_SALT
+	binary scan [Pad $input] I* input
+	foreach val $input {
+		set output ""
+		for {set i 1} {$i < 7} {incr i} {
+			append output [lindex $EGGDROP_BASE64_SALT [expr {$val & 0x3F}]]
+			set val [expr {$val >> 6}]
+		}
+		lappend final $output
+	}
+	foreach {a b} $final { append retval "$b$a" }
+	return $retval
+}
+
 
 # Returns $input with NUL padding:
 proc ::eggbase64::Pad {input} {
