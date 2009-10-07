@@ -443,7 +443,7 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 # I'm calling the extra argument "scope" which can be either -all (the default) or -oneline which means only send the first line of $text.
 proc ::tcldrop::server::putnow {text {scope {-all}}} {
 	if {$scope eq {-oneline}} { set text [lindex [split $text "\n\r"] 0] }
-	if {![PutNow $text noqueue]} { putloglev v * "\[$a->\] $text" }
+	if {![PutNow $text noqueue]} { putloglev v * "\[noqueue->\] $text" }
 }
 
 # Does the actual sending to the server idx:
