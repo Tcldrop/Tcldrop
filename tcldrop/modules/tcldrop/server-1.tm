@@ -442,14 +442,26 @@ proc ::tcldrop::server::Queue {{queue {99}} {line {}} {option {-normal}}} {
 # Sends the text to the IRC server (bypassing the queue system).
 # I'm calling the extra argument "scope" which can be either -all (the default) or -oneline which means only send the first line of $text.
 proc ::tcldrop::server::putnow {text {scope {-all}}} {
-	if {$scope eq {-oneline}} { set text [lindex [split $text "\n\r"] 0] }
-	if {![PutNow $text noqueue]} { putloglev v * "\[noqueue->\] $text" }
+	if {$scope eq {-oneline}} {
+		set text [list [lindex [split [string trim $text] "\n\r"] 0]]
+	} else {
+		set text [split [string trim $text] "\n\r"]
+	}
+	foreach l $text {
+		if {![callout noqueue $l queued] && ![PutNow $l noqueue]} {
+			putloglev v * "\[noqueue->\] $l"
+		}
+	}
 }
 
 # Does the actual sending to the server idx:
 proc ::tcldrop::server::PutNow {text {queue {unknown}}} {
-	if {![putidx ${::server-idx} $text]} { clearqueue all }
-	callout $queue $text sent
+	if {![putidx ${::server-idx} $text]} {
+		# putidx failed, so clear the queues since they can't be sent..
+		clearqueue all
+	} else {
+		callout $queue $text sent
+	}
 }
 
 proc ::tcldrop::server::callout {queue message status} {
@@ -473,7 +485,7 @@ proc ::tcldrop::server::TraceNick {name1 name2 op} { puthelp "NICK $::nick" }
 trace add variable ::nick write [list ::tcldrop::server::TraceNick]
 
 # Adds $text to a queue..
-# $queue must be mode, serv, help, or a integer from 1-99.
+# $queue must be mode, serv, help, or an integer from 1-99.
 # $option can be -normal or -next (Like in Eggdrop).
 proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
 	if {[queuesize] < ${::max-queue-msg}} {
@@ -482,14 +494,20 @@ proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
 		if {[info exists QueueAliases($queue)]} {
 			set priority $QueueAliases($queue)
 		}
-		variable Queue
 		# Unlike Eggdrop, we deal with people sending multiple lines at once..
-		foreach line [split $text \n] {
+		if {$option eq {-next}} {
+			# Queue them in reverse order because -next will make the last ones come first:
+			set text [lreverse [split [string trim $text] "\n\r"]]
+		} else {
+			set text [split [string trim $text] "\n\r"]
+		}
+		variable Queue
+		foreach line $text {
 			# Only queue the line if the callout binds say we can:
 			if {$line != {}} {
 				if {[info exists Queue($priority)] && [info exists "::double-$queue"] && ![set "::double-$queue"] && [lsearch -exact $Queue($priority) $line] != -1} {
 					putloglev d * "msg already queued. skipping: $line"
-				} else {[callout $queue $line queued] == 0} {
+				} else {![callout $queue $line queued]} {
 					Queue $priority $line $option
 					putloglev v * "\[!$queue\] $line"
 				}
