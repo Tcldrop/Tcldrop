@@ -354,19 +354,10 @@ proc ::tcldrop::server::GetPenalty {line} {
 			{PONG} { set penalty 750 }
 			{default} {
 				# The number of destinations (targets) for the command:
-				# Note: it's possible that targets can be 0, if the command
-				#       we're sending doesn't have any arguments to it.
+				# Note: it's possible that targets can be 0, if the command we're sending doesn't have any arguments to it.
 				set targets [llength [split [lindex [split $line] 1] ,]]
-				# The length:
-				set length [string length $line]
-				# 2 second minimum (I know it says 1 here, but it works out to 2 later):
-				set minimum {1}
-				# Uhm..
-				set divisor {120.0}
-				# Anyways.. I fiddled with the numbers until it looked right to me..
-				# Somebody else can fiddle with them some more if they like.
-				set penalty [expr { int(($minimum + ($divisor + $length * $targets) / $divisor) * 1000) }]
-				# The smallest result will be 2004.
+				# Somebody else please tweak this if Tcldrop floods itself off any servers (Assume msg-rate is 2 when tweaking):
+				set penalty [expr { int(${::msg-rate} * 1000 + [string length $line] * $targets) }]
 			}
 		}
 		# Return the penalty:
@@ -657,6 +648,7 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault max-exempts {13}
 	setdefault max-invites {13}
 	setdefault nicklen {9}
+	setdefault msg-rate {2}
 	bind raw - PONG ::tcldrop::server::PONG -priority 100
 	bind raw - PING ::tcldrop::server::PING -priority 100
 	bind raw - ERROR ::tcldrop::server::ERROR -priority 100
