@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -77,11 +77,59 @@ proc ::tcldrop::channels::dcc::-CHAN {handle idx text} {
 	return 0
 }
 
+proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
+	global idxlist
+	if {$text eq {}} {
+		if {[set channel [dict get $idxlist($idx) console-channel]] eq {-}} {
+			putdcc $idx "Your console channel is invalid."
+			return 0
+		}
+	} else {
+		set channel [lindex [split $text] 0]
+	}
+	if {![matchattr $handle m|m $channel]} {
+		putdcc $idx "You don't have access to $channel."
+		return 0
+	}
+	if {![validchan $channel]} {
+		putdcc $idx "No such channel defined."
+		return 0
+	}
+	putdcc $idx "Settings for [expr {[isdynamic $channel]?{dynamic}:{static}}] channel $channel:"
+	putdcc $idx "Protect modes (chanmode): [expr {[set x [channel get $channel chanmode]] in {{} 0}?{None}:$x}]"
+	putdcc $idx "Idle Kick after (idle-kick): [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
+	putdcc $idx "stopnethack: [expr {[set x [channel get $channel stopnethack-mode]] in {{} 0}?{DON'T!}:$x}]"
+	putdcc $idx "aop-delay: [expr {[set x [channel get $channel aop-delay]] in {{} 0}?{0:0}:[join $x {:}]}]"
+	putdcc $idx "revenge-mode: [expr {[set x [channel get $channel revenge-mode]] eq {}?0:$x}]"
+	putdcc $idx "ban-time: [expr {[set x [channel get $channel ban-time]] eq {}?0:$x}]"
+	putdcc $idx "exempt-time: [expr {[set x [channel get $channel exempt-time]] eq {}?0:$x}]"
+	putdcc $idx "invite-time: [expr {[set x [channel get $channel invite-time]] eq {}?0:$x}]"
+	putdcc $idx "Other modes:"
+	set chanflags [list autohalfop autoop autovoice bitch cycle dontkickops dynamicbans dynamicexempts dynamicinvites enforcebans greet inactive nodesynch protectfriends protecthalfops protectops revenge revengebot secret seen shared statuslog userbans userexempts userinvites]
+	foreach {a b c d} $chanflags {
+		if {$b ne {}} { set b "[expr {[channel get $channel $b] in {{} 0}?{-}:{+}}]$b" }
+		if {$c ne {}} { set c "[expr {[channel get $channel $c] in {{} 0}?{-}:{+}}]$c" }
+		if {$d ne {}} { set d "[expr {[channel get $channel $d] in {{} 0}?{-}:{+}}]$d" }
+		putdcc $idx [format {%4s %-15s %-15s %-15s %s} {} [expr {[channel get $channel $a] in {{} 0}?{-}:{+}}]$a $b $c $d]
+	}
+	# FixMe: add user defined flags
+	putdcc $idx "User defined channel flags:"
+	putdcc $idx "flood settings: chan ctcp join kick deop nick"
+	foreach type [list chan ctcp join kick deop nick] {
+		if {[set x [channel get $channel flood-$type]] in {{} 0}} { set $x [list 0 0] }
+		set flood-${type}(number) [lindex $x 0]
+		set flood-${type}(time) [lindex $x 1]
+	}
+	putdcc $idx [format {number:          %3d  %3d  %3d  %3d  %3d  %3d} ${flood-chan(number)} ${flood-ctcp(number)} ${flood-join(number)} ${flood-kick(number)} ${flood-deop(number)} ${flood-nick(number)}]
+	putdcc $idx [format {time  :          %3d  %3d  %3d  %3d  %3d  %3d} ${flood-chan(time)} ${flood-ctcp(time)} ${flood-join(time)} ${flood-kick(time)} ${flood-deop(time)} ${flood-nick(time)}]
+	putcmdlog "#$handle# chaninfo $channel"
+}
 
 bind load - channels::dcc ::tcldrop::channels::dcc::LOAD -priority 0
 proc ::tcldrop::channels::dcc::LOAD {module} {
 	bind dcc n +chan ::tcldrop::channels::dcc::+CHAN -priority 1000
 	bind dcc n -chan ::tcldrop::channels::dcc::-CHAN -priority 1000
+	bind dcc m|m chaninfo ::tcldrop::channels::dcc::CHANINFO -priority 1000
 	bind unld - channels::dcc ::tcldrop::channels::dcc::UNLD -priority 0
 }
 

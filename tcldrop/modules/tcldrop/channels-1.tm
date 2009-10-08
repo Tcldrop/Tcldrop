@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -36,7 +36,7 @@ namespace eval ::tcldrop::channels {
 	variable depends {core::database core}
 	variable rcsid {$Id$}
 	variable script [info script]
-	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores lowerchannel upperchannel
+	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores lowerchannel upperchannel isdynamic
 	variable commands [namespace export]
 	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands [namespace export] script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
