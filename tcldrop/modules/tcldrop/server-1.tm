@@ -334,34 +334,20 @@ proc ::tcldrop::server::GetPenalty {line} {
 		# Note, it's possible that this gives a percent over 100..
 		#putloglev d * {burst: 1}
 		# Let's spend our allowance!  =D
-		set penalty 0
+		return 0
 	} else {
 		#putloglev d * {burst: 0}
 		# We can't burst any more, so apply the penalties...
-		# Note that 1000 (ms) equals 1 second....
-		switch -- [string toupper [lindex [split $line] 0]] {
-			{INVITE} { set penalty 3000 }
-			{JOIN} { set penalty 2000 }
-			{PART} { set penalty 4000 }
-			{VERSION} { set penalty 2000 }
-			{TIME} { set penalty 2000 }
-			{TRACE} { set penalty 2000 }
-			{NICK} { set penalty 3000 }
-			{ISON} { set penalty 1000 }
-			{WHOIS} { set penalty 8000 }
-			{DNS} { set penalty 2000 }
-			{PING} { set penalty 2000 }
-			{PONG} { set penalty 750 }
-			{default} {
-				# The number of destinations (targets) for the command:
-				# Note: it's possible that targets can be 0, if the command we're sending doesn't have any arguments to it.
-				set targets [llength [split [lindex [split $line] 1] ,]]
-				# Somebody else please tweak this if Tcldrop floods itself off any servers (Assume msg-rate is 2 when tweaking):
-				set penalty [expr { int(${::msg-rate} * 1000 + [string length $line] * $targets) }]
-			}
+		# The number of destinations (targets) for the command:
+		# Note: it's possible that targets can be 0, if the command we're sending doesn't have any arguments to it.
+		set targets [llength [split [lindex [split $line] 1] ,]]
+		set length [string length $line]
+		variable penalties
+		if {[info exists penalties([set cmd [string toupper [lindex [split $line] 0]]])]} {
+			expr int($penalties($cmd))
+		} else {
+			expr int($penalties(default))
 		}
-		# Return the penalty:
-		set penalty
 	}
 }
 
@@ -618,6 +604,22 @@ proc ::tcldrop::server::LOAD {module} {
 	variable SentData
 	# Set the initial penalty and seed the burst allowance:
 	array set SentData [list penalty 0 lastclicks [list [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}]]]
+	# This variable might should be moved to the global namespace:
+	array set penalties {
+		{INVITE} {${::msg-rate} * 1000 * 1}
+		{JOIN} {${::msg-rate} * 1000 * 1}
+		{PART} {${::msg-rate} * 1000 * 3}
+		{VERSION} {${::msg-rate} * 1000 * 2}
+		{TIME} {${::msg-rate} * 1000 * 2}
+		{TRACE} {${::msg-rate} * 1000 * 2}
+		{NICK} {${::msg-rate} * 1000 * 3}
+		{ISON} {${::msg-rate} * 1000 * 1}
+		{WHOIS} {${::msg-rate} * 1000 * 7}
+		{DNS} {${::msg-rate} * 1000 * 2}
+		{PING} {${::msg-rate} * 1000 * 1}
+		{PONG} {${::msg-rate} * 1000 * 1}
+		{default} {${::msg-rate} * 1000 + $length * $targets}
+	}
 	# These are aliases for the queues, because we use integers to specify queues internally.
 	variable QueueAliases
 	array set QueueAliases [list quick 10 q 10 mode 15 m 15 server 30 serv 30 s 30 help 75 h 75 last 99 l 99 idle 99 i 99 noqueue 1 unknown -1]
