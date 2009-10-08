@@ -484,7 +484,7 @@ proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
 			if {$line != {}} {
 				if {[info exists Queue($priority)] && [info exists "::double-$queue"] && ![set "::double-$queue"] && [lsearch -exact $Queue($priority) $line] != -1} {
 					putloglev d * "msg already queued. skipping: $line"
-				} else {![callout $queue $line queued]} {
+				} elseif {![callout $queue $line queued]} {
 					Queue $priority $line $option
 					putloglev v * "\[!$queue\] $line"
 				}
@@ -605,6 +605,7 @@ proc ::tcldrop::server::LOAD {module} {
 	# Set the initial penalty and seed the burst allowance:
 	array set SentData [list penalty 0 lastclicks [list [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}] [expr {[clock clicks -milliseconds] - 99999}]]]
 	# This variable might should be moved to the global namespace:
+	variable penalties
 	array set penalties {
 		{INVITE} {${::msg-rate} * 1000 * 1}
 		{JOIN} {${::msg-rate} * 1000 * 1}
