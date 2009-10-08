@@ -49,6 +49,14 @@ The optional arguments will be documented here (when they're generally useful).
     Returns: nothing
     Module: server
 
+| putnow <text> [-oneline]
+|   Description: sends unqueued text to the server immediately.
+|     Use with caution, as the bot may easily flood itself off the server.
+|   Options:
+|     -oneline: cut and ignore the message after the first \r or \n
+|   Returns: nothing
+|   Module: server
+
   putlog <text>
     Description: sends text to the bot's logfile, marked as 'misc' (o)
     Returns: nothing
@@ -2120,6 +2128,20 @@ The optional arguments will be documented here (when they're generally useful).
 #           because the data transfer stalled for some reason.
 #         Module: transfer
 
+|   (45) OUT (stackable)
+|        bind out <flags> <mask> <proc>
+|        proc-name <queue> <message> <queued|sent>
+|
+|        Description: triggered when a message is sent to the server. Normally
+|          the event will occur twice for each line sent: once before entering
+|          a server queue and once after the message is actually sent. This
+|          allows for more flexible logging of server output and message
+|          cancelation.
+|          Mask is matched against "queue status", where status is either
+|          'queued' or 'sent'. Queues are: mode, server, help, noqueue.
+|          noqueue is only used by the putnow tcl command.
+|        Module: server
+
 
 # FixMe: Document the LOG bind type.
 
@@ -2168,8 +2190,26 @@ The optional arguments will be documented here (when they're generally useful).
 
 #    (10) CHOF  Return 1 to ask the bot not to process the partyline part event.
 
-#    (11) WALL  Return 1 to make the command get logged like so:
-#           !nick! msg
+#|   (11) WALL  Return 1 to make Eggdrop not log the message that triggered
+#|              this bind.
+
+#|   (12) NOTE  Return 1 to make Eggdrop not process the note any further.
+#|              This includes stacked note bindings that would be processed
+#|              after this one, as well as the built-in eggdrop note handling
+#|              routines.
+
+#|   (13) MSGM  Return 1 to make Eggdrop not log the message that triggered
+#|              this bind.
+
+#|   (14) PUBM  Return 1 to make Eggdrop not log the message that triggered
+#|              this bind.
+
+#|   (15) NOTC  Return 1 to make Eggdrop not log the message that triggered
+#|              this bind.
+
+|   (16) OUT   Return 1 to make Eggdrop drop the message instead of sending it.
+|              Only meaningful for messages with status "queued".
+
 
 *** CONTROL PROCEDURES ***
 
