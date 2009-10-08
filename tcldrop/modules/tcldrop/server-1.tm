@@ -459,16 +459,16 @@ proc ::tcldrop::server::PutNow {text {queue {unknown}}} {
 	if {![putidx ${::server-idx} $text]} {
 		# putidx failed, so clear the queues since they can't be sent..
 		clearqueue all
-	} else {
-		callout $queue $text sent
+		return 1
 	}
+	callout $queue $text sent
 }
 
 proc ::tcldrop::server::callout {queue message status} {
 	foreach {type flags mask proc} [bindlist out] {
 		if {[string equal -nocase $mask $status]} {
 			if {[catch { $proc $queue $message $status } err]} {
-				putlog "(callout) Error in script: $proc: $err"
+				putlog "(callout) Error in script: $proc $queue $message $status: $err"
 				puterrlog "$::errorInfo"
 			} elseif {$err == 1} {
 				# Abort processing further binds if they return 1.
