@@ -843,6 +843,13 @@ The optional arguments will be documented here (when they're generally useful).
     Returns: nothing
     Module: channels
 
+  udeftype <name>
+    Returns: the udef type of <name>
+    Module: channels
+
+  udefs
+    Returns: a list of all udef types in Tcldrop
+    Module: channels
 
 *** DCC COMMANDS ***
 
@@ -977,7 +984,7 @@ The optional arguments will be documented here (when they're generally useful).
       is in unixtime format.
     Module: core
 
-	FixMe: Document the idxlist command.
+  FixMe: Document the idxlist command.
 
   whom <chan>
     Returns: list of people on the botnet who are on that channel. 0 is

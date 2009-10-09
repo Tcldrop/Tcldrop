@@ -36,7 +36,7 @@ namespace eval ::tcldrop::channels {
 	variable depends {core::database core}
 	variable rcsid {$Id$}
 	variable script [info script]
-	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores lowerchannel upperchannel isdynamic
+	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores lowerchannel upperchannel isdynamic udeftype udefs
 	variable commands [namespace export]
 	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands [namespace export] script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
@@ -345,9 +345,20 @@ proc ::tcldrop::channels::SetUdefDefaults {{name {*}}} {
 
 # Gives the type of the udef given in $name:
 # It returns one of the following: int, flag, str, list, or unknown.
-proc ::tcldrop::channels::UdefType {name} {
+proc ::tcldrop::channels::udeftype {name} {
 	variable Udefs
 	if {[info exists Udefs($name)]} { return $Udefs($name) } else { return {unknown} }
+}
+
+# FixMe: remove all references to this and use udeftype
+proc ::tcldrop::channels::UdefType {name} {
+	udeftype $name
+}
+
+# Returns all udef types defined, such as flag, int, string etc
+proc ::tcldrop::channels::udefs {} {
+	variable Udefs
+	array get Udefs
 }
 
 proc ::tcldrop::channels::newchanbei {bei channel mask creator comment {lifetime {-1}} {options {}}} {
