@@ -87,6 +87,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	} else {
 		set channel [lindex [split $text] 0]
 	}
+	# Check for access before validchan so users without access can't see if the channel exists or not
 	if {![matchattr $handle m|m $channel]} {
 		putdcc $idx "You don't have access to $channel."
 		return 0
@@ -95,8 +96,10 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 		putdcc $idx "No such channel defined."
 		return 0
 	}
+	set chanflags [list autohalfop autoop autovoice bitch cycle dontkickops dynamicbans dynamicexempts dynamicinvites enforcebans greet inactive nodesynch protectfriends protecthalfops protectops revenge revengebot secret seen shared statuslog userbans userexempts userinvites]
+	set internalflags [lsort [concat $chanflags [list chanmode idle-kick stopnethack-mode aop-delay revenge-mode ban-time exempt-time invite-time need-op need-halfop need-voice need-invite need-key need-unban need-limit flood-chan flood-ctcp flood-join flood-kick flood-deop flood-nick]]]
 	putdcc $idx "Settings for [expr {[isdynamic $channel]?{dynamic}:{static}}] channel $channel:"
-	putdcc $idx "Protect modes (chanmode): [expr {[set x [channel get $channel chanmode]] in {{} 0}?{None}:$x}]"
+	putdcc $idx "Protect modes (chanmode): [expr {[set x [channel get $channel chanmode]] eq {}?{None}:$x}]"
 	putdcc $idx "Idle Kick after (idle-kick): [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "stopnethack: [expr {[set x [channel get $channel stopnethack-mode]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "aop-delay: [expr {[set x [channel get $channel aop-delay]] in {{} 0}?{0:0}:[join $x {:}]}]"
@@ -105,15 +108,75 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	putdcc $idx "exempt-time: [expr {[set x [channel get $channel exempt-time]] eq {}?0:$x}]"
 	putdcc $idx "invite-time: [expr {[set x [channel get $channel invite-time]] eq {}?0:$x}]"
 	putdcc $idx "Other modes:"
-	set chanflags [list autohalfop autoop autovoice bitch cycle dontkickops dynamicbans dynamicexempts dynamicinvites enforcebans greet inactive nodesynch protectfriends protecthalfops protectops revenge revengebot secret seen shared statuslog userbans userexempts userinvites]
+	# only bot owners can see/change these
+	if {[matchattr $handle n|n $channel]} {
+		if {[set x [channel get $channel need-op]] ne {}} {
+			putdcc $idx "To regain op's (need-op):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-halfop]] ne {}} {
+			putdcc $idx "To regain halfop's (need-halfop):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-voice]] ne {}} {
+			putdcc $idx "To regain voice (need-voice):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-invite]] ne {}} {
+			putdcc $idx "To get invite (need-invite):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-key]] ne {}} {
+			putdcc $idx "To get key (need-key):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-unban]] ne {}} {
+			putdcc $idx "If I'm banned (need-unban):"
+			putdcc $idx "\{ $x \}"
+		}
+		if {[set x [channel get $channel need-limit]] ne {}} {
+			putdcc $idx "When channel full (need-limit):"
+			putdcc $idx "\{ $x \}"
+		}
+	}
+	# Channel flags
 	foreach {a b c d} $chanflags {
 		if {$b ne {}} { set b "[expr {[channel get $channel $b] in {{} 0}?{-}:{+}}]$b" }
 		if {$c ne {}} { set c "[expr {[channel get $channel $c] in {{} 0}?{-}:{+}}]$c" }
 		if {$d ne {}} { set d "[expr {[channel get $channel $d] in {{} 0}?{-}:{+}}]$d" }
 		putdcc $idx [format {%4s %-15s %-15s %-15s %s} {} [expr {[channel get $channel $a] in {{} 0}?{-}:{+}}]$a $b $c $d]
 	}
-	# FixMe: add user defined flags
-	putdcc $idx "User defined channel flags:"
+	# User defined flags
+	foreach udef [channel get $channel] {
+		if {[lsearch -exact $internalflags $udef] == -1} {
+			set type [string tolower [udeftype $udef]]
+			lappend udefs($type) $udef
+		}
+	}
+	if {[info exists udefs(flag)]} {
+		putdcc $idx "User defined channel flags:"
+		foreach {a b c d} [lsort $udefs(flag)] {
+			if {$b ne {}} { set b "[expr {[channel get $channel $b] in {{} 0}?{-}:{+}}]$b" }
+			if {$c ne {}} { set c "[expr {[channel get $channel $c] in {{} 0}?{-}:{+}}]$c" }
+			if {$d ne {}} { set d "[expr {[channel get $channel $d] in {{} 0}?{-}:{+}}]$d" }
+			putdcc $idx [format {%4s %-15s %-15s %-15s %s} {} [expr {[channel get $channel $a] in {{} 0}?{-}:{+}}]$a $b $c $d]
+		}
+	}
+	# FixMe: display 4 of these on one line?
+	if {[info exists udefs(int)]} {
+		putdcc $idx "Used defined channel settings:"
+		foreach udef [lsort $udefs(int)] {
+			putdcc $idx "${udef}: [expr {[set x [channel get $channel ${udef}]] eq {}?0:$x}]"
+		
+		}
+	}
+	if {[info exists udefs(str)]} {
+		putdcc $idx "Used defined channel strings:"
+		foreach udef [lsort $udefs(str)] {
+			putdcc $idx "${udef}: [expr {[set x [channel get $channel ${udef}]] eq {}?{{}}:$x}]"
+		}
+	}
+	# Flood settings
 	putdcc $idx "flood settings: chan ctcp join kick deop nick"
 	foreach type [list chan ctcp join kick deop nick] {
 		if {[set x [channel get $channel flood-$type]] in {{} 0}} { set $x [list 0 0] }
