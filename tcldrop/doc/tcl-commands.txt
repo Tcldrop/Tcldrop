@@ -848,7 +848,7 @@ The optional arguments will be documented here (when they're generally useful).
     Module: channels
 
   udefs
-    Returns: a list of all udef types in Tcldrop
+    Returns: A list of all defined udefs and their types.
     Module: channels
 
 *** DCC COMMANDS ***

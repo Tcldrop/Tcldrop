@@ -458,9 +458,6 @@ proc ::tcldrop::server::callout {queue message status} {
 	return 0
 }
 
-proc ::tcldrop::server::TraceNick {name1 name2 op} { puthelp "NICK $::nick" }
-trace add variable ::nick write [list ::tcldrop::server::TraceNick]
-
 # Adds $text to a queue..
 # $queue must be mode, serv, help, or an integer from 1-99.
 # $option can be -normal or -next (Like in Eggdrop).
@@ -661,6 +658,10 @@ proc ::tcldrop::server::LOAD {module} {
 	bind evnt - exit ::tcldrop::server::EVNT_exit -priority 0
 	bind evnt - loaded ::tcldrop::server::EVNT_loaded -priority 100000
 	checkmodule server::dcc
+	if {[info procs ::tcldrop::server::TraceNick] eq {}} {
+		proc ::tcldrop::server::TraceNick {name1 name2 op} { puthelp "NICK $::nick" }
+		trace add variable ::nick write [list ::tcldrop::server::TraceNick]
+	}
 	return 0
 }
 
