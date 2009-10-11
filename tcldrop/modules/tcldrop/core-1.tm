@@ -240,6 +240,38 @@ proc ::tcldrop::core::string2list {string} { lsearch -inline -not -all [split $s
 proc ::tcldrop::core::slindex {string index} { lindex [lsearch -inline -not -all [split $string] {}] $index }
 proc ::tcldrop::core::slrange {string {start {0}} {end {end}}} { lrange [lsearch -inline -not -all [split $string] {}] $start $end }
 
+# Note: []\^ (uppers) == {}|~ (lowers)
+# These commands are for rfc1459 compliance:
+proc ::tcldrop::core::irctolower {string} {
+	if {${::rfc-compliant}} {
+		string map [list \[ \{ \] \} ^ ~ \\ |] [string tolower $string]
+	} else {
+		string tolower $string
+	}
+}
+proc ::tcldrop::core::irctoupper {string} {
+	if {${::rfc-compliant}} {
+		string map [list \{ \[ \} \] ~ ^ | \\] [string toupper $string]
+	} else {
+		string toupper $string
+	}
+}
+proc ::tcldrop::core::ircstreql {string1 string2} {
+	if {${::rfc-compliant}} {
+		string equal -nocase [string map [list \{ \[ \} \] ~ ^ | \\] $string1] [string map [list \{ \[ \} \] ~ ^ | \\] $string2]
+	} else {
+		string equal -nocase $string1 $string2
+	}
+}
+proc ::tcldrop::core::ircstrhasspecial {string} {
+	switch -glob $string {
+		{*[*} - {*]*} - "*\{*" - "*\}*" - {*^*} - {*~*} - {*|*} - "\\" { return 1 }
+		{default} { return 0 }
+	}
+	return 0
+}
+# 2x faster:
+proc ::tcldrop::core::ircstrhasspecial {string} { regexp {(?x) ([^\s]*[\{\}\|~\[\]\\^][^\s]*)} $string }
 
 proc ::tcldrop::core::randstring {length {chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}} {
 	set count [string length $chars]
