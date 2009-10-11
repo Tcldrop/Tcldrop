@@ -1557,6 +1557,8 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault exit-on-sigbreak 21
 	setdefault die-on-sigexit 1
 	setdefault save-on-sigpwr 1
+	setdefault rfc-compliant 1
+	setdefault net-type 0
 	setdefault config {}
 	setdefault owner {}
 	setdefault nick {Tcldrop}
@@ -1903,6 +1905,17 @@ proc ::tcldrop::core::start {} {
 			}
 			variable LastError 0
 			trace add variable ::errorInfo write ::tcldrop::core::TraceError
+		}
+		if {[info procs ::tcldrop::core::TraceNetType] eq {}} {
+			# Note/FixMe: There's possibly other things besides rfc-compliant that need changing to match net-type, so put that stuff in this proc too..
+			proc ::tcldrop::core::TraceNetType {name1 name2 op} {
+				# Only net-type 3 (DALnet) is not rfc1459 compliant, update ::rfc-compliant to match (Eggdrop does this too!):
+				switch -exact -- ${::net-type} {
+					{3} { set ::rfc-compliant 0 }
+					{default} { set ::rfc-compliant 1 }
+				}
+			}
+			trace add variable ::net-type write [list ::tcldrop::core::TraceNetType]
 		}
 		# Setup a log bind that sends logs to the "screen":
 		bind log $console * ::tcldrop::PutLogLev -priority 0
