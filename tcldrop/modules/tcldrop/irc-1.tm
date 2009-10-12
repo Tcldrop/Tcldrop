@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 Tcldrop Development Team <Tcldrop-Dev>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -168,9 +168,9 @@ proc ::tcldrop::irc::callpart {nick uhost handle channel {msg {}}} {
 			countbind $type $mask $proc
 		}
 	}
-	array unset ::channelnicks [string tolower "$channel,$nick"]
-	if {![llength [array names ::channelnicks *,[string tolower $nick]]]} {
-		array unset ::nicks [string tolower $nick]
+	array unset ::channelnicks [irctoupper "$channel,$nick"]
+	if {![llength [array names ::channelnicks *,[irctoupper $nick]]]} {
+		array unset ::nicks [irctoupper $nick]
 	}
 }
 
@@ -184,9 +184,9 @@ proc ::tcldrop::irc::callkick {nick uhost handle channel target {reason {}}} {
 			countbind $type $mask $proc
 		}
 	}
-	array unset ::channelnicks [string tolower "$channel,$nick"]
-	if {![llength [array names ::channelnicks *,[string tolower $nick]]]} {
-		array unset ::nicks [string tolower $target]
+	array unset ::channelnicks [irctoupper "$channel,$nick"]
+	if {![llength [array names ::channelnicks *,[irctoupper $nick]]]} {
+		array unset ::nicks [irctoupper $target]
 	}
 }
 
@@ -204,7 +204,7 @@ proc ::tcldrop::irc::callsign {nick uhost {handle {*}} {chanmask {*}} {msg {Quit
 		}
 	}
 	# Forget everything we know about $nick:
-	array unset ::nicks [set element [string tolower $nick]]
+	array unset ::nicks [set element [irctoupper $nick]]
 	array unset ::channelnicks *,$element
 }
 
@@ -215,7 +215,7 @@ proc ::tcldrop::irc::callsplt {nick uhost {handle {*}} {chanmask {*}} {msg {net-
 	foreach {type flags mask proc} [bindlist splt] {
 		foreach channel $channels {
 			if {[onchan $nick $channel]} {
-				array set channickinfo $channelnicks([set element [string tolower $channel,$nick]])
+				array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
 				array set channickinfo [list split [clock seconds] split-timer [after [expr { ${::wait-split} * 1001 }] [list ::tcldrop::irc::callsign $nick $uhost $handle $channel $msg]]]
 				set channelnicks($element) [array get channickinfo]
 				if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
@@ -236,7 +236,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 	# Call all of the rejn binds:
 	foreach {type flags mask proc} [bindlist rejn] {
 		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
-			array set channickinfo $channelnicks([set element [string tolower $channel,$nick]])
+			array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
 			array set channickinfo [list split 0 nick $nick op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0]
 			if {[info exists channickinfo(split-timer)]} {
 				after cancel $channickinfo(split-timer)
@@ -254,7 +254,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 
 proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
 	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0
-	#set ::channelnicks([string tolower $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
+	#set ::channelnicks([irctoupper $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join] {
 		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
@@ -281,7 +281,7 @@ proc ::tcldrop::irc::callmode {nick uhost handle channel mode {victim {}}} {
 
 proc ::tcldrop::irc::calltopc {nick uhost handle channel topic} {
 	set chaninfo [dict create topic $topic topic-creator $nick!$uhost topic-created [clock seconds]]
-	if {[info exists ::channels([set element [string tolower $channel]])]} {
+	if {[info exists ::channels([set element [irctoupper $channel]])]} {
 		set ::channels($element) [dict merge $::channels($element) $chaninfo]
 	} else {
 		set ::channels($element) $chaninfo
@@ -529,7 +529,7 @@ bind kick - {* *} ::tcldrop::irc::KICK_rejoin -priority 1000
 proc ::tcldrop::irc::KICK_rejoin {nick uhost handle channel target reason} { JoinOrPart }
 
 proc ::tcldrop::irc::nickinfo {nick args} {
-	if {[info exists ::nicks([set nick [string tolower $nick]])]} {
+	if {[info exists ::nicks([set nick [irctoupper $nick]])]} {
 		set ::nicks($nick) [dict merge $::nicks($nick) $args]
 	} else {
 		set ::nicks($nick) [dict create {*}$args]
@@ -537,7 +537,7 @@ proc ::tcldrop::irc::nickinfo {nick args} {
 }
 
 proc ::tcldrop::irc::getnickinfo {nick {info {}}} {
-	if {[info exists ::nicks([set nick [string tolower $nick]])]} {
+	if {[info exists ::nicks([set nick [irctoupper $nick]])]} {
 		if {$info == {}} {
 			return $::nicks($nick)
 		} elseif {[dict exists $::nicks($nick) $info]} {
@@ -547,7 +547,7 @@ proc ::tcldrop::irc::getnickinfo {nick {info {}}} {
 }
 
 proc ::tcldrop::irc::channickinfo {channel nick args} {
-	if {[info exists ::channelnicks([set element [string tolower "$channel,$nick"]])]} {
+	if {[info exists ::channelnicks([set element [irctoupper "$channel,$nick"]])]} {
 		set ::channelnicks($element) [dict merge $::channelnicks($element) $args]
 	} else {
 		set ::channelnicks($element) [dict create {*}$args]
@@ -555,7 +555,7 @@ proc ::tcldrop::irc::channickinfo {channel nick args} {
 }
 
 proc ::tcldrop::irc::chaninfo {channel args} {
-	if {[info exists ::channels([set channel [string tolower $channel]])]} {
+	if {[info exists ::channels([set channel [irctoupper $channel]])]} {
 		set ::channels($channel) [dict merge $::channels($channel) $args]
 	} else {
 		set ::channels($channel) [dict create {*}$args]
@@ -565,13 +565,13 @@ proc ::tcldrop::irc::chaninfo {channel args} {
 
 # FixMe: Broken and Unused anywhere else.
 #proc ::tcldrop::irc::setchandata {chan {info {}}} {
-#	if {[info exists ::channels([set element [string tolower $nick]])]} { array set nickinfo $::nicks($element) }
+#	if {[info exists ::channels([set element [irctoupper $nick]])]} { array set nickinfo $::nicks($element) }
 #	array set nickinfo $info
 #	set ::nicks($element) [array get nickinfo]
 #}
 
 #proc ::tcldrop::irc::getchandata {nick {info {}}} {
-#	if {[info exists ::nicks([set nick [string tolower $nick]])]} {
+#	if {[info exists ::nicks([set nick [irctoupper $nick]])]} {
 #		if {$info == {}} {
 #			return $::nicks($nick)
 #		} else {
@@ -656,7 +656,7 @@ bind mode - "* ?o" ::tcldrop::irc::mode -priority 1000
 bind mode - "* ?v" ::tcldrop::irc::mode -priority 1000
 bind mode - "* ?h" ::tcldrop::irc::mode -priority 1000
 proc ::tcldrop::irc::mode {nick uhost handle channel mode {victim {}}} {
-	if {[info exists ::channelnicks([set element [string tolower "$channel,$victim"]])]} {
+	if {[info exists ::channelnicks([set element [irctoupper "$channel,$victim"]])]} {
 		switch -- $mode {
 			{+o} {
 				dict set ::channelnicks($element) wasop [dict get $::channelnicks($element) op]
@@ -717,7 +717,7 @@ proc ::tcldrop::irc::311 {from key arg} {
 #	set nick [lindex $larg 1]
 #	set idle [lindex $larg 2]
 #	set jointime [lindex $larg 3]
-#	set element [string tolower $nick]
+#	set element [irctoupper $nick]
 #	if {[info exists ::nicks($element)]} { array set nickinfo $::nicks($element) }
 #	array set nickinfo [list idle $idle logon $jointime]
 #	set ::nicks($element) [array get nickinfo]
@@ -754,7 +754,7 @@ proc ::tcldrop::irc::JOIN {from key arg} {
 # Process the results of MODE $channel +b:
 bind raw - 367 ::tcldrop::irc::367 -priority 1000
 proc ::tcldrop::irc::367 {from key arg} {
-	set ::bans([string tolower [set channel [lindex [set larg [split $arg]] 1]],[set ban [lindex $larg 2]]]) [list channel $channel ban $ban creator [lindex $larg 3] created [lindex $larg 4]]
+	set ::bans([irctoupper [set channel [lindex [set larg [split $arg]] 1]],[set ban [lindex $larg 2]]]) [list channel $channel ban $ban creator [lindex $larg 3] created [lindex $larg 4]]
 }
 
 # irc.wh.verio.net: 368 FireEgl #debian End of Channel Ban List
@@ -768,7 +768,7 @@ proc ::tcldrop::irc::368 {from key arg} {
 # Process the results from MODE $channel:
 bind raw - 324 ::tcldrop::irc::324 -priority 1000
 proc ::tcldrop::irc::324 {from key arg} {
-	dict set ::channels([string tolower [lindex [set larg [split $arg]] 1]]) chanmodes [join [lrange $larg 2 end]]
+	dict set ::channels([irctoupper [lindex [set larg [split $arg]] 1]]) chanmodes [join [lrange $larg 2 end]]
 }
 
 # irc.choopa.net: 329 FireEgl #channel 1050676546
@@ -780,7 +780,7 @@ proc ::tcldrop::irc::324 {from key arg} {
 #	set channel [lindex $larg 1]
 #	# This is the unixtime of when the channel was created:
 #	set created [lindex $larg end]
-#	set element [string tolower $channel]
+#	set element [irctoupper $channel]
 #	if {![info exists ::channels($element)]} { set ::channels($element) {} }
 #	array set chaninfo $::channels($element)
 #	array set chaninfo [list created $created]
@@ -797,7 +797,7 @@ proc ::tcldrop::irc::331 {from key arg} { 332 $from $key [join [lrange [split $a
 # Process the results from TOPIC $channel:
 bind raw - 332 ::tcldrop::irc::332 -priority 1000
 proc ::tcldrop::irc::332 {from key arg} { set larg [split $arg]
-	dict set ::channels([string tolower [lindex $larg 1]]) topic [string range [join [lrange $larg 2 end]] 1 end]
+	dict set ::channels([irctoupper [lindex $larg 1]]) topic [string range [join [lrange $larg 2 end]] 1 end]
 	# FixMe: Does Eggdrop call the topc binds when it joins a channel and receives the topic?
 }
 
@@ -806,7 +806,7 @@ proc ::tcldrop::irc::332 {from key arg} { set larg [split $arg]
 # This tells us the creator and created time.
 bind raw - 333 ::tcldrop::irc::333 -priority 1000
 proc ::tcldrop::irc::333 {from key arg} { set larg [split $arg]
-	set channel [string tolower [lindex $larg 1]]
+	set channel [irctoupper [lindex $larg 1]]
 	dict set ::channels($channel) topic-creator [lindex $larg 2]
 	dict set ::channels($channel) topic-created [lindex $larg 3]
 }
@@ -836,18 +836,18 @@ proc ::tcldrop::irc::NICK {from key arg} {
 		set botname "$newnick![lindex [split $from {! }] 1]"
 	}
 
-	set loweroldnick [string tolower $oldnick]
-	set lowernewnick [string tolower $newnick]
-	if {[info exists nicks($loweroldnick)]} {
-		set nicks($lowernewnick) $nicks($loweroldnick)
-		dict set nicks($lowernewnick) nick $newnick
-		unset nicks($loweroldnick)
+	set upperoldnick [irctoupper $oldnick]
+	set uppernewnick [irctoupper $newnick]
+	if {[info exists nicks($upperoldnick)]} {
+		set nicks($uppernewnick) $nicks($upperoldnick)
+		dict set nicks($uppernewnick) nick $newnick
+		unset nicks($upperoldnick)
 	}
 	# Update the channelnick info with the new nick:
-	foreach m [array names ::channelnicks *,$loweroldnick] {
-		set lowerchannel [string tolower [dict get $channelnicks($m) channel]]
-		set channelnicks($lowerchannel,$lowernewnick) $channelnicks($m)
-		dict set channelnicks($lowerchannel,$lowernewnick) nick $newnick
+	foreach m [array names ::channelnicks *,$upperoldnick] {
+		set upperchannel [irctoupper [dict get $channelnicks($m) channel]]
+		set channelnicks($upperchannel,$uppernewnick) $channelnicks($m)
+		dict set channelnicks($upperchannel,$uppernewnick) nick $newnick
 		unset channelnicks($m)
 	}
 
@@ -900,7 +900,7 @@ bind raw - 352 ::tcldrop::irc::352 -priority 1000
 # Note: This command seems to work good now
 proc ::tcldrop::irc::352 {from key arg} {
 	set larg [split $arg]
-	set channel [string tolower [lindex $larg 1]]
+	set upperchannel [irctoupper [set channel [lindex $larg 1]]]
 	set ident [lindex $larg 2]
 	set address [lindex $larg 3]
 	#set server [lindex $larg 4]
@@ -908,9 +908,9 @@ proc ::tcldrop::irc::352 {from key arg} {
 	set flags [string trimleft [lindex $larg 6] {HG*xXd!}]
 	#set hops [string trimleft [lindex $larg 7] :]
 	set realname [join [lrange $larg 8 end]]
-	set element [string tolower $nick]
+	set uppernick [irctoupper $nick]
 	set handle [finduser "$nick!$ident@$address"]
-	nickinfo $nick handle $handle nick $nick uhost "$ident@$address" ident $ident address $address realname $realname
+	nickinfo $uppernick handle $handle nick $nick uppernick $uppernick uhost "$ident@$address" ident $ident address $address realname $realname
 	set op [set voice [set halfop 0]]
 	foreach f [split $flags {}] {
 		switch -- $f {
@@ -919,7 +919,7 @@ proc ::tcldrop::irc::352 {from key arg} {
 			{default} { if {[string first $f $::opchars] != -1} { set op 1 } }
 		}
 	}
-	channickinfo $channel $nick handle $handle channel $channel idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
+	channickinfo $upperchannel $uppernick handle $handle channel $channel upperchannel $upperchannel idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
 	return 0
 }
 
@@ -1032,7 +1032,7 @@ proc ::tcldrop::irc::dumpfile {nick filename} {
 #      (not the bot's banlist for the channel)
 #    Module: irc
 proc ::tcldrop::irc::ischanban {ban channel} {
-	info exists ::bans([string tolower "$channel,$ban"])
+	info exists ::bans([irctoupper "$channel,$ban"])
 }
 
 #  ischanexempt <exempt> <channel>
@@ -1040,7 +1040,7 @@ proc ::tcldrop::irc::ischanban {ban channel} {
 #      list (not the bot's exemptlist for the channel)
 #    Module: irc
 proc ::tcldrop::irc::ischanexempt {exempt channel} {
-	info exists ::exempts([string tolower "$channel,$exempt"])
+	info exists ::exempts([irctoupper "$channel,$exempt"])
 }
 
 #  ischaninvite <invite> <channel>
@@ -1048,7 +1048,7 @@ proc ::tcldrop::irc::ischanexempt {exempt channel} {
 #      list (not the bot's invitelist for the channel)
 #    Module: irc
 proc ::tcldrop::irc::ischaninvite {invite channel} {
-	info exists ::invites([string tolower $channel,$invite])
+	info exists ::invites([irctoupper $channel,$invite])
 }
 
 #  chanbans <channel>
@@ -1059,7 +1059,7 @@ proc ::tcldrop::irc::ischaninvite {invite channel} {
 proc ::tcldrop::irc::chanbans {channel {banmask {*}}} {
 	set banlist [list]
 	global bans
-	foreach b [array names bans "[string tolower $channel],$banmask"] {
+	foreach b [array names bans "[irctoupper $channel],$banmask"] {
 		dict with bans($b) {
 			lappend banlist [list $ban $creator $created]
 		}
@@ -1071,7 +1071,7 @@ proc ::tcldrop::irc::chanbans {channel {banmask {*}}} {
 proc ::tcldrop::irc::listchanbans {channel {banmask {*}}} {
 	set banlist [list]
 	global bans
-	foreach b [array names bans "[string tolower $channel],$banmask"] { lappend banlist $bans($b) }
+	foreach b [array names bans "[irctoupper $channel],$banmask"] { lappend banlist $bans($b) }
 	return $banlist
 }
 
@@ -1084,7 +1084,7 @@ proc ::tcldrop::irc::listchanbans {channel {banmask {*}}} {
 proc ::tcldrop::irc::chanexempts {channel {exemptmask {*}}} {
 	set exemptlist [list]
 	global exempts
-	foreach b [array names exempts "[string tolower $channel],$exemptmask"] {
+	foreach b [array names exempts "[irctoupper $channel],$exemptmask"] {
 		dict with exempts($b) {
 			lappend exemptlist [list $exempt $creator $created]
 		}
@@ -1100,7 +1100,7 @@ proc ::tcldrop::irc::chanexempts {channel {exemptmask {*}}} {
 proc ::tcldrop::irc::chaninvites {channel {invitemask {*}}} {
 	set invitelist [list]
 	global invites
-	foreach b [array names invites "[string tolower $channel],$invitemask"] {
+	foreach b [array names invites "[irctoupper $channel],$invitemask"] {
 		dict with invites($b) {
 			lappend invitelist [list $invite $creator $created]
 		}
@@ -1124,7 +1124,7 @@ proc ::tcldrop::irc::resetbans {channel} {
 		# First remove any active bans that shouldn't be active:
 		set ban-time [channel get $channel ban-time]
 		global bans
-		foreach b [array names bans [string tolower $channel],*] {
+		foreach b [array names bans [irctoupper $channel],*] {
 			array set baninfo $bans($b)
 			if {[isban $baninfo(ban) $channel]} {
 				# See if the ban-time has expired..
@@ -1173,7 +1173,7 @@ proc ::tcldrop::irc::resetinvites {channel} {
 #    Returns: 1 if someone by that nickname is on the specified channel (or
 #      any channel if none is specified); 0 otherwise
 proc ::tcldrop::irc::onchan {nick {channel {*}}} {
-	if {[llength [array names ::channelnicks [string tolower "$channel,$nick"]]]} {
+	if {[llength [array names ::channelnicks [irctoupper "$channel,$nick"]]]} {
 		return 1
 	} else {
 		return 0
@@ -1192,7 +1192,7 @@ proc ::tcldrop::irc::botonchan {{channel {*}}} { onchan $::botnick $channel }
 #      a handle, "*" is returned.
 # Note: Like Eggdrop, Tcldrop ignores $channel.
 proc ::tcldrop::irc::nick2hand {nick {channel {*}}} {
-	if {[info exists ::nicks([set element [string tolower $nick]])]} {
+	if {[info exists ::nicks([set element [irctoupper $nick]])]} {
 		array set nickinfo $::nicks($element)
 		if {[info exists nickinfo(handle)]} {
 			set nickinfo(handle)
@@ -1226,7 +1226,7 @@ proc ::tcldrop::irc::hand2nick {handle {channel {*}}} {
 #      0 otherwise
 proc ::tcldrop::irc::handonchan {handle {channel {*}}} {
 	if {[set nick [hand2nick $handle]] != {}} {
-		if {[array names ::channelnicks [string tolower $channel,$nick]] != {}} {
+		if {[array names ::channelnicks [irctoupper $channel,$nick]] != {}} {
 			return 1
 		} else {
 			return 0
@@ -1241,7 +1241,7 @@ proc ::tcldrop::irc::handonchan {handle {channel {*}}} {
 #      in the returned host).  Or "" if none found.
 # Note: Eggdrop ignores $channel, and so do we.
 proc ::tcldrop::irc::getchanhost {nick {channel {*}}} {
-	if {[info exists ::nicks([set nick [string tolower $nick]])]} {
+	if {[info exists ::nicks([set nick [irctoupper $nick]])]} {
 		dict get $::nicks($nick) uhost
 	}
 }
@@ -1250,7 +1250,7 @@ proc ::tcldrop::irc::getchanhost {nick {channel {*}}} {
 #    Returns: timestamp (unixtime format) of when the specified nickname
 #      joined the channel; 0 if the specified user isn't on the channel
 proc ::tcldrop::irc::getchanjoin {nick channel} {
-	if {[info exists ::channelnicks([set element [string tolower $channel,$nick]])]} {
+	if {[info exists ::channelnicks([set element [irctoupper $channel,$nick]])]} {
 		dict get $::channelnicks($element) jointime
 	} else {
 		return 0
@@ -1273,7 +1273,7 @@ proc ::tcldrop::irc::getchanjoin {nick channel} {
 proc ::tcldrop::irc::chanlist {channel {flags {*}}} {
 	set chanlist [list]
 	global channelnicks
-	foreach n [array names channelnicks [string tolower "$channel,*"]] {
+	foreach n [array names channelnicks [irctoupper "$channel,*"]] {
 		array set channickinfo $channelnicks($n)
 		if {$flags == {*}} {
 			lappend chanlist $channickinfo(nick)
@@ -1287,7 +1287,7 @@ proc ::tcldrop::irc::chanlist {channel {flags {*}}} {
 #  getchanidle <nickname> <channel>
 #    Returns: number of minutes that person has been idle; 0 if the specified user isn't on the channel.
 proc ::tcldrop::irc::getchanidle {nick channel} {
-	if {[info exists ::channelnicks([set element [string tolower $channel,$nick]])]} {
+	if {[info exists ::channelnicks([set element [irctoupper $channel,$nick]])]} {
 		dict get $::channelnicks($element) idletime
 	} else {
 		return 0
@@ -1297,7 +1297,7 @@ proc ::tcldrop::irc::getchanidle {nick channel} {
 #  getchanmode <channel>
 #    Returns: string of the type "+ntik key" for the channel specified
 proc ::tcldrop::irc::getchanmode {channel} {
-	if {[info exists ::channels([set element [string tolower $channel]])]} {
+	if {[info exists ::channels([set element [irctoupper $channel]])]} {
 		dict get $::channels($element) chanmodes
 	} else {
 		return {}
@@ -1313,12 +1313,12 @@ proc ::tcldrop::irc::getchanmode {channel} {
 proc ::tcldrop::irc::pushmode {channel mode {arg {}}} {
 	if {[validchan $channel] && [botonchan $channel]} {
 		variable PushModes
-		if {[info exists PushModes([set channel [string tolower $channel]])] && [set pos [lsearch -glob $PushModes($channel) "?[string index $mode 1] $arg"]] != -1} {
+		if {[info exists PushModes([set upperchannel [irctoupper $channel]])] && [set pos [lsearch -glob $PushModes($upperchannel) "?[string index $mode 1] $arg"]] != -1} {
 			# A conflicting or duplicate mode was found. So we replace it.
-			set PushModes($channel) [lreplace $PushModes($channel) $pos $pos "$mode $arg"]
+			set PushModes($upperchannel) [lreplace $PushModes($upperchannel) $pos $pos "$mode $arg"]
 		} else {
 			# Otherwise we just lappend to the end:
-			lappend PushModes($channel) "$mode $arg"
+			lappend PushModes($upperchannel) "$mode $arg"
 		}
 		after idle [list flushmode $channel]
 		return 1
@@ -1408,7 +1408,7 @@ proc ::tcldrop::irc::GroupModes {modes} {
 proc ::tcldrop::irc::flushmode {{channel {*}}} {
 	variable PushModes
 	# Process the modes for each channel array in PushModes:
-	foreach c [array names PushModes [string tolower $channel]] {
+	foreach c [array names PushModes [irctoupper $channel]] {
 		set modes [list]
 		foreach m $PushModes($c) {
 			set victim [string trim [string range $m 3 end]]
@@ -1432,7 +1432,7 @@ proc ::tcldrop::irc::flushmode {{channel {*}}} {
 #    Returns: string containing the current topic of the specified channel
 # Proc by Papillon@EFNet
 proc ::tcldrop::irc::topic {channel} {
-	if {[info exists ::channels([set element [string tolower $channel]])]} {
+	if {[info exists ::channels([set element [irctoupper $channel]])]} {
 		if {[dict exists $::channels($element) topic]} { dict get $::channels($element) topic }
 	}
 }
@@ -1485,7 +1485,7 @@ proc ::tcldrop::irc::washalfop {nick channel} { is washalfop $nick $channel }
 proc ::tcldrop::irc::wasvoice {nick channel} { is wasvoice $nick $channel }
 
 proc ::tcldrop::irc::is {type nick {channel {*}}} { global channelnicks
-	foreach n [array names channelnicks [string tolower "$channel,$nick"]] {
+	foreach n [array names channelnicks [irctoupper "$channel,$nick"]] {
 		if {[dict get $channelnicks($n) $type]} { return 1 }
 	}
 	return 0
@@ -1604,7 +1604,7 @@ bind join - * ::tcldrop::irc::JOIN_+cycle -priority 1000
 bind channel - {remove *} ::tcldrop::irc::CHANNEL_remove -priority 10000
 proc ::tcldrop::irc::CHANNEL_remove {command channel data} {
 	if {[botonchan $channel]} {
-		array unset ::channelnicks [string tolower "$channel,$::botnick"]
+		array unset ::channelnicks [irctoupper "$channel,$::botnick"]
 		putserv "PART $channel"
 	}
 }
@@ -1623,7 +1623,7 @@ proc ::tcldrop::irc::JoinOrPart {args} {
 			if {[set inactive [channel get $channel inactive]] && $botonchan} {
 				putloglev d $channel "Joined +inactive channel $channel ...Leaving!"
 				lappend partchannels $channel
-				array unset ::channelnicks [string tolower "$channel,$::botnick"]
+				array unset ::channelnicks [irctoupper "$channel,$::botnick"]
 			} elseif {!$botonchan && !$inactive} {
 				lappend joinchannels $channel
 			} elseif {![botisop $channel]} {
@@ -1646,25 +1646,25 @@ bind load - irc ::tcldrop::irc::LOAD -priority 0
 proc ::tcldrop::irc::LOAD {module} {
 	# Initialize variables:
 	# ::nicks stores the non-channel specific info for each nick:
-	# Format: ::nicks($lowernick) {array data}
+	# Format: ::nicks($uppernick) {array data}
 	# Array data contains the following types:
 	# nick, handle, ident, address, and realname (if available).
 	array set ::nicks {}
 
 	# ::channelnicks stores the channel specific info for each nick:
-	# Format: ::channelnicks($lowerchannel,$lowernick) {array data}
+	# Format: ::channelnicks($upperchannel,$uppernick) {array data}
 	# Array data contains the following types:
 	# op, voice, halfop, jointime, idletime.
 	array set ::channelnicks {}
 
 	# ::channels stores the non-nick specific info for each channel:
-	# Format: ::channels($lowerchannel) {array data}
+	# Format: ::channels($upperchannel) {array data}
 	# Array data contains the following types:
 	# channel, chanmodes, topic.
 	array set ::channels {}
 
 	# ::bans stores the currently active channel bans:
-	# Format: ::bans($lowerchannel,$lowerban) {array data}
+	# Format: ::bans($upperchannel,$upperban) {array data}
 	# Array data contains the following types:
 	# ban, creator, created, channel.
 	array set ::bans {}
