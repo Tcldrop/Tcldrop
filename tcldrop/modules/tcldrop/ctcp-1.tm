@@ -39,7 +39,7 @@ namespace eval ::tcldrop::ctcp {
 	variable depends {server irc core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides responses to CTCPs on IRC.}
-	variable commands [list callctcp callctcr]
+	variable commands [list callctcp callctcr ctcr]
 	variable rcsid {$Id$}
 	checkmodule irc
 	# Export all the commands that should be available to 3rd-party scripters:
@@ -55,6 +55,7 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 		{-1} - {default} { set allow 0 }
 	}
 	if {$allow} {
+		variable CTCRs {}
 		foreach {type flags mask proc} [bindlist ctcp] {
 			# FixMe: If $dest is a channel, make it do a matchattr for that channel.
 			#        It needs to distinguish between personal and channel CTCPs anyway.
@@ -68,7 +69,18 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 				countbind $type $mask $proc
 			}
 		}
+		# binds that used the ctcr command to stack the replies will have the replies in $CTCRs, so we send them here:
+		if {$CTCRs ne {}} {
+			puthelp "NOTICE $nick :$CTCRs"
+			unset CTCRs
+		}
 	}
+}
+
+# CTCP binds can use this command to "stack" the CTCRs (replies).
+proc ::tcldrop::ctcp::ctcr {text} {
+	variable CTCRs
+	append CTCRs "\001$text\001"
 }
 
 proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
@@ -88,10 +100,10 @@ proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
 	}
 }
 
-proc ::tcldrop::ctcp::ctcp_PING {nick uhost handle dest keyword text} { puthelp "NOTICE $nick :\001PING $text\001" }
+proc ::tcldrop::ctcp::ctcp_PING {nick uhost handle dest keyword text} { ctcr "PING $text" }
 
 proc ::tcldrop::ctcp::ctcp_VERSION_FINGER_USERINFO {nick uhost handle dest keyword text which} {
-	puthelp "NOTICE $nick :\001$keyword [set ::ctcp-$which]\001"
+	ctcr "$keyword [set ::ctcp-$which]"
 }
 proc ::tcldrop::ctcp::ctcp_VERSION {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text version }
 proc ::tcldrop::ctcp::ctcp_FINGER {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text finger }
@@ -102,7 +114,7 @@ proc ::tcldrop::ctcp::ctcp_USERINFO {nick uhost handle dest keyword text} { ctcp
 #	putlog "ctcp CHAT: FixMe: Need support for DCC CHAT"
 #}
 
-proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} { puthelp "NOTICE $nick :\001TIME [ctime [clock seconds]]\001" }
+proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} { ctcr "TIME [ctime [clock seconds]]" }
 
 # Note: Eggdrop supports:
 # CLIENTINFO SED VERSION CLIENTINFO USERINFO ERRMSG FINGER TIME ACTION DCC UTC PING ECHO  :Use CLIENTINFO <COMMAND> to get more specific information
