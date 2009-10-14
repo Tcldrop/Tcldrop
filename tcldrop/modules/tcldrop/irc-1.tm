@@ -960,38 +960,44 @@ proc ::tcldrop::irc::NOTICE {from key arg} {
 # FixMe: pubm & msgm should be triggered _before_ pub & msg. If a line matches,
 # it should only be passed along to pub or msg if exclusive-binds is 1
 bind raw - PRIVMSG ::tcldrop::irc::PRIVMSG -priority 1000
-proc ::tcldrop::irc::PRIVMSG {from key arg} {
+proc ::tcldrop::irc::PRIVMSG {from key text} {
+	regexp -- {([^ :]+) +:(.*)} $text -> dest text
 	set nick [lindex [split $from !] 0]
 	set uhost [lindex [split $from !] end]
 	set handle [finduser $from]
-	set larg [split $arg]
-	set dest [lindex $larg 0]
-	if {[string equal [string index [lindex $larg 1] 1] \001]} {
-		# All CTCP binds are called:
-		callctcp $nick $uhost $handle $dest [string trimright [string range [lindex $larg 1] 2 end] "\001"] [string trimright [join [lrange $larg 2 end]] "\001"]
-		if {[isbotnetnick $dest]} { set dest {-} }
-		putloglev m $dest "CTCP [string trimright [string range [lindex $larg 1] 2 end] "\001"] [string trimright [join [lrange $larg 2 end]] "\001"] from $nick (${uhost})"
-	} else {
-		set text [string range [join [lrange $larg 1 end]] 1 end]
-		set ltext [split [string trim $text]]
-		set command [lindex $ltext 0]
-		set args [string trimleft [join [lrange $ltext 1 end]]]
-		if {[isbotnick $dest]} {
-			# All MSG binds are called:
-			if {![::tcldrop::irc::callmsg $nick $uhost $handle $command $args]} {
-				# If callmsg returned 0, do the MSGM binds:
-				::tcldrop::irc::callmsgm $nick $uhost $handle $text
-				# Only do the msg log if a msg bind wasn't triggered
-				putloglev m - "\[$nick!$uhost\] $text"
-			}
-		} elseif {[validchan $dest]} {
-			# All PUB binds are called:
-			if {![::tcldrop::irc::callpub $nick $uhost $handle $dest $command $args]} {
-				# If callpub returned 0, do the PUBM binds:
-				::tcldrop::irc::callpubm $nick $uhost $handle $dest $text
-				# Only do the pub log if a pub bind wasn't triggered
-				putloglev p $dest "<${nick}> $text"
-			}
+	# All CTCP binds are called:
+	foreach {c c} [regexp -all -inline -- {\001(.*)*?\001} $text] {
+		# Note: Eggdrop responds to, what I'll call, stacked CTCPs.  Such as: \001VERSION\001\001FINGER\001
+		#       And replies to such are also stacked.  (FixMe: We can't do this yet)
+		#       Not many IRC clients support such stacking..
+		callctcp $nick $uhost $handle $dest [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]]
+		if {[isbotnick $dest]} { set consoledest {-} } else { set consoledest $dest }
+		putloglev m $consoledest "CTCP [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]] from $nick (${uhost})"
+	}
+	# Call msgm/pubm binds:
+	# This regexp strips any trailing CTCPs (if there are any) from the message text:
+	if {[regexp -- {^(.*)*?\001} $text -> text] && [string trim $text] eq {}} {
+		# If CTCPs were stripped off and the remaining text is "" then just return..
+		return
+	}
+	set ltext [split [string trim $text]]
+	set command [lindex $ltext 0]
+	set args [string trimleft [join [lrange $ltext 1 end]]]
+	if {[isbotnick $dest]} {
+		# All MSG binds are called:
+		if {![::tcldrop::irc::callmsg $nick $uhost $handle $command $args]} {
+			# If callmsg returned 0, do the MSGM binds:
+			::tcldrop::irc::callmsgm $nick $uhost $handle $text
+			# Only do the msg log if a msg bind wasn't triggered
+			putloglev m - "\[$nick!$uhost\] $text"
+		}
+	} elseif {[validchan $dest]} {
+		# All PUB binds are called:
+		if {![::tcldrop::irc::callpub $nick $uhost $handle $dest $command $args]} {
+			# If callpub returned 0, do the PUBM binds:
+			::tcldrop::irc::callpubm $nick $uhost $handle $dest $text
+			# Only do the pub log if a pub bind wasn't triggered
+			putloglev p $dest "<${nick}> $text"
 		}
 	}
 }
