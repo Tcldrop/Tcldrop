@@ -48,17 +48,25 @@ namespace eval ::tcldrop::ctcp {
 
 proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 	if {!${::lowercase-ctcp} && [string is lower $keyword]} { return -1 }
-	foreach {type flags mask proc} [bindlist ctcp] {
-		# FixMe: If $dest is a channel, make it do a matchattr for that channel.
-		#        It needs to distinguish between personal and channel CTCPs anyway.
-		if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
-			if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
-				putlog "Error in $proc: $err"
-				puterrlog "$::errorInfo"
-			} elseif {![string equal {0} $err] || [string equal {1} $err]} {
-				break
+	switch -- ${::ctcp-mode} {
+		{0} { set allow 1 }
+		{1} { set allow [matchattr $handle o] }
+		{2} { if {[detectflood ${::flood-ctcp} ctcp $uhost]} { set allow 0 } else { set allow 1 } }
+		{-1} - {default} { set allow 0 }
+	}
+	if {$allow} {
+		foreach {type flags mask proc} [bindlist ctcp] {
+			# FixMe: If $dest is a channel, make it do a matchattr for that channel.
+			#        It needs to distinguish between personal and channel CTCPs anyway.
+			if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
+				if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
+					putlog "Error in $proc: $err"
+					puterrlog "$::errorInfo"
+				} elseif {![string equal {0} $err] || [string equal {1} $err]} {
+					break
+				}
+				countbind $type $mask $proc
 			}
-			countbind $type $mask $proc
 		}
 	}
 }
@@ -83,13 +91,7 @@ proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
 proc ::tcldrop::ctcp::ctcp_PING {nick uhost handle dest keyword text} { puthelp "NOTICE $nick :\001PING $text\001" }
 
 proc ::tcldrop::ctcp::ctcp_VERSION_FINGER_USERINFO {nick uhost handle dest keyword text which} {
-	switch -- ${::ctcp-mode} {
-		{0} { set allow 1 }
-		{1} { set allow [matchattr $handle o] }
-		{2} { if {[detectflood ${::flood-ctcp} ctcp $uhost]} { set allow 0 } else { set allow 1 } }
-		{-1} - {default} { set allow 0 }
-	}
-	if {$allow} { puthelp "NOTICE $nick :\001$keyword [set ::ctcp-$which]\001" }
+	puthelp "NOTICE $nick :\001$keyword [set ::ctcp-$which]\001"
 }
 proc ::tcldrop::ctcp::ctcp_VERSION {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text version }
 proc ::tcldrop::ctcp::ctcp_FINGER {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text finger }
@@ -101,6 +103,9 @@ proc ::tcldrop::ctcp::ctcp_USERINFO {nick uhost handle dest keyword text} { ctcp
 #}
 
 proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} { puthelp "NOTICE $nick :\001TIME [ctime [clock seconds]]\001" }
+
+# Note: Eggdrop supports:
+# CLIENTINFO SED VERSION CLIENTINFO USERINFO ERRMSG FINGER TIME ACTION DCC UTC PING ECHO  :Use CLIENTINFO <COMMAND> to get more specific information
 
 bind load - ctcp ::tcldrop::ctcp::LOAD -priority 0
 proc ::tcldrop::ctcp::LOAD {module} {
