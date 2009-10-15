@@ -973,6 +973,7 @@ proc ::tcldrop::irc::PRIVMSG {from key text} {
 		callctcp $nick $uhost $handle $dest [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]]
 		if {[isbotnick $dest]} { set consoledest {-} } else { set consoledest $dest }
 		putloglev m $consoledest "CTCP [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]] from $nick (${uhost})"
+		if {[incr Count] >= ${::answer-ctcp}} { break }
 	}
 	# Call msgm/pubm binds:
 	# This regexp strips any trailing CTCPs (if there are any) from the message text:
@@ -1689,6 +1690,7 @@ proc ::tcldrop::irc::LOAD {module} {
 	setdefault network {Unknown}
 	setdefault flood-msg 0:0
 	setdefault flood-ctcp 0:0
+	setdefault answer-ctcp 1
 	setdefault text-path {text}
 	setdefault wait-split 3
 	setdefault opchars {@&~} -protect 1
