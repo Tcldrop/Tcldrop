@@ -39,7 +39,7 @@ namespace eval ::tcldrop::ctcp {
 	variable depends {server irc core::users core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides responses to CTCPs on IRC.}
-	variable commands [list callctcp callctcr ctcr]
+	variable commands [list callctcp callctcr callctcps ctcr]
 	variable rcsid {$Id$}
 	checkmodule irc
 	# Export all the commands that should be available to 3rd-party scripters:
@@ -55,7 +55,6 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 		{-1} - {default} { set allow 0 }
 	}
 	if {$allow} {
-		variable CTCRs {}
 		foreach {type flags mask proc} [bindlist ctcp] {
 			# FixMe: If $dest is a channel, make it do a matchattr for that channel.
 			#        It needs to distinguish between personal and channel CTCPs anyway.
@@ -69,11 +68,23 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 				countbind $type $mask $proc
 			}
 		}
-		# binds that used the ctcr command to stack the replies will have the replies in $CTCRs, so we send them here:
-		if {$CTCRs ne {}} {
-			puthelp "NOTICE $nick :$CTCRs"
-			unset CTCRs
-		}
+	}
+}
+
+# Similar to callctcp, this command handles multiple (stacked) CTCPs in $text:
+# Example of "stacked" CTCPs: \001VERSION\001\001FINGER\001
+proc ::tcldrop::ctcp::callctcps {nick uhost handle dest text} {
+	variable CTCRs {}
+	foreach {c c} [regexp -all -inline -- {\001(.*)*?\001} $text] {
+		callctcp $nick $uhost $handle $dest [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]]
+		if {[isbotnick $dest]} { set consoledest {-} } else { set consoledest $dest }
+		putloglev m $consoledest "CTCP [lindex [split [string trim $c]] 0] [join [lrange [split [string trim $c]] 1 end]] from $nick (${uhost})"
+		if {[incr Count] >= ${::answer-ctcp}} { break }
+	}
+	# binds that used the ctcr command to stack the replies will have the replies in $CTCRs, so we send them here:
+	if {$CTCRs ne {}} {
+		puthelp "NOTICE $nick :$CTCRs"
+		unset CTCRs
 	}
 }
 
