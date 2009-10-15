@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -80,7 +80,11 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 # CTCP binds can use this command to "stack" the CTCRs (replies).
 proc ::tcldrop::ctcp::ctcr {text} {
 	variable CTCRs
-	append CTCRs "\001$text\001"
+	if {[info exists CTCRs]} {
+		append CTCRs "\001$text\001"
+	} else {
+		return -code error "Calling the ctcr command outside of a CTCP bind is not allowed."
+	}
 }
 
 proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
@@ -100,21 +104,26 @@ proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
 	}
 }
 
-proc ::tcldrop::ctcp::ctcp_PING {nick uhost handle dest keyword text} { ctcr "PING $text" }
-
-proc ::tcldrop::ctcp::ctcp_VERSION_FINGER_USERINFO {nick uhost handle dest keyword text which} {
-	ctcr "$keyword [set ::ctcp-$which]"
+proc ::tcldrop::ctcp::ctcp_PING {nick uhost handle dest keyword text} {
+	ctcr "$keyword $text"
+	return 1
 }
-proc ::tcldrop::ctcp::ctcp_VERSION {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text version }
-proc ::tcldrop::ctcp::ctcp_FINGER {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text finger }
-proc ::tcldrop::ctcp::ctcp_USERINFO {nick uhost handle dest keyword text} { ctcp_VERSION_FINGER_USERINFO $nick $uhost $handle $dest $keyword $text userinfo }
-
-#proc ::tcldrop::ctcp::ctcp_CHAT {nick uhost handle dest keywork text} {
-#	# FixMe: Add support for DCC CHAT here.
-#	putlog "ctcp CHAT: FixMe: Need support for DCC CHAT"
-#}
-
-proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} { ctcr "TIME [ctime [clock seconds]]" }
+proc ::tcldrop::ctcp::ctcp_VERSION {nick uhost handle dest keyword text} {
+	ctcr "$keyword ${::ctcp-version}"
+	return 1
+}
+proc ::tcldrop::ctcp::ctcp_FINGER {nick uhost handle dest keyword text} {
+	ctcr "$keyword ${::ctcp-finger}"
+	return 1
+}
+proc ::tcldrop::ctcp::ctcp_USERINFO {nick uhost handle dest keyword text} {
+	ctcr "$keyword ${::ctcp-userinfo}"
+	return 1
+}
+proc ::tcldrop::ctcp::ctcp_TIME {nick uhost handle dest keyword text} {
+	ctcr "TIME [ctime [clock seconds]]"
+	return 1
+}
 
 # Note: Eggdrop supports:
 # CLIENTINFO SED VERSION CLIENTINFO USERINFO ERRMSG FINGER TIME ACTION DCC UTC PING ECHO  :Use CLIENTINFO <COMMAND> to get more specific information
@@ -134,10 +143,9 @@ proc ::tcldrop::ctcp::LOAD {module} {
 	setdefault ctcp-finger "Tcldrop v$::tcldrop(version)"
 	setdefault ctcp-userinfo "Tcldrop v$::tcldrop(version)"
 	setdefault flood-ctcp 3:61
+	setdefault answer-ctcp 1
 	# FixMe: Add support for these settings:
-	setdefault answer-ctcp 3
 	setdefault global-flood-ctcp 9:99
-	#bind ctcp p CHAT ::tcldrop::ctcp::ctcp_CHAT -priority 10000
 	bind ctcp - PING ::tcldrop::ctcp::ctcp_PING -priority 10000
 	bind ctcp - TIME ::tcldrop::ctcp::ctcp_TIME -priority 10000
 	bind ctcp - VERSION ::tcldrop::ctcp::ctcp_VERSION -priority 10000
