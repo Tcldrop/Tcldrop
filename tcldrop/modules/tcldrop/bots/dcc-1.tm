@@ -76,52 +76,76 @@ proc ::tcldrop::bots::dcc::LINK {handle idx text} {
 	return 0
 }
 
-proc ::tcldrop::bots::dcc::BOTTREE {handle idx text} {
-	# dict get $::bots(saffron) icon
-	# dict get $::bots(saffron) tracepath
-	foreach bot [bots] { lappend bots [string tolower $bot] }
-	set botCount [llength $bots]
-	putloglev d * "Bots: $bots"
-	lappend botOrder ${::botnet-nick}
-	set currentBot 0
-	set match 0
-	set loops 0; # remove once this works
-	while [set len [llength $bots]] {; # <- why doesn't this check work?!
-		# putloglev d * "bots len: $len"
-		if {[llength $bots] <= 0} { break }; # Fix for the while check not working
-		incr loops; # remove once this works
-		if {$loops >= 50 } { putloglev d * "Caught infinite loop, breaking"; break }; # remove once this works
-		putloglev d * "while. botOrder: $botOrder, currentBot: [lindex $botOrder $currentBot]"
-		set pos 0
-		foreach bot $bots {
-			putloglev d * "  foreach. bot: <${bot}>, pos: $pos, tracepath: [dict get $::bots($bot) tracepath]"
-			if {[string equal -nocase [lindex $botOrder $currentBot] [lindex [dict get $::bots($bot) tracepath] end]]} {
-				lappend botOrder $bot
-				set currentBot [expr {[llength $botOrder]-1}]
-				set bots [lreplace $bots $pos $pos]
-				putloglev d * "    found match. botOrder: $botOrder, bots: $bots"
-				set match 1; break
-			}
-			incr pos
+# proc by thommey
+proc ::tcldrop::bots::dcc::getallbotschildren {} {
+	set result [dict create]
+	foreach node [bots] {
+		dict set result [string tolower $node] [list]
+	}
+	# now parse the tracepaths to append children to their parent
+	foreach node [bots] {
+	# every path tells us about the direct parent of a node, the rest is ignored
+		dict lappend result [string tolower [lindex [dict get $::bots([set node [string tolower $node]]) tracepath] end]] $node
+	}
+	return [dict get $result]
+}
+
+# proc by thommey
+# walk the tree recursively starting with us
+proc ::tcldrop::bots::dcc::printtree {idx {version 0} {childrendict {}} {root {}} {indentionlvl -1} {endlvl 0}} {
+	if {$root eq {}} { set root ${::botnet-nick} }
+	if {$childrendict eq {}} { set childrendict [getallbotschildren] }
+	set children [dict get $childrendict [string tolower $root]]
+	# output the root of the whole tree
+	if {$indentionlvl < 0} {
+		if {$version} { putdcc $idx "$root (Tcldrop v[lindex $::version 0])" } else { putdcc $idx $root }
+	}
+	incr indentionlvl
+	set prefix "  "
+	for {set i 0} {$i < $indentionlvl} {incr i} {
+		if {$i < $endlvl} { append prefix " " } else { append prefix "|" }
+		append prefix "    "
+	}
+	for {set i 0} {$i < [llength $children]} {incr i} {
+		set child [lindex $children $i]
+		set suffix "[dict get $::bots($child) icon][dict get $::bots($child) handle]"
+		if {$version} { append suffix " ([dict get $::bots($child) type] [dict get $::bots($child) numversion])" }; # FixMe: this should display version instead of numversion
+		# not last child? "`--", else "|--"
+		if {$i < [llength $children]-1} {
+			putdcc $idx "$prefix|-$suffix"
+		} else {
+			putdcc $idx "$prefix`-$suffix"
+			incr endlvl
 		}
-		if {!$match} { incr currentBot; if {[expr {$currentBot+1}] > [llength $botOrder]} { set currentBot 0 } } else { set match 0 }
-		# putloglev d * "  bots: \"${bots}\" llength: [llength $bots]"
+		# and walk on with the recursion for this child
+		printtree $idx $version $childrendict $child $indentionlvl $endlvl
 	}
-	set indent(${::botnet-nick}) 0
-	foreach bot [lrange $botOrder 1 end] {
-		set indent($bot) [expr {$indent([lindex [dict get $::bots($bot) tracepath] end]) + 1}]
+}
+
+# proc by thommey
+proc ::tcldrop::bots::dcc::avghops {} {
+	set totalbots 1; # ourselves, there's no tracepath for us
+	set hopstotal 0
+	foreach node [bots] {
+		set path [dict get $::bots([string tolower $node]) tracepath]
+		if {[lindex $path 0] eq ${::botnet-nick}} { set path [lrange $path 1 end] }; # skip us as hop
+		incr hopstotal [llength $path]
+		incr hopstotal; # but we are a hop, so count us
 	}
-	# Output
-	putdcc $idx "${::botnet-nick}"
-	foreach bot [lrange $botOrder 1 end] {
-		putdcc $idx "[string repeat "  " $indent($bot)]  [dict get $::bots($bot) icon]${bot}"
-		# putdcc $idx "<${bot}> [dict get $::bots($bot) tracepath] $indent($bot)"
-	}
-	# putdcc $idx $botOrder
+	return [format %.1f [expr {$hopstotal/(1.0+[llength [bots]])}]]
+}
+
+
+proc ::tcldrop::bots::dcc::BOTTREE {handle idx text} {
+	putcmdlog "#$handle# bottree"
+	printtree $idx
+	putdcc $idx "Total bots: [expr {[llength [bots]]+1}], Avg hops: [avghops]"
 }
 
 proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
-	return 0
+	putcmdlog "#$handle# vbottree"
+	printtree $idx 1
+	putdcc $idx "Total bots: [expr {[llength [bots]]+1}], Avg hops: [avghops]"
 }
 
 bind load - bots::dcc ::tcldrop::bots::dcc::LOAD -priority 0
@@ -130,10 +154,10 @@ proc ::tcldrop::bots::dcc::LOAD {module} {
 	bind dcc nmt +bot ::tcldrop::bots::dcc::+BOT
 	bind dcc nmt -bot ::tcldrop::bots::dcc::-BOT
 	bind dcc nmt link ::tcldrop::bots::dcc::LINK
-	# FixMe: Add these dcc commands:
-	bind dcc nmt botinfo ::tcldrop::bots::dcc::BOTINFO
 	bind dcc nmt bottree ::tcldrop::bots::dcc::BOTTREE
 	bind dcc nmt vbottree ::tcldrop::bots::dcc::VBOTTREE
+	# FixMe: Add these dcc commands:
+	bind dcc nmt botinfo ::tcldrop::bots::dcc::BOTINFO
 	bind dcc nmt botattr ::tcldrop::bots::dcc::BOTATTR
 	bind dcc nmt unlink ::tcldrop::bots::dcc::UNLINK
 }
