@@ -125,9 +125,13 @@ proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
 # > el
 
 proc ::tcldrop::bots::eggdrop::Read {idx line} {
-	#putloglev d * "in eggdrop::Read $idx $line"
+	putloglev d * "in eggdrop::Read $idx $line"
 	array set idxinfo $::idxlist($idx)
-	#putloglev d * "idxinfo(state): $idxinfo(state)"
+	putloglev d * "idxinfo(state): $idxinfo(state)"
+	if {$line eq {}} {
+		putloglev d * "line is empty."
+		#return
+	}
 	switch -- $idxinfo(state) {
 		{FORK_BOT} { Write_OUT $idx }
 		{BOT_IN} { Write_IN $idx $line }
@@ -141,7 +145,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 				} else {
 					# They don't have a password set.. Accept the line.
 					idxinfo $idx handle $line state BOT other {bot}
-					after idle [list ::tcldrop::bots::eggdrop::LinkedPeer $idx]
+					::tcldrop::bots::eggdrop::LinkedPeer $idx
 				}
 			} else {
 				# Note: Eggdrop sends the following message, but I don't think we should send anything at all.
@@ -250,7 +254,7 @@ proc ::tcldrop::bots::eggdrop::LinkedPeer {idx args} {
 	putidx $idx {el}
 
 	# Notify the LINK binds:
-	calllink $botinfo(handle) ${::botnet-nick}
+	calllink $idxinfo(handle) ${::botnet-nick}
 }
 
 #|   (45) RBOT (stackable)
@@ -421,21 +425,17 @@ bind eggdrop b thisbot ::tcldrop::bots::eggdrop::Thisbot -priority 1000
 bind eggdrop b tb ::tcldrop::bots::eggdrop::Thisbot -priority 1000
 proc ::tcldrop::bots::eggdrop::Thisbot {handle idx cmd arg} {
 	variable Peers
-	if {![info exists Peers($idx)]} {
-		# Previously unknown bot!  o_O
-		killidx $idx
-		return 1
-	} elseif {![string equal -nocase $Peers($idx) $handle]} {
-		# Imposter?
-		killidx $idx
-		return 1
-	} elseif {![string equal $Peers($idx) $handle]} {
-		# It's the right bot, just need to update some variables to get the cAsE right..
+	if {(![info exists Peers($idx)]) || ([string equal -nocase $Peers($idx) $handle] && ![string equal $Peers($idx) $handle])} {
+		# Add it, or update the cAsE.
 		set Peers($idx) $arg
 		botinfo $handle handle $arg peer $arg
 		# FixMe: Also update the Linked variable.
 		idxinfo $idx handle $arg
 		return 0
+	} else {
+		# Imposter?  The Peers($idx) exists, but the handle doesn't match.
+		killidx $idx
+		return 1
 	}
 }
 
