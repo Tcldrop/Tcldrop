@@ -138,14 +138,24 @@ proc ::tcldrop::bots::dcc::avghops {} {
 
 proc ::tcldrop::bots::dcc::BOTTREE {handle idx text} {
 	putcmdlog "#$handle# bottree"
-	printtree $idx
-	putdcc $idx "Total bots: [expr {[llength [bots]]+1}], Avg hops: [avghops]"
+	if {[llength [bots]] > 0} {
+		printtree $idx
+	} else {
+		putdcc $idx "No bots linked."
+		return 0
+	}
+	putdcc $idx "Average hops: [avghops], total bots: [expr {[llength [bots]]+1}]"
 }
 
 proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
 	putcmdlog "#$handle# vbottree"
-	printtree $idx 1
-	putdcc $idx "Total bots: [expr {[llength [bots]]+1}], Avg hops: [avghops]"
+	if {[llength [bots]] > 0} {
+		printtree $idx 1
+	} else {
+		putdcc $idx "No bots linked."
+		return 0
+	}
+	putdcc $idx "Average hops: [avghops], total bots: [expr {[llength [bots]]+1}]"
 }
 
 bind load - bots::dcc ::tcldrop::bots::dcc::LOAD -priority 0
