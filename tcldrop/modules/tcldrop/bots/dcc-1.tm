@@ -44,8 +44,8 @@ namespace eval ::tcldrop::bots::dcc {
 
 proc ::tcldrop::bots::dcc::BOTS {handle idx text} {
 	putcmdlog "#$handle# bots"
-	putdcc $idx "Bots: [join [bots] {, }]."
-	putdcc $idx "(Total: [llength [bots]])"
+	putdcc $idx "Bots: [join [set bots [bots]] {, }]."
+	putdcc $idx "(Total: [llength $bots])"
 	return 0
 }
 
@@ -73,6 +73,54 @@ proc ::tcldrop::bots::dcc::LINK {handle idx text} {
 		putdcc $idx "Attempting to link to $text..."
 		link $text
 	}
+	return 0
+}
+
+proc ::tcldrop::bots::dcc::BOTTREE {handle idx text} {
+	# dict get $::bots(saffron) icon
+	# dict get $::bots(saffron) tracepath
+	foreach bot [bots] { lappend bots [string tolower $bot] }
+	set botCount [llength $bots]
+	putloglev d * "Bots: $bots"
+	lappend botOrder ${::botnet-nick}
+	set currentBot 0
+	set match 0
+	set loops 0; # remove once this works
+	while [set len [llength $bots]] {; # <- why doesn't this check work?!
+		# putloglev d * "bots len: $len"
+		if {[llength $bots] <= 0} { break }; # Fix for the while check not working
+		incr loops; # remove once this works
+		if {$loops >= 50 } { putloglev d * "Caught infinite loop, breaking"; break }; # remove once this works
+		putloglev d * "while. botOrder: $botOrder, currentBot: [lindex $botOrder $currentBot]"
+		set pos 0
+		foreach bot $bots {
+			putloglev d * "  foreach. bot: <${bot}>, pos: $pos, tracepath: [dict get $::bots($bot) tracepath]"
+			if {[string equal -nocase [lindex $botOrder $currentBot] [lindex [dict get $::bots($bot) tracepath] end]]} {
+				lappend botOrder $bot
+				set currentBot [expr {[llength $botOrder]-1}]
+				set bots [lreplace $bots $pos $pos]
+				putloglev d * "    found match. botOrder: $botOrder, bots: $bots"
+				set match 1; break
+			}
+			incr pos
+		}
+		if {!$match} { incr currentBot; if {[expr {$currentBot+1}] > [llength $botOrder]} { set currentBot 0 } } else { set match 0 }
+		# putloglev d * "  bots: \"${bots}\" llength: [llength $bots]"
+	}
+	set indent(${::botnet-nick}) 0
+	foreach bot [lrange $botOrder 1 end] {
+		set indent($bot) [expr {$indent([lindex [dict get $::bots($bot) tracepath] end]) + 1}]
+	}
+	# Output
+	putdcc $idx "${::botnet-nick}"
+	foreach bot [lrange $botOrder 1 end] {
+		putdcc $idx "[string repeat "  " $indent($bot)]  [dict get $::bots($bot) icon]${bot}"
+		# putdcc $idx "<${bot}> [dict get $::bots($bot) tracepath] $indent($bot)"
+	}
+	# putdcc $idx $botOrder
+}
+
+proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
 	return 0
 }
 
