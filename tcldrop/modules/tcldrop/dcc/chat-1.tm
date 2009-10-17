@@ -45,24 +45,26 @@ namespace eval ::tcldrop::dcc::chat {
 }
 
 # This is when they do a /dcc chat $botnick
-bind ctcp p DCC ::tcldrop::dcc::chat::DCC -priority 1000
+bind ctcp op|o DCC ::tcldrop::dcc::chat::DCC -priority 1000
 proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
+	if {[info exists {::require-p}] && ${::require-p} && ![matchattr p $hand]} { return }
 	if {[isbotnick $dest]} {
 		if {$key == {DCC} && [string toupper [lindex [set text [split $text]] 0]] == {CHAT} && [expr 1024 < [set port [lindex $text end]] < 65535]} {
 			set host [lindex [split $host @] end]
-			# FixMe: $althost should be used if we can't connect to $host:
-			set althost [lindex $text 2]
-			set fail [catch { connect $host $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::dcc::telnet::Read -errors ::tcldrop::dcc::telnet::Error -writable ::tcldrop::dcc::chat::Write } idx]
-			if {!$fail} { idxinfo $idx idx $idx handle $hand remote $host hostname $host dccchatip $dccchatip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds] }
+			# FixMe: we should try to connect to $decip first, and if it fails, connect to $host. Currently always connects to $decip
+			# FixMe: honor the dcc-sanitycheck conf option
+			set decip [lindex $text 2]
+			set fail [catch { connect $decip $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::dcc::telnet::Read -errors ::tcldrop::dcc::telnet::Error -writable ::tcldrop::dcc::chat::Write } idx]
+			if {!$fail} { idxinfo $idx idx $idx handle $hand remote $host hostname $host dccchatip $decip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds] }
 		}
 	}
 	return 1
 }
 
 # This is when they do a /ctcp $botnick CHAT
-bind ctcp p CHAT ::tcldrop::dcc::chat::CHAT -priority 1000
-# FixMe: This doesn't seem to work yet.
+bind ctcp op|o CHAT ::tcldrop::dcc::chat::CHAT -priority 1000
 proc ::tcldrop::dcc::chat::CHAT {nick uhost handle dest key text} {
+	if {[info exists {::require-p}] && ${::require-p} && ![matchattr p $hand]} { return }
 	if {[isbotnick $dest]} {
 		# FixMe: is this the log we want this in?
 		putlog "CTCP CHAT: from $nick ($uhost)"
@@ -90,6 +92,7 @@ proc ::tcldrop::dcc::chat::Connect {idx} { idxinfo $idx -control ::tcldrop::dcc:
 proc ::tcldrop::dcc::chat::Error {idx {error {}}} { ::tcldrop::dcc::telnet::Error $idx $error }
 
 proc ::tcldrop::dcc::chat::Write {idx} {
+	putdcc $idx "Password:"
 	if {![dict exists $::idxlist($idx) handle] || [dict get $::idxlist($idx) handle] eq {*}} {
 		# Note: We share code with the telnetparty module.
 		::tcldrop::dcc::telnet::Write $idx
