@@ -219,7 +219,7 @@ proc ::tcldrop::bots::eggdrop::Read {idx line} {
 		}
 		{BOT} {
 			calleggdrop $idxinfo(handle) $idx [string trim [lindex [split $line] 0]] [string trimleft [join [lrange [split $line] 1 end]]]
-			putloglev t * $line
+			putloglev t * "\[${idxinfo(handle)}\] $line"
 			idxinfo $idx timestamp [clock seconds]
 		}
 		{default} {
