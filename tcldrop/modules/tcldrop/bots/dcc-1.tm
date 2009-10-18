@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2005,2006,2007 FireEgl (Philip Moore) <FireEgl@Tcldrop.US>
+# Copyright (C) 2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -65,6 +65,44 @@ proc ::tcldrop::bots::dcc::-BOT {handle idx text} {
 		-USER $handle $idx $text
 	}
 	return 0
+}
+
+# botattr target
+# botattr target changes
+# botattr target changes channel
+# botattr target channel
+proc ::tcldrop::bots::dcc::BOTATTR {handle idx text} {
+	lassign [set args [split $text]] target arg2 arg3
+	if {[set argLen [llength $args]] < 1} { putdcc $idx {Usage: botattr <handle> [changes] [channel]}; return 0 }
+	if {![matchattr $target b]} { putdcc $idx {No such bot!}; return 0}
+	switch -exact -- $argLen {
+		{1} {; # botattr target
+			if {[set flags [botattr $target]] ne {}} {
+				putdcc $idx "Bot flags for $target are: ${flags}."
+			} else {
+				putdcc $idx "There are no bot flags for ${target}."
+			}
+		}
+		{2} {; # botattr target channel / # botattr target changes
+			if {[islinked $target]} { putdcc $idx {You may not change the attributes of a directly linked bot.}; return 0 }
+			# FixMe: not optimal, should return "No channel record for #chan" if the channel doesn't exist.
+			if {[validchan $arg2]} {; # botattr target channel
+				putdcc $idx [botattr $target {} $arg2]; # FixMe: this doesn't work
+			} else {; #botattr target changes
+				botattr $target $arg2
+				if {[set flags [botattr $target]] ne {}} {
+					putdcc $idx "Bot flags for $target are now: ${flags}."
+				} else {
+					putdcc $idx "There are no bot flags for ${target}."
+				}
+			}
+		}
+		{3} {default} {; # botattr target changes channel
+			if {[islinked $target]} { putdcc $idx {You may not change the attributes of a directly linked bot.}; return 0 }
+			# FixMe: finish this once botattr works
+		}
+	}
+	putcmdlog "#$handle# botattr $text"
 }
 
 proc ::tcldrop::bots::dcc::LINK {handle idx text} {
@@ -158,16 +196,24 @@ proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
 	putdcc $idx "Average hops: [avghops], total bots: [expr {[llength [bots]]+1}]"
 }
 
+
 bind load - bots::dcc ::tcldrop::bots::dcc::LOAD -priority 0
 proc ::tcldrop::bots::dcc::LOAD {module} {
-	bind dcc nmt bots ::tcldrop::bots::dcc::BOTS
-	bind dcc nmt +bot ::tcldrop::bots::dcc::+BOT
-	bind dcc nmt -bot ::tcldrop::bots::dcc::-BOT
-	bind dcc nmt link ::tcldrop::bots::dcc::LINK
-	bind dcc nmt bottree ::tcldrop::bots::dcc::BOTTREE
-	bind dcc nmt vbottree ::tcldrop::bots::dcc::VBOTTREE
+	bind dcc nmt +bot ::tcldrop::bots::dcc::+BOT -priority 1000
+	bind dcc nmt -bot ::tcldrop::bots::dcc::-BOT -priority 1000
+	bind dcc nmt botattr ::tcldrop::bots::dcc::BOTATTR -priority 1000
+	bind dcc nmt bots ::tcldrop::bots::dcc::BOTS -priority 1000
+	bind dcc nmt link ::tcldrop::bots::dcc::LINK -priority 1000
+	bind dcc nmt bottree ::tcldrop::bots::dcc::BOTTREE -priority 1000
+	bind dcc nmt vbottree ::tcldrop::bots::dcc::VBOTTREE -priority 1000
 	# FixMe: Add these dcc commands:
-	bind dcc nmt botinfo ::tcldrop::bots::dcc::BOTINFO
-	bind dcc nmt botattr ::tcldrop::bots::dcc::BOTATTR
-	bind dcc nmt unlink ::tcldrop::bots::dcc::UNLINK
+	bind dcc nmt botinfo ::tcldrop::bots::dcc::BOTINFO -priority 1000
+	bind dcc nmt unlink ::tcldrop::bots::dcc::UNLINK -priority 1000
+	
+	bind unld - bots::dcc ::tcldrop::bots::dcc::UNLD -priority 0
+}
+
+proc ::tcldrop::bots::dcc::UNLD {module} {
+	unbind dcc * * ::tcldrop::bots::dcc::*
+	return 0
 }
