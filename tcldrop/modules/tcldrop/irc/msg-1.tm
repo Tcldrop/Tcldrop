@@ -206,7 +206,8 @@ proc ::tcldrop::irc::msg::HALFOP {nick uhost hand text} {
 
 # INVITE <password> <channel>
 proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
-	if {(![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]) && (([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])) && ([matchattr $hand nmol|nmol $chan])} {
+	upvar 1 flags flags
+	if {(![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]) && (([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])) && ([matchattr $hand $flags $chan])} {
 		putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
 		putserv "INVITE $nick $chan"
 		return 0
@@ -250,7 +251,8 @@ proc ::tcldrop::irc::msg::GO {nick host hand text} {
 
 # KEY <password> <channel>
 proc ::tcldrop::irc::msg::KEY {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [matchattr $hand nmol|nmol [set chan [lindex $text 1]]]} {
+	upvar 1 flags flags
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [matchattr $hand $flags [set chan [lindex $text 1]]]} {
 		if {![botonchan $chan]} {
 			puthelp "NOTICE $nick :[lang 0x001]: /MSG $::botnick key <pass> <channel>";# Usage
 			putcmdlog "(${nick}!${host}) !${hand}! failed KEY"
@@ -348,8 +350,9 @@ proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
 
 # RESET <password> [channel]
 proc ::tcldrop::irc::msg::RESET {nick host hand text} {
+	upvar 1 flags flags
 	# don't check for botonchan, since that might return 0 on a desynch
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [channel exists [set chan [lindex $text 1]]] && [matchattr $hand nm|nm $chan]} {
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [channel exists [set chan [lindex $text 1]]] && [matchattr $hand $flags $chan]} {
 		putcmdlog "(${nick}!${host}) !${hand}! RESET $chan"
 		# reply put in server queue or Tcldrop won't reply until after resetchan sends /who /topic etc
 		putserv "NOTICE $nick :[lang 0x62a]"; # Resetting channel info.
@@ -363,6 +366,7 @@ proc ::tcldrop::irc::msg::RESET {nick host hand text} {
 
 # STATUS <password>
 proc ::tcldrop::irc::msg::STATUS {nick host hand text} {
+	upvar 1 flags flags
 	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
 		puthelp "NOTICE $nick :I am ${::botnet-nick}, running Tcldrop v$::tcldrop(version): [countusers] users."
 		puthelp "NOTICE $nick :Online for [duration [expr { [clock seconds] - $::uptime }]]"
@@ -371,7 +375,7 @@ proc ::tcldrop::irc::msg::STATUS {nick host hand text} {
 		puthelp "NOTICE $nick :Online as: $::botname ($::realname)"
 		# Hide +secret channels from people with no access to them
 		foreach chan [channels] {
-			if {[channel get $chan secret] && ![matchattr $hand nm|nm $chan]} {
+			if {[channel get $chan secret] && ![matchattr $hand $flags $chan]} {
 				continue
 			} else {
 				lappend outChans $chan
@@ -397,9 +401,9 @@ proc ::tcldrop::irc::msg::LOAD {module} {
 	bind msg -|- pass ::tcldrop::irc::msg::PASS
 	bind msg o|o op ::tcldrop::irc::msg::OP
 	bind msg l|l halfop ::tcldrop::irc::msg::HALFOP
-	bind msg -|- invite ::tcldrop::irc::msg::INVITE
+	bind msg l|l invite ::tcldrop::irc::msg::INVITE
 	bind msg -|- go ::tcldrop::irc::msg::GO
-	bind msg -|- key ::tcldrop::irc::msg::KEY
+	bind msg l|l key ::tcldrop::irc::msg::KEY
 	bind msg n|- die ::tcldrop::irc::msg::DIE
 	bind msg n|- jump ::tcldrop::irc::msg::JUMP
 	bind msg n|- memory ::tcldrop::irc::msg::MEMORY
