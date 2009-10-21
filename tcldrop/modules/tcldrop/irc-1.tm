@@ -95,65 +95,107 @@ proc ::tcldrop::irc::resetchan {channel} {
 	puthelp "TOPIC $channel"
 }
 
-# This calls all of the msgm binds:
+# This calls all of the MSGM binds, and MSG binds (if allowed by $exclusive-binds):
 proc ::tcldrop::irc::callmsgm {nick uhost handle text} {
+	set retval 0
+	set nolog 0
 	foreach {type flags mask proc} [bindlist msgm] {
 		if {[string match -nocase $mask $text] && [matchattr $handle $flags]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
+			} else {
+				if {[string equal {1} $err]} { set nolog 1 }
+				set retval 1
 			}
 		}
 	}
+	set ltext [split [string trim $text]]
+	if {(!$retval || !${::exclusive-binds}) && ![callmsg $nick $uhost $handle [lindex $ltext 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
+		putloglev m - "\[$nick!$uhost\] $text"
+	}
+	set retval
 }
 
+# This calls all of the PUBM binds, and PUB binds (if allowed by $exclusive-binds):
 proc ::tcldrop::irc::callpubm {nick uhost handle channel text} {
+	set retval 0
+	set nolog 0
 	foreach {type flags mask proc} [bindlist pubm] {
 		if {[string match -nocase $mask "$channel $text"] && [matchattr $handle $flags $channel]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
+			} else {
+				if {[string equal {1} $err]} { set nolog 1 }
+				set retval 1
 			}
 		}
 	}
+	set ltext [split [string trim $text]]
+	if {(!$retval || !${::exclusive-binds}) && ![callpub $nick $uhost $handle $channel [lindex $ltext 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
+		putloglev p $channel "<${nick}> $text"
+	}
+	set retval
 }
 
+# This calls all MSG binds:
 proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 	set retval 0
+	set log 0
+	set failed 0
 	foreach {type flags mask proc} [bindlist msg] {
-		if {[string equal -nocase $mask $command] && [matchattr $handle $flags]} {
+		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags]]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
-				if {[string equal {1} $err]} {
-					putcmdlog "(${nick}!${uhost}) !$handle! [string toupper $command]"
-				}
+				if {[string equal {1} $err]} { set log 1 }
 				set retval 1
 			}
+		} elseif {!$matchattr} {
+			set failed 1
 		}
+
+	}
+	if {$log} {
+		putcmdlog "(${nick}!${uhost}) !$handle! [string toupper $command]"
+	} elseif {$failed && !$retval} {
+		# binds were found, but none triggered.
+		putcmdlog "(${nick}!${uhost}) !$handle! failed [string toupper $command]"
+		return 1
 	}
 	set retval
 }
 
+# This calls all PUB binds:
 proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 	set retval 0
+	set log 0
+	set failed 0
 	foreach {type flags mask proc} [bindlist pub] {
-		if {[string equal -nocase $mask $command] && [matchattr $handle $flags $channel]} {
+		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags $channel]]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
-				if {[string equal {1} $err]} {
-					putcmdlog "(${nick}!${uhost}) !$handle! [string toupper $command]" $channel
-				}
+				if {[string equal {1} $err]} { set log 1 }
 				set retval 1
 			}
+		} elseif {!$matchattr} {
+			set failed 1
 		}
+	}
+	if {$log} {
+		putcmdlog "(${nick}!${uhost}) !$handle! [string toupper $command]" $channel
+	} elseif {$failed && !$retval} {
+		# binds were found, but none triggered.
+		putcmdlog "(${nick}!${uhost}) !$handle! failed [string toupper $command]" $channel
+		return 1
 	}
 	set retval
 }
@@ -973,25 +1015,12 @@ proc ::tcldrop::irc::PRIVMSG {from key text} {
 		# If CTCPs were stripped off and the remaining text is "" then just return..
 		return
 	}
-	set ltext [split [string trim $text]]
-	set command [lindex $ltext 0]
-	set args [string trimleft [join [lrange $ltext 1 end]]]
 	if {[isbotnick $dest]} {
-		# All MSG binds are called:
-		if {![::tcldrop::irc::callmsg $nick $uhost $handle $command $args]} {
-			# If callmsg returned 0, do the MSGM binds:
-			::tcldrop::irc::callmsgm $nick $uhost $handle $text
-			# Only do the msg log if a msg bind wasn't triggered
-			putloglev m - "\[$nick!$uhost\] $text"
-		}
+		# All MSGM binds are called which also calls MSG binds (if allowed by $exclusive-binds):
+		callmsgm $nick $uhost $handle $text
 	} elseif {[validchan $dest]} {
-		# All PUB binds are called:
-		if {![::tcldrop::irc::callpub $nick $uhost $handle $dest $command $args]} {
-			# If callpub returned 0, do the PUBM binds:
-			::tcldrop::irc::callpubm $nick $uhost $handle $dest $text
-			# Only do the pub log if a pub bind wasn't triggered
-			putloglev p $dest "<${nick}> $text"
-		}
+		# All PUBM binds are called which also calls PUB binds (if allowed by $exclusive-binds):
+		callpubm $nick $uhost $handle $dest $text
 	}
 }
 
@@ -1685,6 +1714,7 @@ proc ::tcldrop::irc::LOAD {module} {
 	setdefault text-path {text}
 	setdefault wait-split 3
 	setdefault opchars {@&~} -protect 1
+	setdefault exclusive-binds 0
 	loadhelp [file join set irc.help]
 	bind unld - irc ::tcldrop::irc::UNLD -priority 0
 	checkmodule irc::dcc
