@@ -107,7 +107,7 @@ proc ::tcldrop::core::users::matchattr {handle flags {channel {}}} {
 		{default} {
 			if {![validuser $handle]} {
 				return 0
-			} elseif {[set globalflags [lindex [split $flags {|}] 0]] ne {} && [checkflags $globalflags [getuser $handle flags]] == 1} {
+			} elseif {[set globalflags [lindex [split $flags {|}] 0]] ne {} && [checkflags $globalflags [getuser $handle flags global]] == 1} {
 				# Return 1 since we matched one of their global flags.
 				return 1
 			} elseif {$channel != {} && [string match {*\|*} $flags]} {
@@ -232,24 +232,23 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			# So use chflags (or chattr or botattr) if you want to add (merge) to the existing flags.
 			if {$xtra != {}} {
 				# Set $type for $setting (probably the channel name) to $xtra:
-				database users set $lowerhandle $type [string tolower $setting] $xtra
-			} elseif {$setting != {}} {
-				# Set global $type to $setting:
-				database users set $lowerhandle $type $setting
+				database users set $lowerhandle $type [string tolower $setting] [string trimleft $xtra {+- |}]
 			} else {
 				# Delete all data matching $type:
-				database users unset $lowerhandle $type
+				database users unset $lowerhandle $type [string tolower $setting]
 			}
 		}
 		{laston} {
+			# $setting = where
+			# $xtra = when
 			if {$xtra != {}} {
-				# Set the laston for $xtra (the place) to $setting (the unixtime):
-				database users set $lowerhandle $type [string tolower $xtra] $setting
-				# Set the global laston to $setting (the unixtime) $xtra (the place):
-				database users set $lowerhandle $type [list $setting $xtra]
+				# Set the laston for $setting (the place) to $xtra (the unixtime):
+				database users set $lowerhandle $type [string tolower $setting] $xtra
+				# Set the global laston to $xtra (the unixtime) $setting (the place):
+				database users set $lowerhandle $type global [list $xtra $setting]
 			} elseif {$setting != {}} {
-				# Set the global laston to $setting (the unixtime):
-				database users set $lowerhandle $type [list $setting]
+				# Set the global laston to [clock seconds] $setting (the place):
+				database users set $lowerhandle $type global [list [clock seconds] $setting]
 			} else {
 				# Delete all of the laston data:
 				database users unset $lowerhandle $type
@@ -312,8 +311,11 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 
 proc ::tcldrop::core::users::chpass {handle password {option {}} {type {}}} { setuser $handle pass $password $option $type }
 
-# This is an eggdrop v1.7.0 command:
-proc ::tcldrop::core::users::setlaston {handle when {where {}}} { setuser $handle laston $when $where }
+proc ::tcldrop::core::users::setlaston {handle {where {global}} {when {0}}} {
+	if {$when eq {0} || $when eq {}} { set when [clock seconds] }
+	if {$where eq {}} { set where {global} }
+	setuser $handle laston $where $when
+}
 
 # Gets a users channel INFO line:
 proc ::tcldrop::core::users::getchaninfo {handle channel} { getuser $handle info $channel }
@@ -330,16 +332,16 @@ proc ::tcldrop::core::users::getting-users {} {
 
 # Adds/removes a users global/channel flags.
 proc ::tcldrop::core::users::chflags {handle type {flags {}} {channel {}}} {
-	if {[catch { set current [getuser $handle $type] }]} { set current {} }
+	if {[catch { set current [getuser $handle $type global] }]} { set current {} }
 	if {[set addflags [lindex [split $flags {|}] 0]] != {}} {
-		set out [setuser $handle $type [mergeflags $addflags $current]]
+		set out [setuser $handle $type global [mergeflags $addflags $current]]
 	} else {
 		set out $current
 	}
 	if {$channel != {}} {
 		if {[catch { set current [getuser $handle $type $channel] }]} { set current {} }
 		if {[set addflags [lindex [split $flags {|}] end]] != {}} {
-			append out "|[setuser $handle flags [mergeflags $addflags $current] $channel]"
+			append out "|[setuser $handle flags $channel [mergeflags $addflags $current]]"
 		}
 	}
 	return $out
@@ -359,8 +361,8 @@ proc ::tcldrop::core::users::adduser {handle {hostmask {}}} {
 		setuser $handle
 		setuser $handle hosts $hostmask
 		setuser $handle console {}
-		setuser $handle flags ${::default-flags}
-		setlaston $handle 0 {never}
+		setuser $handle flags global [string trimleft ${::default-flags} {+- |}]
+		setlaston $handle global 0
 		# Call all of the ADDUSER binds:
 		foreach {type flags mask proc} [bindlist adduser] {
 			if {[string match -nocase $mask $handle]} {
@@ -405,15 +407,15 @@ proc ::tcldrop::core::users::delhost {handle {hostmask {}}} {
 }
 
 # addhost is in compat.tcl, but I'm adding it here because there's a delhost command here:
-proc ::tcldrop::core::users::addhost {handle {hostmask {}}} { setuser $handle HOSTS $hostmask }
+proc ::tcldrop::core::users::addhost {handle {hostmask {}}} { setuser $handle hosts $hostmask }
 
 # Adds a channel record for a user:
-proc ::tcldrop::core::users::addchanrec {handle channel} { setuser $handle $channel flags - }
+proc ::tcldrop::core::users::addchanrec {handle channel} { setuser $handle flags $channel - }
 
 # Removes a channel record for a user:
-proc ::tcldrop::core::users::delchanrec {handle channel} { setuser $handle $channel }
+proc ::tcldrop::core::users::delchanrec {handle channel} { setuser $handle flags $channel }
 
-proc ::tcldrop::core::users::haschanrec {handle channel} { dict exists $::database(users) [string tolower $handle] [string tolower $channel] }
+proc ::tcldrop::core::users::haschanrec {handle channel} { dict exists $::database(users) [string tolower $handle] flags [string tolower $channel] }
 
 # Saves the user database to the hard disk:
 proc ::tcldrop::core::users::save {args} {

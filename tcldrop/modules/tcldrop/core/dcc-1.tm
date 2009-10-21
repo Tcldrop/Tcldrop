@@ -130,7 +130,7 @@ proc ::tcldrop::core::dcc::dccsimul {idx line} {
 		}
 		# Update their laston info:
 		# FixMe: Should this be done here? (Probably not, because a killdcc/killidx could happen in one of the binds triggered above) Or at all? How often should laston be updated? Only when they join the dcc? Only when they join the partyline? And/Or when they leave the dcc/partyline?
-		#setlaston $handle [clock seconds] [getidxinfo $idx traffictype]
+		#setlaston $handle [getidxinfo $idx traffictype] [clock seconds]
 	}
 }
 
@@ -484,7 +484,7 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 			# FixMe: Make it show a very short time format eg. "11:06" or "05 Oct".
 			set laston "[lindex $laston 0] ([lindex $laston 1])"
 		}
-		putdcc $idx [format {%-9.9s %-4.4s %-28.28s %-35.35s} [getuser $text handle] $haspass [getuser $text FLAGS] $laston]
+		putdcc $idx [format {%-9.9s %-4.4s %-28.28s %-35.35s} [getuser $text handle] $haspass [getuser $text FLAGS global] $laston]
 		foreach c [channels] {
 			# FixMe: Make it show the laston for the channel:
 			putdcc $idx "[format {   %-11.11s %-28.28s %-12.12s} $c [getuser $text FLAGS $c] {}]"

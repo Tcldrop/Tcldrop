@@ -60,6 +60,7 @@ namespace eval ::tcldrop::core::database {
 # Note: It's best to use catch when calling the database command, because it can/will throw errors when it's unable to do something.
 proc ::tcldrop::core::database::database {database command args} { Database $database $command $args }
 proc ::tcldrop::core::database::Database {database command {arguments {}}} {
+	#putlog "in database: $database $command $arguments"
 	if {[set pos [lsearch -exact $arguments {--}]] == -1} {
 		# If they didn't use -- then we assume there were no options.
 		set options [dict create]
@@ -79,6 +80,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This sets or replaces the value of a key.
 			# Usage: database dbName set key ?key ...? value
 			# Returns: Whatever dict returns.
+			#putlog "in database set: $database $arguments"
 			dict set ::database($database) {*}$arguments
 			calldatabase $database $command $arguments $options
 			lindex $arguments end

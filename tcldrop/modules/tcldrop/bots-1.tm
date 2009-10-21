@@ -316,7 +316,7 @@ proc ::tcldrop::core::users::addbot {handle {address {}} {hostmask {}} args} {
 		setuser $handle flags {b}
 		setuser $handle console {}
 		setuser $handle botaddr [list [lindex [split $address :] 0] [lindex [split $address :/] 1] [lindex [split $address /] end]]
-		setlaston $handle 0 {never}
+		setlaston $handle global 0
 		return 1
 	} else {
 		return 0
