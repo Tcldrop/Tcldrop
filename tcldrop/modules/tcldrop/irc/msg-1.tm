@@ -107,11 +107,11 @@ proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
 		return 0
 	} elseif {$text eq {}} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed WHOIS (no handle specified)"
-		puthelp "PRIVMSG $nick :[lang 0x001]: /msg $::botnick whois <handle>";# Usage
+		puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick whois <handle>";# Usage
 		return 0
 	} elseif {![validuser $text]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed WHOIS $text (no such user)"
-		puthelp "PRIVMSG $nick :[lang 0x411]";# No such user record.
+		puthelp "NOTICE $nick :[lang 0x411]";# No such user record.
 		return 0
 	} else {
 		set target [getuser $text handle]
@@ -124,30 +124,30 @@ proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
 		}
 		# FixMe: truncate or split into several lines if there's too many channels
 		if {[info exists onchans]} {
-			puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62d]: [join [lsort $onchans] {, }]";# Now on channel
+			puthelp "NOTICE $nick :\[${target}\] [lang 0x62d]: [join [lsort $onchans] {, }]";# Now on channel
 		} else {
 			lassign [getuser $text laston] seenTime seenLoc
 			if {$seenTime != 0} {
 				# FixMe: better time format for this
-				puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62f]: [clock format $seenTime]";# Last seen at
+				puthelp "NOTICE $nick :\[${target}\] [lang 0x62f]: [clock format $seenTime]";# Last seen at
 			} else {
-				puthelp "PRIVMSG $nick :\[${target}\] [lang 0x62e]";# Never seen on channel.
+				puthelp "NOTICE $nick :\[${target}\] [lang 0x62e]";# Never seen on channel.
 			}
 		}
 		if {[matchattr $text b]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: bot"
+			puthelp "NOTICE $nick :\[${target}\] Status: bot"
 		} elseif {[matchattr $text n]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: global owner"
+			puthelp "NOTICE $nick :\[${target}\] Status: global owner"
 		} elseif {[matchattr $text m]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: global master"
+			puthelp "NOTICE $nick :\[${target}\] Status: global master"
 		} elseif {[matchattr $text t]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: botnet master"
+			puthelp "NOTICE $nick :\[${target}\] Status: botnet master"
 		} elseif {[matchattr $text o]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: global op"
+			puthelp "NOTICE $nick :\[${target}\] Status: global op"
 		} elseif {[matchattr $text l]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: global halfop"
+			puthelp "NOTICE $nick :\[${target}\] Status: global halfop"
 		} elseif {[matchattr $text v]} {
-			puthelp "PRIVMSG $nick :\[${target}\] Status: global voice"
+			puthelp "NOTICE $nick :\[${target}\] Status: global voice"
 		}
 		return 0
 	}
@@ -161,29 +161,29 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 		return 0
 	} elseif {[set numArgs [llength [set arg [split $text]]]] == 1 && ![passwdok $hand -]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (already set)"
-		puthelp "PRIVMSG $nick :[lang 0x615]";# You already have a password set.
+		puthelp "NOTICE $nick :[lang 0x615]";# You already have a password set.
 		return 0
 	} elseif {($numArgs == 1 && [string length $text] < 6) || ($numArgs == 2 && [string length [set newPass [lindex $arg 1]]] < 6)} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (too short)"
-		puthelp "PRIVMSG $nick :[lang 0x616]";# Please use at least 6 characters.
+		puthelp "NOTICE $nick :[lang 0x616]";# Please use at least 6 characters.
 		return 0
 	} elseif {$numArgs == 1} {
 		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
 		chpass $hand $text
-		puthelp "PRIVMSG $nick :[lang 0x617] '${text}'.";# Password set to:
+		puthelp "NOTICE $nick :[lang 0x617] '${text}'.";# Password set to:
 		return 0
 	} elseif {$numArgs == 2 && ![passwdok $hand [lindex $arg 0]]} {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS (old password incorrect)"
-		puthelp "PRIVMSG $nick :[lang 0x618]";# Incorrect password.
+		puthelp "NOTICE $nick :[lang 0x618]";# Incorrect password.
 		# return 0
 	} elseif {$numArgs == 2} {
 		putcmdlog "(${nick}!${host}) !${hand}! PASS ..."
 		chpass $hand $newPass
-		puthelp "PRIVMSG $nick :[lang 0x619] '${newPass}'.";# Password changed to:
+		puthelp "NOTICE $nick :[lang 0x619] '${newPass}'.";# Password changed to:
 		return 0
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed PASS"
-		puthelp "PRIVMSG $nick :[lang 0x001]: /msg $::botnick pass \[oldpass\] <newpass>";# Usage
+		puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick pass \[oldpass\] <newpass>";# Usage
 		return 0
 	}
 }
@@ -198,9 +198,15 @@ proc ::tcldrop::irc::msg::OP {nick host hand text} {
 	}
 }
 
+# FixMe: finish this
+# HALFOP <password> [channel]
+proc ::tcldrop::irc::msg::HALFOP {nick uhost hand text} {
+
+}
+
 # INVITE <password> <channel>
 proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
-	if {(![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]) && (([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan]))} {
+	if {(![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]) && (([validchan [set chan [lindex $text 1]]] && [botonchan $chan]) && ([botisop $chan] || [botishalfop $chan])) && ([matchattr $hand nmol|nmol $chan])} {
 		putcmdlog "(${nick}!${host}) !${hand}! INVITE $chan"
 		putserv "INVITE $nick $chan"
 		return 0
@@ -213,7 +219,7 @@ proc ::tcldrop::irc::msg::INVITE {nick host hand text} {
 # GO <channel>
 proc ::tcldrop::irc::msg::GO {nick host hand text} {
 	if {$hand ne {*}} {
-		if {[set chan [lindex $text 1]] eq {}} {
+		if {[set chan [lindex [split $text] 0]] eq {}} {
 			putcmdlog "(${nick}!${host}) !${hand}! failed GO"
 			puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick go <channel>";# Usage
 			return 0
@@ -233,6 +239,7 @@ proc ::tcldrop::irc::msg::GO {nick host hand text} {
 		} else {
 			putcmdlog "(${nick}!${host}) !${hand}! GO $chan"
 			putserv "PART $chan"
+			putserv "JOIN $chan"
 			return 0
 		}
 	} else {
@@ -243,8 +250,8 @@ proc ::tcldrop::irc::msg::GO {nick host hand text} {
 
 # KEY <password> <channel>
 proc ::tcldrop::irc::msg::KEY {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
-		if {![botonchan [set chan [lindex $text 1]]]} {
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [matchattr $hand nmol|nmol [set chan [lindex $text 1]]]} {
+		if {![botonchan $chan]} {
 			puthelp "NOTICE $nick :[lang 0x001]: /MSG $::botnick key <pass> <channel>";# Usage
 			putcmdlog "(${nick}!${host}) !${hand}! failed KEY"
 			return 0
@@ -329,9 +336,10 @@ proc ::tcldrop::irc::msg::SAVE {nick host hand text} {
 # REHASH <password>
 proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
 	if {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
+		putcmdlog "(${nick}!${host}) !${hand}! REHASH"
 		puthelp "NOTICE $nick :[lang 0x40f]"; # Rehashing...
 		rehash
-		return 1
+		return 0
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed REHASH"
 		return 0
@@ -341,7 +349,7 @@ proc ::tcldrop::irc::msg::REHASH {nick host hand text} {
 # RESET <password> [channel]
 proc ::tcldrop::irc::msg::RESET {nick host hand text} {
 	# don't check for botonchan, since that might return 0 on a desynch
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [channel exists [set chan [lindex $text 1]]]} {
+	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]] && [channel exists [set chan [lindex $text 1]]] && [matchattr $hand nm|nm $chan]} {
 		putcmdlog "(${nick}!${host}) !${hand}! RESET $chan"
 		# reply put in server queue or Tcldrop won't reply until after resetchan sends /who /topic etc
 		putserv "NOTICE $nick :[lang 0x62a]"; # Resetting channel info.
@@ -361,7 +369,15 @@ proc ::tcldrop::irc::msg::STATUS {nick host hand text} {
 		puthelp "NOTICE $nick :Admin: $::owner"
 		puthelp "NOTICE $nick :OS: $::tcl_platform(os) $::tcl_platform(osVersion)"
 		puthelp "NOTICE $nick :Online as: $::botname ($::realname)"
-		puthelp "NOTICE $nick :Channels: [join [channels] {, }]"; # FixMe: split this into several lines if it's too long
+		# Hide +secret channels from people with no access to them
+		foreach chan [channels] {
+			if {[channel get $chan secret] && ![matchattr $hand nm|nm $chan]} {
+				continue
+			} else {
+				lappend outChans $chan
+			}
+		}
+		puthelp "NOTICE $nick :Channels: [join $outChans {, }]"; # FixMe: split this into several lines if it's too long
 		return 1
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! failed STATUS"
@@ -380,9 +396,10 @@ proc ::tcldrop::irc::msg::LOAD {module} {
 	bind msg -|- whois ::tcldrop::irc::msg::WHOIS
 	bind msg -|- pass ::tcldrop::irc::msg::PASS
 	bind msg o|o op ::tcldrop::irc::msg::OP
+	bind msg l|l halfop ::tcldrop::irc::msg::HALFOP
 	bind msg -|- invite ::tcldrop::irc::msg::INVITE
 	bind msg -|- go ::tcldrop::irc::msg::GO
-	bind msg o|o key ::tcldrop::irc::msg::KEY
+	bind msg -|- key ::tcldrop::irc::msg::KEY
 	bind msg n|- die ::tcldrop::irc::msg::DIE
 	bind msg n|- jump ::tcldrop::irc::msg::JUMP
 	bind msg n|- memory ::tcldrop::irc::msg::MEMORY
