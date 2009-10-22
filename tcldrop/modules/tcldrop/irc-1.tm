@@ -111,8 +111,7 @@ proc ::tcldrop::irc::callmsgm {nick uhost handle text} {
 			}
 		}
 	}
-	set ltext [split [string trim $text]]
-	if {(!$retval || !${::exclusive-binds}) && ![callmsg $nick $uhost $handle [lindex $ltext 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
+	if {(!$retval || !${::exclusive-binds}) && ![callmsg $nick $uhost $handle [lindex [set ltext [split [string trim $text]]] 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
 		putloglev m - "\[$nick!$uhost\] $text"
 	}
 	set retval
@@ -134,8 +133,7 @@ proc ::tcldrop::irc::callpubm {nick uhost handle channel text} {
 			}
 		}
 	}
-	set ltext [split [string trim $text]]
-	if {(!$retval || !${::exclusive-binds}) && ![callpub $nick $uhost $handle $channel [lindex $ltext 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
+	if {(!$retval || !${::exclusive-binds}) && ![callpub $nick $uhost $handle $channel [lindex [set ltext [split [string trim $text]]] 0] [string trimleft [join [lrange $ltext 1 end]]]] && !$nolog} {
 		putloglev p $channel "<${nick}> $text"
 	}
 	set retval
@@ -146,10 +144,11 @@ proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 	set retval 0
 	set log 0
 	set failed 0
+	set matchattr -1
 	foreach {type flags mask proc} [bindlist msg] {
 		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags]]} {
 			countbind $type $mask $proc
-			if {[catch { $proc $nick $uhost $handle $text } err]} {
+			if {[catch { $proc $nick $uhost $handle $command $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
@@ -176,10 +175,11 @@ proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 	set retval 0
 	set log 0
 	set failed 0
+	set matchattr -1
 	foreach {type flags mask proc} [bindlist pub] {
 		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags $channel]]} {
 			countbind $type $mask $proc
-			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
+			if {[catch { $proc $nick $uhost $handle $channel $command $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
