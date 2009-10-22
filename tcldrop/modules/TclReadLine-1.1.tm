@@ -73,11 +73,13 @@ proc TclReadLine::clearline {} {
 }
 
 proc TclReadLine::getColumns {} {
-	set cols 0
-	if {![catch {exec stty -a} err]} {
-		 regexp {rows (= )?(\d+); columns (= )?(\d+)} $err junk i1 rows i2 cols
+	if {(![catch {exec stty -a} err]) && ([regexp {rows (= )?(\d+); columns (= )?(\d+)} $err -> i1 rows i2 cols] || [regexp {; (\d+) columns;} $err -> cols])} {
+		return $cols
+	} elseif {[info exists ::env(COLUMNS)]} {
+		return $::env(COLUMNS)
 	}
-	return $cols
+	# At least default to 80, to avoid the stupid "divide by zero" error..
+	return 80
 }
 
 proc TclReadLine::localInfo {args} {
