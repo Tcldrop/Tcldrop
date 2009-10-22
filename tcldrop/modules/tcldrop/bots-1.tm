@@ -309,7 +309,7 @@ proc ::tcldrop::bots::unlink {botname {type {}}} {
 
 # Adds a bot to the user database, with the optional address and hostmask:
 # Returns 1 for success, 0 for failure.
-proc ::tcldrop:bots::addbot {handle {address {}} {hostmask {}} args} {
+proc ::tcldrop::bots::addbot {handle {address {}} {hostmask {}} args} {
 	if {$handle ne {} && ![validuser $handle]} {
 		setuser $handle
 		setuser $handle hosts $hostmask
