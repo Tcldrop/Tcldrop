@@ -758,11 +758,12 @@ proc ::tcldrop::core::getbinds {{typemask {*}} {mask {*}}} {
 }
 
 # Counts how many times a bind has been triggered:
-proc ::tcldrop::core::countbind {type mask proc {priority {*}}} { after idle [list ::tcldrop::core::CountBind $type $mask $proc $priority] }
+proc ::tcldrop::core::countbind {type mask proc {priority {*}}} {
+	after idle [list ::tcldrop::core::CountBind $type $mask $proc $priority]
+	set ::lastbind $mask
+}
 proc ::tcldrop::core::CountBind {type mask proc {priority {*}}} {
-	global binds lastbind
-	# FixMe: When does ::lastbind need to actually be updated?
-	set lastbind $mask
+	global binds
 	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] { dict incr binds($name) count }
 }
 
