@@ -47,15 +47,20 @@ namespace eval ::tcldrop::dcc::chat {
 # This is when they do a /dcc chat $botnick
 bind ctcp op|o DCC ::tcldrop::dcc::chat::DCC -priority 1000
 proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
-	if {[info exists {::require-p}] && ${::require-p} && ![matchattr p $hand]} { return }
+	if {[info exists {::require-p}] && ${::require-p} && ![matchattr $hand p]} { return }
 	if {[isbotnick $dest]} {
 		if {$key == {DCC} && [string toupper [lindex [set text [split $text]] 0]] == {CHAT} && [expr 1024 < [set port [lindex $text end]] < 65535]} {
 			set host [lindex [split $host @] end]
 			# FixMe: we should try to connect to $decip first, and if it fails, connect to $host. Currently always connects to $decip
 			# FixMe: honor the dcc-sanitycheck conf option
 			set decip [lindex $text 2]
+			putloglev d * "DCC CHAT: connecting to $decip $port"
 			set fail [catch { connect $decip $port -timeout ${::connect-timeout} -myaddr ${::my-ip} -control ::tcldrop::dcc::telnet::Read -errors ::tcldrop::dcc::telnet::Error -writable ::tcldrop::dcc::chat::Write } idx]
-			if {!$fail} { idxinfo $idx idx $idx handle $hand remote $host hostname $host dccchatip $decip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds] }
+			if {!$fail} {
+				idxinfo $idx idx $idx handle $hand remote $host hostname $host dccchatip $decip port $port type TELNET_ID other {t-in} traffictype partyline timestamp [clock seconds]
+			} else {
+				putloglev d * "DCC CHAT: connection failed."
+			}
 		}
 	}
 	return 1
@@ -63,12 +68,12 @@ proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
 
 # This is when they do a /ctcp $botnick CHAT
 bind ctcp op|o CHAT ::tcldrop::dcc::chat::CHAT -priority 1000
-proc ::tcldrop::dcc::chat::CHAT {nick uhost handle dest key text} {
-	if {[info exists {::require-p}] && ${::require-p} && ![matchattr p $hand]} { return }
+proc ::tcldrop::dcc::chat::CHAT {nick uhost hand dest key text} {
+	if {[info exists {::require-p}] && ${::require-p} && ![matchattr $hand p]} { return }
 	if {[isbotnick $dest]} {
 		# FixMe: is this the log we want this in?
 		putlog "CTCP CHAT: from $nick ($uhost)"
-		if {![matchattr $handle p]} { return 0 }
+		if {![matchattr $hand p]} { return 0 }
 		foreach i [array names ::idxlist] {
 			array set idxinfo $::idxlist($i)
 			if {$idxinfo(type) eq {users}} {
