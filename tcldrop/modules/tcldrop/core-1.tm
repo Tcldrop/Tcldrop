@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial
+	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -764,6 +764,13 @@ proc ::tcldrop::core::CountBind {type mask proc {priority {*}}} {
 	# FixMe: When does ::lastbind need to actually be updated?
 	set lastbind $mask
 	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] { dict incr binds($name) count }
+}
+
+# Alternative to doing "upvar 1 flags flags" in binds (mainly msg binds):
+# This is a bit of a kludge, and probably shouldn't be an official command..unless Eggdrop someday gets a command that does this too.
+proc ::tcldrop::core::bindflags {{level {1}}} {
+	upvar [incr level] flags flags
+	return $flags
 }
 
 # Provides a unique timerID:
