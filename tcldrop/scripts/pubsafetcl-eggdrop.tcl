@@ -82,8 +82,7 @@ namespace eval pubsafetcl::eggdrop {
 	## How long in milliseconds to wait for safetcl commands to complete.
 	# After this long they're aborted.  (1000ms = 1sec)
 	# The higher this is, the more likely your Eggdrop can get lagged off of IRC.
-	variable timeLimit 250
-
+	variable timeLimit 300
 	## How long to wait for somebody to paste/type a multi-line script (in seconds)?
 	variable multilineWait 9
 
