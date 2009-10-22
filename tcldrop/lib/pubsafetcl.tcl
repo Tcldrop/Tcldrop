@@ -143,6 +143,16 @@ namespace eval pubsafetcl {
 				for {set index 0} {$index < $length} {incr index} { append result [string index $chars [rand $count]] }
 				set result
 			}
+			proc randhex {begin end} {
+				if {![string match {0x[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]} $begin]} {
+					return -code error "Expected hexadecimal number but got \"$begin\""
+				} elseif {![string match {0x[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]} $end]} {
+					return -code error "Expected hexadecimal number but got \"$end\""
+				} elseif {$begin > $end} {
+					return -code error {Invalid expression: begin is higher than end}
+				}
+				return "0x[format %04X [expr { int(rand() * ($end - $begin + 1) + $begin) }]]"
+			}
 			proc lrandom {L} { lindex $L [expr { int(rand()*[llength $L]) }] }
 			proc lrand {list} { lindex $list [expr { int(rand()*[llength $list]) }] }
 			proc reverse {s} { puts unknown {Use [string reverse] instead in Tcl v8.5+}

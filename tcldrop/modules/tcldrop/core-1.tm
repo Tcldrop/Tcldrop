@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial
+	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -185,6 +185,17 @@ proc ::tcldrop::core::know {what} {
 proc ::tcldrop::core::unixtime {} { clock seconds }
 
 if {![llength [info commands rand]]} { proc ::tcldrop::core::rand {maxint {minint {0}}} { expr { int($minint + rand() * ($maxint - $minint)) } } }
+
+proc ::tcldrop::core::randhex {begin end} {
+	if {![string match {0x[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]} $begin]} {
+		return -code error "Expected hexadecimal number but got \"$begin\""
+	} elseif {![string match {0x[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]} $end]} {
+		return -code error "Expected hexadecimal number but got \"$end\""
+	} elseif {$begin > $end} {
+		return -code error "Invalid expression: begin is higher than end"
+	}
+	return "0x[format %04X [expr { int(rand() * ($end - $begin + 1) + $begin) }]]"
+}
 
 proc ::tcldrop::core::fuzz {number {percent {100}}} { expr { int(rand() * $percent / 100.0 * $number) + $number } }
 
