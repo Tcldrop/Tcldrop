@@ -148,7 +148,7 @@ proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 	foreach {type flags mask proc} [bindlist msg] {
 		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags]]} {
 			countbind $type $mask $proc
-			if {[catch { $proc $nick $uhost $handle $command $text } err]} {
+			if {[catch { $proc $nick $uhost $handle $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
@@ -179,7 +179,7 @@ proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 	foreach {type flags mask proc} [bindlist pub] {
 		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags $channel]]} {
 			countbind $type $mask $proc
-			if {[catch { $proc $nick $uhost $handle $channel $command $text } err]} {
+			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
 				putlog "Error in $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
