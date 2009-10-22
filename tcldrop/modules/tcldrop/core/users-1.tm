@@ -332,6 +332,7 @@ proc ::tcldrop::core::users::getting-users {} {
 
 # Adds/removes a users global/channel flags.
 proc ::tcldrop::core::users::chflags {handle type {flags {}} {channel {}}} {
+	if {![validuser $handle]} { return {*} }
 	if {[catch { set current [getuser $handle $type global] }]} { set current {} }
 	if {[set addflags [lindex [split $flags {|}] 0]] != {}} {
 		set out [setuser $handle $type global [mergeflags $addflags $current]]
@@ -349,7 +350,9 @@ proc ::tcldrop::core::users::chflags {handle type {flags {}} {channel {}}} {
 
 
 # Adds/removes a users global/channel flags.
-proc ::tcldrop::core::users::chattr {handle {flags {}} {channel {}}} { chflags $handle flags $flags $channel }
+proc ::tcldrop::core::users::chattr {handle {flags {}} {channel {}}} {
+	chflags $handle flags $flags $channel
+}
 
 # Adds/removes a bots global/channel bot-specific flags.
 proc ::tcldrop::core::users::botattr {handle {flags {}} {channel {}}} { if {[matchattr $handle b]} { chflags $handle botfl $flags $channel } }
