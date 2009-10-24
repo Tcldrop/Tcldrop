@@ -125,9 +125,9 @@ proc ::tcldrop::bots::eggdrop::Write_OUT {idx} {
 # > el
 
 proc ::tcldrop::bots::eggdrop::Read {idx line} {
-	putloglev d * "in eggdrop::Read $idx $line"
+	putloglev 1 * "in eggdrop::Read $idx $line"
 	array set idxinfo $::idxlist($idx)
-	putloglev d * "idxinfo(state): $idxinfo(state)"
+	putloglev 1 * "idxinfo(state): $idxinfo(state)"
 	if {$line eq {}} {
 		putloglev d * "line is empty."
 		#return
