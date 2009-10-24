@@ -484,10 +484,13 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 			# FixMe: Make it show a very short time format eg. "11:06" or "05 Oct".
 			set laston "[lindex $laston 0] ([lindex $laston 1])"
 		}
-		putdcc $idx [format {%-9.9s %-4.4s %-28.28s %-35.35s} [getuser $text handle] $haspass [getuser $text FLAGS global] $laston]
-		foreach c [channels] {
+		set flags [getuser $text FLAGS]
+		putdcc $idx [format {%-9.9s %-4.4s %-28.28s %-35.35s} [getuser $text handle] $haspass [dict get $flags global] $laston]
+		# Discard the global flags now, so we can loop over what's left (the channel flags):
+		dict unset flags global
+		foreach {c f} [dict get $flags] {
 			# FixMe: Make it show the laston for the channel:
-			putdcc $idx "[format {   %-11.11s %-28.28s %-12.12s} $c [getuser $text FLAGS $c] {}]"
+			putdcc $idx "[format {   %-11.11s %-28.28s %-12.12s} $c $f {}]"
 		}
 		if {[matchattr $text b]} {
 			lassign [getuser $text botaddr] address botport userport
