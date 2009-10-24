@@ -206,6 +206,9 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			if {$setting != {}} {
 				if {$xtra eq {-type}} {
 					database users set $lowerhandle $type [encpass $setting -type $args]
+				} elseif {[matchattr $handle +b]} {
+					# Eggdrop doesn't use password encryption on bot accounts, so neither should we.  (Using -type null is basically a no-op)
+					database users set $lowerhandle $type [encpass $setting -type null]
 				} else {
 					database users set $lowerhandle $type [encpass $setting]
 				}
