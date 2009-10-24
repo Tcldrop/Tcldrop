@@ -310,12 +310,18 @@ proc ::tcldrop::bots::unlink {botname {type {}}} {
 # Adds a bot to the user database, with the optional address and hostmask:
 # Returns 1 for success, 0 for failure.
 proc ::tcldrop::bots::addbot {handle {address {}} {hostmask {}} args} {
-	if {$handle ne {} && ![validuser $handle]} {
+	if {[string trim $handle] ne {} && ![validuser $handle]} {
+		# This creates an account:
 		setuser $handle
+		chattr $handle +b
 		setuser $handle hosts $hostmask
-		setuser $handle flags {b}
+		# Note/FixMe: Splitting on : is incompatible with IPv6 IPs:
+		set host [lindex [split $address :] 0]
+		set ports [lindex [split $address :] end]
+		setuser $handle botaddr [list $host [lindex [split $ports /] 0] [lindex [split $ports /] end]]
+		# Note: Even Eggdrop sets an empty console for bots (See [getuser $bot CONSOLE] on an Eggdrop)..and we also kind of need to do it too:
 		setuser $handle console {}
-		setuser $handle botaddr [list [lindex [split $address :] 0] [lindex [split $address :/] 1] [lindex [split $address /] end]]
+		# Set the initial laston info:
 		setlaston $handle global 0
 		return 1
 	} else {
