@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial
+	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1034,6 +1034,33 @@ if {![llength [info commands maskhost]] || [llength [info procs maskhost]]} {
 			}
 		}
 		return "$nick!$user@$host"
+	}
+}
+
+# extreme case this should parse:
+# nick!!!\001\002\003,,,,::::@aol.com
+# references: http://tools.ietf.org/html/rfc2812#section-2.3.1
+#  user       =  1*( %x01-09 / %x0B-0C / %x0E-1F / %x21-3F / %x41-FF )
+#				; any octet except NUL, CR, LF, " " and "@"
+# not that ! is valid in ident, but not @ and not space
+proc ::tcldrop::core::splithost {nick!user@host} {
+	if {![string match *!*@* ${nick!user@host}]} { return [list {} {} {}] }
+	# we find the first "!" since it's not valid in nick
+	set nick [string range ${nick!user@host} 0 [expr {[set firstExcl [string first {!} ${nick!user@host}]] - 1}]]
+	# "@" is not valid in nick or user so it's safe to search for that.
+	set user [string range ${nick!user@host} [expr {$firstExcl + 1}] [expr {[set firstAt [string first @ ${nick!user@host}]] - 1}]]
+	# find the host
+	set host [string range ${nick!user@host} [expr {$firstAt + 1}] end]
+	return [list $nick $user $host]
+}
+
+# matchaddr <hostmask> <address>
+#   Description: checks if the address matches the hostmask given. The
+#     address should be in the form nick!user@host.
+#   Returns: 1 if the address matches the hostmask, 0 otherwise.
+# FixMe: write this
+if {![llength [info commands matchaddr]] || [llength [info procs matchaddr]]} {
+	proc ::tcldrop::core::matchaddr {hostmask address} {
 	}
 }
 

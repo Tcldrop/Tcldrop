@@ -1331,6 +1331,11 @@ The optional arguments will be documented here (when they're generally useful).
       "n!u@lame.com" -> "*!u@lame.com", "n!u@a.b.edu" -> "*!u@*.b.edu")
     Module: core
 
+  splithost <nick!user@host>
+    Description: splits "nick!user@host" according to RFC 2812
+    Returns: a list containing nick user host
+    Module: core
+
   timer <minutes> <tcl-command>
     Description: executes the given Tcl command after a certain number of
       minutes have passed
@@ -1544,6 +1549,12 @@ The optional arguments will be documented here (when they're generally useful).
         g - remove all ctrl-g (bell) codes
     Returns: the stripped string.
     Module: core
+
+   matchaddr <hostmask> <address>
+     Description: checks if the address matches the hostmask given. The
+       address should be in the form nick!user@host.
+     Returns: 1 if the address matches the hostmask, 0 otherwise.
+     Module: core
 
     matchcidr <block> <address> <prefix>
     Description: performs a cidr match on the specified ip addresses.
