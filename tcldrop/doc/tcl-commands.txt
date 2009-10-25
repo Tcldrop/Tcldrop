@@ -1545,6 +1545,13 @@ The optional arguments will be documented here (when they're generally useful).
     Returns: the stripped string.
     Module: core
 
+    matchcidr <block> <address> <prefix>
+    Description: performs a cidr match on the specified ip addresses.
+      IPv6 is supported.
+        Example: matchcidr 192.168.0.0 192.168.1.17 16
+    Returns: 1 if the address matches the block prefix, 0 otherwise.
+    Module: core
+
 
 *** GLOBAL VARIABLES ***
 

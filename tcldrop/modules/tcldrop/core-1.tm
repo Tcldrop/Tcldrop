@@ -1018,7 +1018,7 @@ if {![llength [info commands maskhost]] || [llength [info procs maskhost]]} {
 				# It's an IPv6 IP.
 				# Note: I don't think it's appropriate to mask an IPv6 IP, since they're almost always static.
 			}
-			{-1} {
+			{0} - {-1} {
 				# It's probably a hostname.
 				# Note/FixMe: This doesn't mask long hosts the same as Eggdrop, although it's just as dumb as Eggdrop.
 				# Rather than make it exactly like Eggdrop, it should be fixed to be SMARTER than Eggdrop.
@@ -1034,6 +1034,28 @@ if {![llength [info commands maskhost]] || [llength [info procs maskhost]]} {
 			}
 		}
 		return "$nick!$user@$host"
+	}
+}
+
+#  matchcidr <block> <address> <prefix>
+#   Description: performs a cidr match on the specified ip addresses.
+#     IPv6 is supported
+#       Example: matchcidr 192.168.0.0 192.168.1.17 16
+#   Returns: 1 if the address matches the block prefix, 0 otherwise.
+if {![llength [info commands matchcidr]] || [llength [info procs matchcidr]]} {
+	package require ip
+	proc ::tcldrop::core::matchcidr {block address prefix} {
+		if {[set ver [ip::version $block]] ni {4 6} || [ip::version $address] ni {4 6}} {
+			return -code error "Invalid IP address format."
+		} elseif {($ver == 4 && $prefix > 32) || ($ver == 6) && ($prefix > 128) || $prefix < 0} {
+			return -code error "Invalid prefix format."
+		}
+		if {$prefix ne {}} {
+			set pfx [ip::prefix $address/$prefix]
+		} else {
+			set pfx $address
+		}
+		string equal [ip::prefix $block] $pfx
 	}
 }
 
