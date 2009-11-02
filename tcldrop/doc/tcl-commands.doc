@@ -1,24 +1,24 @@
-Tcldrop-specific Tcl Commands/Variables/Binds      Last revised: October, 2009.
-    ______________________________________________________________________
+$Id: tcl-commands.doc,v 1.127 2009/10/25 15:19:05 pseudo Exp $
 
-This is an exhaustive list of all the Tcl commands added or changed in Tcldrop.
-All of the normal Tcl built-in commands are still there, of course,
-as well as the normal Eggdrop Tcl commands (see tcl-commands.doc).
-They are listed according to category.
+Eggdrop Tcl Commands
+Last revised: August 02, 2004
+    _____________________________________________________________________
 
-Note, Tcldrop will be focused on being compatible with scripts
-made for Eggdrop v1.6.x, but will also try to be compatible with
-scripts made for older and newer versions of Eggdrop where possible.
+                           Eggdrop Tcl Commands
 
-NOTICE: If a command/bind/variable begins with a #
-        then it probably hasn't been implemented yet.
 
-All commands should work like they would in Eggdrop,
-although some may take additional (optional) arguments beyond Eggdrop.
-The optional arguments will be documented here (when they're generally useful).
+This is an exhaustive list of all the Tcl commands added to Eggdrop. All
+of the normal Tcl built-in commands are still there, of course, but you
+can also use these to manipulate features of the bot. They are listed
+according to category.
 
-FixMe: Need to go through all this and document every command/bind/variable
-       that's specific to or enhanced in Tcldrop.
+This list is accurate for Eggdrop v1.6.18. Scripts written for v1.3/v1.4
+series of Eggdrop should probably work with a few minor modifications
+depending on the script. Scripts which were written for  v0.9, v1.0, v1.1
+or v1.2 will probably not work without modification. Commands which have
+been changed in this version of Eggdrop (or are just new commands) are
+marked with vertical bars (|) on the left.
+
 
 *** OUTPUT COMMANDS ***
 
@@ -51,12 +51,18 @@ FixMe: Need to go through all this and document every command/bind/variable
     Module: server
 
 | putnow <text> [-oneline]
-|   Description: sends unqueued text to the server immediately.
+|   Description: sends text to the server immediately, bypassing all queues.
 |     Use with caution, as the bot may easily flood itself off the server.
 |   Options:
-|     -oneline: cut and ignore the message after the first \r or \n
+|     -oneline: send text up to the first \r or \n, discarding the rest
 |   Returns: nothing
 |   Module: server
+
+  putkick <channel> <nick,nick,...> [reason]
+    Description: sends kicks to the server and tries to put as many nicks
+      into one kick command as possible.
+    Returns: nothing
+    Module: irc
 
   putlog <text>
     Description: sends text to the bot's logfile, marked as 'misc' (o)
@@ -79,12 +85,12 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: core
 
- dumpfile <nick> <filename>
-   Description: dumps file from the help/text directory to a user on IRC via
-     msg (one line per msg). The user has no flags, so the flag bindings
-     won't work within the file.
-   Returns: nothing
-   Module: core
+  dumpfile <nick> <filename>
+    Description: dumps file from the help/text directory to a user on IRC via
+      msg (one line per msg). The user has no flags, so the flag bindings
+      won't work within the file.
+    Returns: nothing
+    Module: core
 
   queuesize [queue]
     Returns: the number of messages in all queues. If a queue is specified,
@@ -393,10 +399,10 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: 1 on success; 0 otherwise
     Module: channels
 
-#  ischanjuped <channel>
-#    Returns: 1 if the channel is juped, and the bot is unable to join; 0
-#      otherwise
-#    Module: channels
+  ischanjuped <channel>
+    Returns: 1 if the channel is juped, and the bot is unable to join; 0
+      otherwise
+    Module: channels
 
   isban <ban> [channel]
     Returns: 1 if the specified ban is in the global ban list; 0 otherwise.
@@ -531,31 +537,29 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: core
 
-#  getting-users
-#    Returns: 1 if the bot is currently downloading a userfile from
-#      a sharebot (and hence, user records are about to drastically
-#      change); 0 if not
-#    Module: core
+  getting-users
+    Returns: 1 if the bot is currently downloading a userfile from
+      a sharebot (and hence, user records are about to drastically
+      change); 0 if not
+    Module: core
 
 *** CHANNEL COMMANDS ***
 
-  channel add <name> <option-list>
+  channel add <name> [option-list]
     Description: adds a channel record for the bot to monitor. The full
-      list of possible options are given in doc/settings.mod.channels. Note
+      list of possible options are given in doc/settings/mod.channels. Note
       that the channel options must be in a list (enclosed in {}).
     Returns: nothing
     Module: channels
 
   channel set <name> <options...>
     Description: sets options for the channel specified. The full list of
-      possible options are given in doc/settings.mod.channels.
+      possible options are given in doc/settings/mod.channels.
     Returns: nothing
     Module: channels
 
   channel info <name>
     Returns: a list of info about the specified channel's settings.
-    COMPATIBILITY WARNING: Tcldrop doesn't return the info in
-                           the same format that Eggdrop does.
     Module: channels
 
   channel get <name> <setting>
@@ -567,10 +571,6 @@ FixMe: Need to go through all this and document every command/bind/variable
     Description: removes a channel record from the bot and makes the bot no
       longer monitor the channel
     Returns: nothing
-    Module: channels
-
-  channel exists <name>
-    Returns: 1 if a channel record exists for the channel, 0 if not.
     Module: channels
 
   savechannels
@@ -589,24 +589,24 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: a list of the channels the bot has a channel record for
     Module: channels
 
-# channame2dname <channel-name>
-# chandname2name <channel-dname>
-#   Description: these two functions are important to correctly support
-#     !channels. The bot differentiates between channel description names
-#     (chan dnames) and real channel names (chan names). The chan dnames
-#     are what you would normally call the channel, such as "!channel". The
-#     chan names are what the IRC server uses to identify the channel. They
-#     consist of the chan dname prefixed with an ID; such as "!ABCDEchannel".
-#
-#     For bot functions like isop, isvoice, etc. you need to know the chan
-#     dnames. If you communicate with the server, you usually get the chan
-#     name, though. That's what you need the channame2dname function for.
-#
-#     If you only have the chan dname and want to directly send raw server
-#     commands, use the chandname2name command.
-#
-#     NOTE: For non-!channels, chan dname and chan name are the same.
-#   Module: irc
+ channame2dname <channel-name>
+ chandname2name <channel-dname>
+   Description: these two functions are important to correctly support
+     !channels. The bot differentiates between channel description names
+     (chan dnames) and real channel names (chan names). The chan dnames
+     are what you would normally call the channel, such as "!channel". The
+     chan names are what the IRC server uses to identify the channel. They
+     consist of the chan dname prefixed with an ID; such as "!ABCDEchannel".
+
+     For bot functions like isop, isvoice, etc. you need to know the chan
+     dnames. If you communicate with the server, you usually get the chan
+     name, though. That's what you need the channame2dname function for.
+
+     If you only have the chan dname and want to directly send raw server
+     commands, use the chandname2name command.
+
+     NOTE: For non-!channels, chan dname and chan name are the same.
+   Module: irc
 
   isbotnick <nick>
     Returns: 1 if the nick matches the botnick; 0 otherwise
@@ -700,19 +700,19 @@ FixMe: Need to go through all this and document every command/bind/variable
   chanbans <channel>
     Returns: a list of the current bans on the channel. Each element is
       a sublist of the form {<ban> <bywho> <age>}. age is seconds from the
-      bot's POV.
+      bot's point of view
     Module: irc
 
   chanexempts <channel>
     Returns: a list of the current exempts on the channel. Each element is
       a sublist of the form {<exempts> <bywho> <age>}. age is seconds from the
-      bot's POV.
+      bot's point of view
     Module: irc
 
   chaninvites <channel>
     Returns: a list of the current invites on the channel. Each element is
       a sublist of the form {<invites> <bywho> <age>}. age is seconds from the
-      bot's POV.
+      bot's point of view
     Module: irc
 
   resetbans <channel>
@@ -722,19 +722,19 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: irc
 
-#  resetexempts <channel>
-#    Description: removes all exempt on the channel that aren't in the bot's
-#      exempt list and refreshes any exempts that should be on the channel
-#      but aren't
-#    Returns: nothing
-#    Module: irc
+  resetexempts <channel>
+    Description: removes all exempt on the channel that aren't in the bot's
+      exempt list and refreshes any exempts that should be on the channel
+      but aren't
+    Returns: nothing
+    Module: irc
 
-#  resetinvites <channel>
-#    Description: removes all invites on the channel that aren't in the bot's
-#      invite list and refreshes any invites that should be on the channel
-#      but aren't
-#    Returns: nothing
-#    Module: irc
+  resetinvites <channel>
+    Description: removes all invites on the channel that aren't in the bot's
+      invite list and refreshes any invites that should be on the channel
+      but aren't
+    Returns: nothing
+    Module: irc
 
   resetchan <channel>
     Description: rereads in the channel info from the server
@@ -805,11 +805,6 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: irc
 
-  putkick <channel> <nick,nick,...> [reason]
-    Description: sends kicks to the server and tries to put as many nicks into one kick command as possible.
-   Returns: nothing
-   Module: irc
-
   topic <channel>
     Returns: string containing the current topic of the specified channel
     Module: irc
@@ -821,9 +816,9 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: 1 if the channel exists, 0 if not
     Module: channels
 
-#  isdynamic <channel>
-#    Returns: 1 if the channel is a dynamic channel; 0 otherwise
-#    Module: channels
+  isdynamic <channel>
+    Returns: 1 if the channel is a dynamic channel; 0 otherwise
+    Module: channels
 
   setudef <flag/int/str> <name>
     Description: initializes a user defined channel flag, string or integer
@@ -843,14 +838,6 @@ FixMe: Need to go through all this and document every command/bind/variable
     Description: deletes a user defined channel flag, string, or integer
       setting.
     Returns: nothing
-    Module: channels
-
-  udeftype <name>
-    Returns: the udef type of <name>
-    Module: channels
-
-  udefs
-    Returns: A list of all defined udefs and their types.
     Module: channels
 
 *** DCC COMMANDS ***
@@ -874,10 +861,10 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: core
 
-#  boot <user@bot> [reason]
-#     Description: boots a user from the partyline
-#     Returns: nothing
-#     Module: core
+  boot <user@bot> [reason]
+     Description: boots a user from the partyline
+     Returns: nothing
+     Module: core
 
   dccsimul <idx> <text>
     Description: simulates text typed in by the dcc user specified. Note
@@ -892,7 +879,7 @@ FixMe: Need to go through all this and document every command/bind/variable
       currently on a channel or in chat off), the file area, or in the control
       of a script. -1 is returned if no idx is found. If the user is on
       multiple times, the oldest idx is returned.
-    Module: dcc
+    Module: core
 
   idx2hand <idx>
     Returns: handle of the user with the given idx
@@ -931,7 +918,14 @@ FixMe: Need to go through all this and document every command/bind/variable
     Module: core
 
   strip <idx> [+/-strip-flags]
-    Description: modifies the strip-flags for a user
+    Description: modifies the strip-flags for a user. The supported
+      strip-flags are:
+        b - remove all boldface codes
+        c - remove all color codes
+        r - remove all reverse video codes
+        u - remove all underline codes
+        a - remove all ANSI codes
+        g - remove all ctrl-g (bell) codes
     Returns: new strip-flags for the specified user (or the current
       flags, if strip-flags was omitted)
     Module: core
@@ -958,6 +952,7 @@ FixMe: Need to go through all this and document every command/bind/variable
   bots
     Returns: list of the bots currently connected to the botnet
     Module: core
+
   botlist
     Returns: a list of bots currently on the botnet. Each item in the list
       is a sublist with four elements: bot, uplink, version, sharing status:
@@ -975,7 +970,7 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: number of dcc connections currently in use
     Module: core
 
-  dcclist ?type?
+  dcclist [type]
     Returns: a list of active connections, each item in the list is a
       sublist containing six elements:
         {<idx> <handle> <hostname> <type> {<other>} <timestamp>}.
@@ -985,8 +980,6 @@ FixMe: Need to go through all this and document every command/bind/variable
       not yet been put under 'control'), telnet, and server. The timestamp
       is in unixtime format.
     Module: core
-
-  FixMe: Document the idxlist command.
 
   whom <chan>
     Returns: list of people on the botnet who are on that channel. 0 is
@@ -1024,12 +1017,12 @@ FixMe: Need to go through all this and document every command/bind/variable
     Description: opens a listening port to accept incoming telnets; type
       must be one of "bots", "all", "users", "script", or "off":
 
-#        listen <port> bots [mask]
-#          Description: accepts connections from bots only; the optional mask
-#            is used to identify permitted bot names. If the mask begins with
-#            '@', it is interpreted to be a mask of permitted hosts to accept
-#            connections from.
-#          Returns: port number
+        listen <port> bots [mask]
+          Description: accepts connections from bots only; the optional mask
+            is used to identify permitted bot names. If the mask begins with
+            '@', it is interpreted to be a mask of permitted hosts to accept
+            connections from.
+          Returns: port number
 
         listen <port> users [mask]
           Description: accepts connections from users only (no bots); the
@@ -1038,24 +1031,24 @@ FixMe: Need to go through all this and document every command/bind/variable
             hosts to accept connections from.
           Returns: port number
 
-#        listen <port> all [mask]
-#          Description: accepts connections from anyone; the optional mask
-#            is used to identify permitted nicknames/botnames. If the mask
-#            begins with '@', it is interpreted to be a mask of permitted
-#            hosts to accept connections from.
-#          Returns: port number
+        listen <port> all [mask]
+          Description: accepts connections from anyone; the optional mask
+            is used to identify permitted nicknames/botnames. If the mask
+            begins with '@', it is interpreted to be a mask of permitted
+            hosts to accept connections from.
+          Returns: port number
 
-#        listen <port> script <proc> [flag]
-#          Description: accepts connections which are immediately routed to
-#            a proc. The proc is called with one parameter: the idx of the
-#            new connection. Flag may currently only be 'pub', which makes
-#            the bot allow anyone to connect.
-#          Returns: port number
+        listen <port> script <proc> [flag]
+          Description: accepts connections which are immediately routed to
+            a proc. The proc is called with one parameter: the idx of the
+            new connection. Flag may currently only be 'pub', which makes
+            the bot allow anyone to connect.
+          Returns: port number
 
-#        listen <port> off
-#          Description: stop listening on a port
-#          Returns: nothing
-#    Module: core
+        listen <port> off
+          Description: stop listening on a port
+          Returns: nothing
+    Module: core
 
   dccdumpfile <idx> <filename>
     Description: dumps out a file from the text directory to a dcc chat
@@ -1063,219 +1056,220 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: core
 
-#  *** NOTES MODULE ***
+  *** NOTES MODULE ***
 
-#  notes <user> [numberlist]
-#    Returns: -1 if no such user, -2 if notefile failure. If a numberlist
-#      is not specified, the number of notes stored for the user is returned.
-#      Otherwise, a list of sublists containing information about notes
-#      stored for the user is returned. Each sublist is in the format of:
-#        {<from> <timestamp> <note text>}.
-#    Module: notes
+  notes <user> [numberlist]
+    Returns: -1 if no such user, -2 if notefile failure. If a numberlist
+      is not specified, the number of notes stored for the user is returned.
+      Otherwise, a list of sublists containing information about notes
+      stored for the user is returned. Each sublist is in the format of:
+        {<from> <timestamp> <note text>}.
+    Module: notes
 
-#  erasenotes <user> <numberlist>
-#    Description: erases some or all stored notes for a user. Use '-'
-#      to erase all notes.
-#    Returns: -1 if no such user, -2 if notefile failure, 0 if
-#      no such note, or number of erased notes.
-#    Module: notes
+  erasenotes <user> <numberlist>
+    Description: erases some or all stored notes for a user. Use '-'
+      to erase all notes.
+    Returns: -1 if no such user, -2 if notefile failure, 0 if
+      no such note, or number of erased notes.
+    Module: notes
 
-#  listnotes <user> <numberlist>
-#    Description: lists existing notes according to the numberlist (ex:
-#      "2-4;8;16-")
-#    Returns: -1 if no such user, -2 if notefile failure, 0 if no
-#      such note, list of existing notes.
-#    Module: notes
+  listnotes <user> <numberlist>
+    Description: lists existing notes according to the numberlist (ex:
+      "2-4;8;16-")
+    Returns: -1 if no such user, -2 if notefile failure, 0 if no
+      such note, list of existing notes.
+    Module: notes
 
-#  storenote <from> <to> <msg> <idx>
-#    Description: stores a note for later reading, notifies idx of any results
-#      (use idx -1 for no notify).
-#    Returns: 0 on success; non-0 on failure
-#    Module: notes
+  storenote <from> <to> <msg> <idx>
+    Description: stores a note for later reading, notifies idx of any results
+      (use idx -1 for no notify).
+    Returns: 0 on success; non-0 on failure
+    Module: notes
 
-#*** ASSOC MODULE ***
+*** ASSOC MODULE ***
 
-#  assoc <chan> [name]
-#    Description: sets the name associated with a botnet channel, if you
-#      specify one
-#    Returns: current name for that channel, if any
-#    Module: assoc
+  assoc <chan> [name]
+    Description: sets the name associated with a botnet channel, if you
+      specify one
+    Returns: current name for that channel, if any
+    Module: assoc
 
-#  killassoc <chan>
-#    Description: removes the name associated with a botnet channel, if any
-#      exists. Use 'killassoc &' to kill all assocs.
-#    Returns: nothing
-#    Module: assoc
+  killassoc <chan>
+    Description: removes the name associated with a botnet channel, if any
+      exists. Use 'killassoc &' to kill all assocs.
+    Returns: nothing
+    Module: assoc
 
-#*** COMPRESS MODULE ***
+*** COMPRESS MODULE ***
 
-#  compressfile [-level <level>] <src-file> [target-file]
-#  uncompressfile <src-file> [target-file]
-#    Description: compresses or un-compresses files. The level option specifies
-#      the compression mode to use when compressing. Available modes are from
-#      0 (minimum CPU usage, minimum compression) all the way up to 9 (maximum
-#      CPU usage, maximum compression). If you don't specify the target-file,
-#      the src-file will be overwritten.
-#    Returns: nothing
-#    Module: compress
+  compressfile [-level <level>] <src-file> [target-file]
+  uncompressfile <src-file> [target-file]
+    Description: compresses or un-compresses files. The level option specifies
+      the compression mode to use when compressing. Available modes are from
+      0 (minimum CPU usage, minimum compression) all the way up to 9 (maximum
+      CPU usage, maximum compression). If you don't specify the target-file,
+      the src-file will be overwritten.
+    Returns: nothing
+    Module: compress
 
-#  iscompressed <filename>
-#    Description: determines whether <filename> is gzip compressed. Returns 1
-#      if it is, 0 if it isn't, and 2 if some kind of error prevented the
-#      checks from succeeding.
-#    Returns: nothing
-#    Module: compress
+  iscompressed <filename>
+    Description: determines whether <filename> is gzip compressed. Returns 1
+      if it is, 0 if it isn't, and 2 if some kind of error prevented the
+      checks from succeeding.
+    Returns: nothing
+    Module: compress
 
-#*** FILESYS MODULE ***
+*** FILESYS MODULE ***
 
-#  setpwd <idx> <dir>
-#    Description: changes the directory of a file system user, in exactly
-#      the same way as a 'cd' command would. The directory can be specified
-#      relative or absolute.
-#    Returns: nothing
-#    Module: filesys
+  setpwd <idx> <dir>
+    Description: changes the directory of a file system user, in exactly
+      the same way as a 'cd' command would. The directory can be specified
+      relative or absolute.
+    Returns: nothing
+    Module: filesys
 
-#  getpwd <idx>
-#    Returns: the current directory of a file system user
-#    Module: filesys
+  getpwd <idx>
+    Returns: the current directory of a file system user
+    Module: filesys
 
-#  getfiles <dir>
-#    Returns: a list of files in the directory given; the directory is
-#      relative to dcc-path
-#    Module: filesys
+  getfiles <dir>
+    Returns: a list of files in the directory given; the directory is
+      relative to dcc-path
+    Module: filesys
 
-#  getdirs <dir>
-#    Returns: a list of subdirectories in the directory given; the directory
-#      is relative to dcc-path
-#    Module: filesys
+  getdirs <dir>
+    Returns: a list of subdirectories in the directory given; the directory
+      is relative to dcc-path
+    Module: filesys
 
-#  dccsend <filename> <ircnick>
-#    Description: attempts to start a dcc file transfer to the given nick;
-#      the filename must be specified either by full pathname or in relation
-#      to the bot's startup directory
-#    Returns:
-#      0 success
-#      1 the dcc table is full (too many connections)
-#      2 can't open a socket for the transfer
-#      3 the file doesn't exist
-#      4 the file was queued for later transfer, which means that person has
-#        too many file transfers going right now
-#      5 copy-to-tmp is enabled and the file already exists in the temp
-#        directory
-#    Module: transfer
+  dccsend <filename> <ircnick>
+    Description: attempts to start a dcc file transfer to the given nick;
+      the filename must be specified either by full pathname or in relation
+      to the bot's startup directory
+    Returns:
+      0 success
+      1 the dcc table is full (too many connections)
+      2 can't open a socket for the transfer
+      3 the file doesn't exist
+      4 the file was queued for later transfer, which means that person has
+        too many file transfers going right now
+      5 copy-to-tmp is enabled and the file already exists in the temp
+        directory
+    Module: transfer
 
-#  filesend <idx> <filename> [ircnick]
-#    Description: like dccsend, except it operates for a current filesystem
-#      user, and the filename is assumed to be a relative path from that
-#      user's current directory
-#    Returns: 0 on failure; 1 on success (either an immediate send or a queued
-#      send)
-#    Module: filesys
+  filesend <idx> <filename> [ircnick]
+    Description: like dccsend, except it operates for a current filesystem
+      user, and the filename is assumed to be a relative path from that
+      user's current directory
+    Returns: 0 on failure; 1 on success (either an immediate send or a queued
+      send)
+    Module: filesys
 
-# fileresend <idx> <filename> [ircnick]
-#    Description: functions like filesend, only that it sends a DCC RESEND
-#      instead of a DCC SEND, which allows people to resume aborted file
-#      transfers if their client supports that protocol. ircII/BitchX/etc.
-#      support it; mIRC does not.
-#    Returns: 0 on failure; 1 on success (either an immediate send or a queued
-#      send)
-#    Module: filesys
+ fileresend <idx> <filename> [ircnick]
+    Description: functions like filesend, only that it sends a DCC RESEND
+      instead of a DCC SEND, which allows people to resume aborted file
+      transfers if their client supports that protocol. ircII/BitchX/etc.
+      support it; mIRC does not.
+    Returns: 0 on failure; 1 on success (either an immediate send or a queued
+      send)
+    Module: filesys
 
-#  setdesc <dir> <file> <desc>
-#    Description: sets the description for a file in a file system directory;
-#      the directory is relative to dcc-path
-#    Returns: nothing
-#    Module: filesys
+  setdesc <dir> <file> <desc>
+    Description: sets the description for a file in a file system directory;
+      the directory is relative to dcc-path
+    Returns: nothing
+    Module: filesys
 
-#  getdesc <dir> <file>
-#    Returns: the description for a file in the file system, if one
-#      exists
-#    Module: filesys
+  getdesc <dir> <file>
+    Returns: the description for a file in the file system, if one
+      exists
+    Module: filesys
 
-#  setowner <dir> <file> <handle>
-#    Description: changes the owner for a file in the file system; the
-#      directory is relative to dcc-path
-#    Returns: nothing
-#    Module: filesys
+  setowner <dir> <file> <handle>
+    Description: changes the owner for a file in the file system; the
+      directory is relative to dcc-path
+    Returns: nothing
+    Module: filesys
 
-#  getowner <dir> <file>
-#    Returns: the owner of a file in the file system
-#    Module: filesys
+  getowner <dir> <file>
+    Returns: the owner of a file in the file system
+    Module: filesys
 
-#  setlink <dir> <file> <link>
-#    Description: creates or changes a linked file (a file that actually
-#      exists on another bot); the directory is relative to dcc-path
-#    Returns: nothing
-#    Module: filesys
+  setlink <dir> <file> <link>
+    Description: creates or changes a linked file (a file that actually
+      exists on another bot); the directory is relative to dcc-path
+    Returns: nothing
+    Module: filesys
 
-#  getlink <dir> <file>
-#    Returns: the link for a linked file, if it exists
-#    Module: filesys
+  getlink <dir> <file>
+    Returns: the link for a linked file, if it exists
+    Module: filesys
 
-#  getfileq <handle>
-#    Returns: list of files queued by someone; each item in the list will be
-#      a sublist with two elements: nickname the file is being sent to and
-#      the filename
-#    Module: transfer
+  getfileq <handle>
+    Returns: list of files queued by someone; each item in the list will be
+      a sublist with two elements: nickname the file is being sent to and
+      the filename
+    Module: transfer
 
-#  getfilesendtime <idx>
-#    Returns: the unixtime value from when a file transfer started, or a
-#      negative number:
-#        -1 no matching transfer with the specified idx was found
-#        -2 the idx matches an entry which is not a file transfer
-#    Module: transfer
+  getfilesendtime <idx>
+    Returns: the unixtime value from when a file transfer started, or a
+      negative number:
+        -1 no matching transfer with the specified idx was found
+        -2 the idx matches an entry which is not a file transfer
+    Module: transfer
 
-#  mkdir <directory> [<required-flags> [channel]]
-#    Description: creates a directory in the file system. Only users with the
-#      required flags may access it.
-#    Returns:
-#      0 success
-#      1 can't create directory
-#      2 directory exists but is not a directory
-#    Module: filesys
+  mkdir <directory> [<required-flags> [channel]]
+    Description: creates a directory in the file system. Only users with the
+      required flags may access it.
+    Returns:
+      0 success
+      1 can't create directory
+      2 directory exists but is not a directory
+     -3 could not open filedb
+    Module: filesys
 
-#  rmdir <directory>
-#    Description: removes a directory from the file system.
-#    Returns: 0 on success; 1 on failure
-#    Module: filesys
+  rmdir <directory>
+    Description: removes a directory from the file system.
+    Returns: 0 on success; 1 on failure
+    Module: filesys
 
-#  mv <file> <destination>
-#    Description: moves a file from its source to the given destination.
-#      The file can also be a mask, such as /incoming/*, provided the
-#      destination is a directory.
-#    Returns: If the command was successful, the number of files moved will
-#      be returned. Otherwise, a negative number will be returned:
-#        -1 invalid source file
-#        -2 invalid destination
-#        -3 destination file exists
-#        -4 no matches found
-#    Module: filesys
+  mv <file> <destination>
+    Description: moves a file from its source to the given destination.
+      The file can also be a mask, such as /incoming/*, provided the
+      destination is a directory.
+    Returns: If the command was successful, the number of files moved will
+      be returned. Otherwise, a negative number will be returned:
+        -1 invalid source file
+        -2 invalid destination
+        -3 destination file exists
+        -4 no matches found
+    Module: filesys
 
-#  cp <file> <destination>
-#    Description: copies a file from its source to the given destination.
-#      The file can also be a mask, such as /incoming/*, provided the
-#      destination is a directory.
-#    Returns: If the command was successful, the number of files copied will
-#      be returned. Otherwise, a negative number will be returned:
-#        -1 invalid source file
-#        -2 invalid destination
-#        -3 destination file exists
-#        -4 no matches found
-#    Module: filesys
+  cp <file> <destination>
+    Description: copies a file from its source to the given destination.
+      The file can also be a mask, such as /incoming/*, provided the
+      destination is a directory.
+    Returns: If the command was successful, the number of files copied will
+      be returned. Otherwise, a negative number will be returned:
+        -1 invalid source file
+        -2 invalid destination
+        -3 destination file exists
+        -4 no matches found
+    Module: filesys
 
-#  getflags <dir>
-#    Returns: the flags required to access a directory
-#    Module: filesys
-#
-#  setflags <dir> [<flags> [channel]]
-#    Description: sets the flags required to access a directory
-#    Returns: 0 on success; -1 on failure
-#    Module: filesys
+  getflags <dir>
+    Returns: the flags required to access a directory
+    Module: filesys
+
+  setflags <dir> [<flags> [channel]]
+    Description: sets the flags required to access a directory
+    Returns: 0 on success; -1 or -3 on failure
+    Module: filesys
 
 
 *** MISCELLANEOUS COMMANDS ***
 
-  bind <type> <flags> <keyword/mask> [proc-name] [priority]
+  bind <type> <flags> <keyword/mask> [proc-name]
     Description: You can use the 'bind' command to attach Tcl procedures
       to certain events. flags are the flags the user must have to trigger
       the event (if applicable). proc-name is the name of the Tcl procedure
@@ -1283,9 +1277,6 @@ FixMe: Need to go through all this and document every command/bind/variable
       call). If the proc-name is omitted, no binding is added. Instead, the
       current binding is returned (if it's stackable, a list of the current
       bindings is returned).
-      priority defaults to 50, but can be between 0-98.
-      priority 99 is reserved for Tcldrop's internal binds.
-      Lower priority number means it gets executed before higher number ones.
     Returns: name of the command that was added, or (if proc-name was
       omitted), a list of the current bindings for this command
     Module: core
@@ -1295,7 +1286,7 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: name of the command that was removed
     Module: core
 
-  binds ?type/mask?
+  binds [type/mask]
     Returns: a list of Tcl binds, each item in the list is a sublist of
       five elements:
         {<type> <flags> <name> <hits> <proc>}
@@ -1328,14 +1319,25 @@ FixMe: Need to go through all this and document every command/bind/variable
       list of logfiles such as: {mco * eggdrop.log} {jp #lame lame.log}
     Module: core
 
-  maskhost <nick!user@host>
-    Returns: masked hostmask for the string given ("n!u@1.2.3.4" -> "*!u@1.2.3.*",
-      "n!u@lame.com" -> "*!u@lame.com", "n!u@a.b.edu" -> "*!u@*.b.edu")
-    Module: core
-
-  splithost <nick!user@host>
-    Description: splits "nick!user@host" according to RFC 2812
-    Returns: a list containing nick user host
+  maskhost <nick!user@host> [masktype]
+    Returns: masked hostmask for the string given according to the masktype
+      (the default is 3).
+      Available types are:
+	0: *!user@host
+	1: *!*user@host
+	2: *!*@host
+	3: *!*user@*.host
+	4: *!*@*.host
+	5: nick!user@host
+	6: nick!*user@host
+	7: nick!*@host
+	8: nick!*user@*.host
+	9: nick!*@*.host
+      You can also specify types from 10 to 19 which correspond to types
+      0 to 9, but instead of using a * wildcard to replace portions of the
+      host, only numbers in hostnames are replaced with the '?' wildcard.
+      Same is valid for types 20-29, but instead of '?', the '*' wildcard
+      will be used.
     Module: core
 
   timer <minutes> <tcl-command>
@@ -1364,12 +1366,12 @@ FixMe: Need to go through all this and document every command/bind/variable
 
   killtimer <timerID>
     Description: removes a minutely timer from the list
-    Returns: 1 if it killed the timer, 0 if it didn't.
+    Returns: nothing
     Module: core
 
   killutimer <timerID>
     Description: removes a secondly timer from the list
-    Returns: 1 if it killed the timer, 0 if it didn't.
+    Returns: nothing
     Module: core
 
   unixtime
@@ -1380,7 +1382,7 @@ FixMe: Need to go through all this and document every command/bind/variable
   duration <seconds>
     Returns: the number of seconds converted into years, weeks, days, hours,
       minutes, and seconds. 804600 seconds is turned into 1 week 2 days
-      7 hours 30 minutes.  Or returns an empty string if an error occurs.
+      7 hours 30 minutes.
     Module: core
 
   strftime <formatstring> [time]
@@ -1416,16 +1418,16 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: nothing
     Module: core
 
-#  sendnote <from> <to[@bot]> <message>
-#    Description: simulates what happens when one user sends a note to another
-#    Returns:
-#      0 - the send failed
-#      1 - the note was delivered locally or sent to another bot
-#      2 - the note was stored locally
-#      3 - the user's notebox is too full to store a note
-#      4 - a Tcl binding caught the note
-#      5 - the note was stored because the user is away
-#    Module: core
+  sendnote <from> <to[@bot]> <message>
+    Description: simulates what happens when one user sends a note to another
+    Returns:
+      0 - the send failed
+      1 - the note was delivered locally or sent to another bot
+      2 - the note was stored locally
+      3 - the user's notebox is too full to store a note
+      4 - a Tcl binding caught the note
+      5 - the note was stored because the user is away
+    Module: core
 
   link [via-bot] <bot>
     Description: attempts to link to another bot directly. If you specify
@@ -1449,7 +1451,7 @@ FixMe: Need to go through all this and document every command/bind/variable
 
   encpass <password>
     Returns: encrypted string (using the currently loaded encryption module)
-    Module: encryption (in irc module right now)
+    Module: encryption
 
   die [reason]
     Description: causes the bot to log a fatal error and exit completely.
@@ -1513,21 +1515,21 @@ FixMe: Need to go through all this and document every command/bind/variable
     Returns: "No such module" if the module is not loaded, "" otherwise.
     Module: core
 
-#  loadhelp <helpfile-name>
-#    Description: attempts to load the specified help file from the help/
-#      directory.
-#    Returns: nothing
-#    Module: core
+  loadhelp <helpfile-name>
+    Description: attempts to load the specified help file from the help/
+      directory.
+    Returns: nothing
+    Module: core
 
-#  unloadhelp <helpfile-name>
-#    Description: attempts to unload the specified help file.
-#    Returns: nothing
-#    Module: core
+  unloadhelp <helpfile-name>
+    Description: attempts to unload the specified help file.
+    Returns: nothing
+    Module: core
 
-#  reloadhelp
-#    Description: reloads the bot's help files.
-#    Returns: nothing
-#    Module: core
+  reloadhelp
+    Description: reloads the bot's help files.
+    Returns: nothing
+    Module: core
 
   restart
     Description: rehashes the bot, kills all timers, reloads all modules,
@@ -1550,19 +1552,6 @@ FixMe: Need to go through all this and document every command/bind/variable
         a - remove all ANSI codes
         g - remove all ctrl-g (bell) codes
     Returns: the stripped string.
-    Module: core
-
-   matchaddr <hostmask> <address>
-     Description: checks if the address matches the hostmask given. The
-       address should be in the form nick!user@host.
-     Returns: 1 if the address matches the hostmask, 0 otherwise.
-     Module: core
-
-    matchcidr <block> <address> <prefix>
-    Description: performs a cidr match on the specified ip addresses.
-      IPv6 is supported.
-        Example: matchcidr 192.168.0.0 192.168.1.17 16
-    Returns: 1 if the address matches the block prefix, 0 otherwise.
     Module: core
 
 
@@ -1622,9 +1611,9 @@ FixMe: Need to go through all this and document every command/bind/variable
       identify which command triggered a Tcl proc.
     Module: core
 
-#  isjuped
-#    Value: 1 if bot's nick is juped(437); 0 otherwise
-#    Module: server
+  isjuped
+    Value: 1 if bot's nick is juped(437); 0 otherwise
+    Module: server
 
   handlen
     Value: the value of the HANDLEN define in src/eggdrop.h
@@ -1675,13 +1664,13 @@ FixMe: Need to go through all this and document every command/bind/variable
            so be careful about storing an idx for long periods of time.
          Module: core
 
-#    (3)  FIL
-#         bind fil <flags> <command> <proc>
-#         procname <handle> <idx> <text>
-#
-#         Description: the same as DCC, except this is triggered if the user
-#           is in the file area instead of the party line
-#         Module: filesys
+    (3)  FIL
+         bind fil <flags> <command> <proc>
+         procname <handle> <idx> <text>
+
+         Description: the same as DCC, except this is triggered if the user
+           is in the file area instead of the party line
+         Module: filesys
 
     (4)  PUB
          bind pub <flags> <command> <proc>
@@ -1697,7 +1686,11 @@ FixMe: Need to go through all this and document every command/bind/variable
 
          Description: matches the entire line of text from a /msg with the
            mask. This is useful for binding Tcl procs to words or phrases
-           spoken anywhere within a line of text.
+|          spoken anywhere within a line of text. If the proc returns 1,
+|          Eggdrop will not log the message that triggered this bind.
+|          MSGM binds are processed before MSG binds. If the exclusive-binds
+|          setting is enabled, MSG binds will not be triggered by text that
+|          a MSGM bind has already handled.
          Module: server
 
     (6)  PUBM (stackable)
@@ -1707,8 +1700,11 @@ FixMe: Need to go through all this and document every command/bind/variable
          Description: just like MSGM, except it's triggered by things said
            on a channel instead of things /msg'd to the bot. The mask is
            matched against the channel name followed by the text and can
-           contain wildcards. Also, if a line triggers a PUB bind, it will not
-           trigger a PUBM bind.
+|          contain wildcards. If the proc returns 1, Eggdrop will not log
+|          the message that triggered this bind. PUBM binds are processed
+|          before PUB binds. If the exclusive-binds setting is enabled,
+|          PUB binds will not be triggered by text that a PUBM bind has
+|          already handled.
          Module: irc
 
     (7)  NOTC (stackable)
@@ -1719,8 +1715,9 @@ FixMe: Need to go through all this and document every command/bind/variable
            obviously) or a channel name. mask is matched against the entire
            notice and can contain wildcards. It is considered a breach of
            protocol to respond to a /notice on IRC, so this is intended for
-           internal use (logging, etc.) only. Note that server notices do not
-           trigger the NOTC bind.
+           internal use (logging, etc.) only. Note that server notices do
+|          not trigger the NOTC bind. If the proc returns 1, Eggdrop will
+|          not log the message that triggered this bind.
 
            New Tcl procs should be declared as
              proc notcproc {nick uhost hand text {dest ""}} {
@@ -1748,9 +1745,9 @@ FixMe: Need to go through all this and document every command/bind/variable
            wildcards. If no part message is specified, msg will be set
            to "".
 
-|          New Tcl procs should be declared as
-|            proc partproc {nick uhost hand chan {msg ""}} { ... }
-|          for compatibility.
+           New Tcl procs should be declared as
+             proc partproc {nick uhost hand chan {msg ""}} { ... }
+           for compatibility.
          Module: irc
 
     (10) SIGN (stackable)
@@ -1776,55 +1773,62 @@ FixMe: Need to go through all this and document every command/bind/variable
          procname <nick> <user@host> <handle> <channel> <target> <reason>
 
          Description: triggered when someone is kicked off the channel. The
-           mask is matched against '#channel target' where the target is
+           mask is matched against '#channel target reason' where the target is
            the nickname of the person who got kicked (can contain wildcards).
            The proc is called with the nick, user@host, and handle of the
            kicker, plus the channel, the nickname of the person who was
-           kicked, and the reason; flags are ignored.
+           kicked, and the reason.
          Module: irc
 
     (13) NICK (stackable)
-        bind nick <flags> <mask> <proc>
+         bind nick <flags> <mask> <proc>
          procname <nick> <user@host> <handle> <channel> <newnick>
 
          Description: triggered when someone changes nicknames. The mask
            is matched against '#channel newnick' and can contain wildcards.
-|          Channel is "*" if the user isn't on a channel (usually the bot not
-|          yet in a channel).
+           Channel is "*" if the user isn't on a channel (usually the bot not
+           yet in a channel).
          Module: irc
 
-    (14) MODE   (stackable)
+    (14) MODE (stackable)
          bind mode <flags> <mask> <proc>
-         proc-name <nick> <user@host> <handle> <channel> <mode-change> <victim>
+         proc-name <nick> <user@host> <handle> <channel> <mode-change> <target>
 
          Description: mode changes are broken down into their component
            parts before being sent here, so the <mode-change> will always
-           be a single mode, such as "+m" or "-o". victim will show the
+           be a single mode, such as "+m" or "-o". target will show the
            argument of the mode change (for o/v/b/e/I) or "" if the set
-           mode does not take an argument. Flags are ignored. The bot's
-           automatic response to a mode change will happen AFTER all
-           matching Tcl procs are called. The mask will be matched against
-           '#channel +/-modes' and can contain wildcards.
+           mode does not take an argument. The bot's automatic response
+           to a mode change will happen AFTER all matching Tcl procs are
+           called. The mask will be matched against '#channel +/-modes'
+           and can contain wildcards.
 
            If it is a server mode, nick will be "", user@host is the server
            name, and handle is *.
 
-|           Note that "victim" was added in 1.3.23 and that this will break
-|           Tcl scripts that were written for pre-1.3.23 versions and use this
-|           binding. An easy fix (by guppy) is as follows (example):
-|
-|           Old script looks as follows:
-|             bind mode - * mode_proc
-|             proc mode_proc {nick uhost hand chan mc} { ... }
-|
-|           To make it work with 1.3.23+ and stay compatible with older bots, do:
-|             bind mode - * mode_proc_fix
-|             proc mode_proc_fix {nick uhost hand chan mc {victim ""}} {
-|               if {$victim != ""} {append mc " $victim"}
-|               mode_proc $nick $uhost $hand $chan $mc
-|             }
-|             proc mode_proc {nick uhost hand chan mc} { ... }
+           Note that "target" was added in 1.3.17 and that this will break
+           Tcl scripts that were written for pre-1.3.17 Eggdrop that use the
+           mode binding. Also, due to a typo, mode binds were broken
+           completely in 1.3.17 but were fixed in 1.3.18. Mode bindings are
+           not triggered at all in 1.3.17.
+
+           One easy example (from guppy) of how to support the "target"
+           parameter in 1.3.18 and later and still remain compatible with
+           older Eggdrop versions is:
+
+           Old script looks as follows:
+             bind mode - * mode_proc
+             proc mode_proc {nick uhost hand chan mode} { ... }
+
+           To make it work with 1.3.18+ and stay compatible with older bots, do:
+             bind mode - * mode_proc_fix
+             proc mode_proc_fix {nick uhost hand chan mode {target ""}} {
+               if {$target != ""} {append mode " $target"}
+               mode_proc $nick $uhost $hand $chan $mode
+             }
+             proc mode_proc {nick uhost hand chan mode} { ... }
          Module: irc
+
 
     (15) CTCP (stackable)
          bind ctcp <flags> <keyword> <proc>
@@ -1845,19 +1849,18 @@ FixMe: Need to go through all this and document every command/bind/variable
          Module: server
 
     (17) RAW (stackable)
-         bind raw <flags> <keyword-mask> <proc>
+         bind raw <flags> <keyword> <proc>
          procname <from> <keyword> <text>
 
          Description: previous versions of Eggdrop required a special compile
-           option to enable this binding, but it's now standard. The mask
-           is checked against the keyword (either a numeric, like "368",
-           or a keyword, like "PRIVMSG"). from will be the server name or
-           the source user (depending on the keyword); flags are ignored.
-           The order of the arguments is identical to the order that the
-           IRC server sends to the bot. The pre-processing only splits it
-           apart enough to determine the keyword. If the proc returns 1,
-           Eggdrop will not process the line any further (this could cause
-           your bot to behave oddly in some cases).
+           option to enable this binding, but it's now standard. The keyword
+           is either a numeric, like "368", or a keyword, such as "PRIVMSG".
+           from will be the server name or the source user (depending on
+           the keyword); flags are ignored. The order of the arguments is
+           identical to the order that the IRC server sends to the bot. The
+           pre-processing  only splits it apart enough to determine the
+           keyword. If the proc returns 1, Eggdrop will not process the line
+           any further (this could cause unexpected behavior in some cases).
          Module: server
 
     (18) BOT
@@ -1891,39 +1894,42 @@ FixMe: Need to go through all this and document every command/bind/variable
            been dropped by the user, so don't send output to the idx.
          Module: core
 
-#    (21) SENT (stackable)
-#         bind sent <flags> <mask> <proc>
-#         proc-name <handle> <nick> <path/to/file>
-#
-#         Description: after a user has successfully downloaded a file from
-#           the bot, this binding is triggered. mask is matched against the
-#           handle of the user that initiated the transfer and supports
-#           wildcards. nick is the actual recipient (on IRC) of the file. The
-#           path is relative to the dcc directory (unless the file transfer
-#           was started by a script call to 'dccsend', in which case the path
-#           is the exact path given in the call to 'dccsend').
-#         Module: transfer
+    (21) SENT (stackable)
+         bind sent <flags> <mask> <proc>
+         proc-name <handle> <nick> <path/to/file>
 
-#    (22) RCVD (stackable)
-#         bind rcvd <flags> <mask> <proc>
-#         proc-name <handle> <nick> <path/to/file>
-#
-#         Description: triggered after a user uploads a file successfully.
-#           mask is matched against the user's handle. nick is the IRC
-#           nickname that the file transfer originated from. The path is
-#           where the file ended up, relative to the dcc directory (usually
-#           this is your incoming dir).
-#         Module: transfer
+         Description: after a user has successfully downloaded a file from
+           the bot, this binding is triggered. mask is matched against the
+           handle of the user that initiated the transfer and supports
+           wildcards. nick is the actual recipient (on IRC) of the file. The
+           path is relative to the dcc directory (unless the file transfer
+           was started by a script call to 'dccsend', in which case the path
+           is the exact path given in the call to 'dccsend').
+         Module: transfer
+
+    (22) RCVD (stackable)
+         bind rcvd <flags> <mask> <proc>
+         proc-name <handle> <nick> <path/to/file>
+
+         Description: triggered after a user uploads a file successfully.
+           mask is matched against the user's handle. nick is the IRC
+           nickname that the file transfer originated from. The path is
+           where the file ended up, relative to the dcc directory (usually
+           this is your incoming dir).
+         Module: transfer
 
     (23) CHAT (stackable)
          bind chat <flags> <mask> <proc>
          proc-name <handle> <channel#> <text>
 
-         Description: when someone says something on the botnet, it invokes
+         Description: when a user says something on the botnet, it invokes
            this binding. Flags are ignored; handle could be a user on this
            bot ("DronePup") or on another bot ("Eden@Wilde") and therefore
            you can't rely on a local user record. The mask is checked against
            the entire line of text and supports wildcards.
+
+           NOTE: If a BOT says something on the botnet, the BCST bind is
+           invoked instead.
          Module: core
 
     (24) LINK (stackable)
@@ -1946,15 +1952,16 @@ FixMe: Need to go through all this and document every command/bind/variable
            Wildcards are supported in mask.
          Module: core
 
-   (26) SPLT (stackable)
+    (26) SPLT (stackable)
          bind splt <flags> <mask> <proc>
          procname <nick> <user@host> <handle> <channel>
+
          Description: triggered when someone gets netsplit on the channel.
-         Be aware that this may be a false alarm (it's easy to fake a
+           Be aware that this may be a false alarm (it's easy to fake a
            netsplit signoff message on some networks); mask may contain
            wildcards and is matched against '#channel nick!user@host'.
            Anyone who is SPLT will trigger a REJN or SIGN within the next
-         wait-split (defined in the config file) minutes.
+           wait-split (defined in the config file) minutes.
          Module: irc
 
     (27) REJN (stackable)
@@ -2002,16 +2009,16 @@ FixMe: Need to go through all this and document every command/bind/variable
            "*" for the bind); flags are ignored.
          Module: server
 
-#    (31) NOTE
-#         bind note <flags> <handle> <proc>
-#         procname <from> <to> <text>
-#
-#         Description: incoming notes (either from the party line, someone on
-#           IRC, or someone on another bot on the botnet) are checked against
-#           these binds before being processed. If a bind exists, the bot will
-#           not deliver the note. The handle must be an exact match (no wildcards),
-#           but it is not case sensitive; flags are ignored.
-#         Module: core
+|   (31) NOTE (stackable)
+|        bind note <flags> <mask> <proc>
+|        procname <from> <to> <text>
+|
+|        Description: incoming notes (either from the party line, someone on
+|          IRC, or someone on another bot on the botnet) are checked against
+|          these binds before being processed. The mask is matched against
+|          the receiving handle and supports wildcards. If the proc returns 1,
+|          Eggdrop will not process the note any further. Flags are ignored.
+|        Module: core
 
     (32) ACT (stackable)
          bind act <flags> <mask> <proc>
@@ -2022,26 +2029,32 @@ FixMe: Need to go through all this and document every command/bind/variable
            text of the action and can support wildcards.
          Module: core
 
-#|   (33) WALL (stackable)
-#|        bind wall <flags> <mask> <proc>
-#|        proc-name <from> <msg>
-#|
-#|        Description: when the bot receives a wallops, it invokes this
-#|          binding. flags are ignored; the mask is matched against the text
-#|          of the wallops msg. Note that RFC shows the server name as a source
-#|          of the message, whereas many IRCds send the nick!user@host of the
-#|          actual sender, thus, Eggdrop will not parse it at all, but simply
-#|          pass it to bind in its original form.
-#|        Module: server
+   (33) WALL (stackable)
+        bind wall <flags> <mask> <proc>
+        proc-name <from> <msg>
+
+        Description: when the bot receives a wallops, it invokes this
+          binding. flags are ignored; the mask is matched against the text
+          of the wallops msg. Note that RFC shows the server name as a source
+          of the message, whereas many IRCds send the nick!user@host of the
+          actual sender, thus, Eggdrop will not parse it at all, but simply
+|         pass it to bind in its original form. If the proc returns 1,
+|         Eggdrop will not log the message that triggered this bind.
+        Module: server
 
     (34) BCST (stackable)
          bind bcst <flags> <mask> <proc>
-         proc-name <botname> <text>
-
+         proc-name <botname> <channel#> <text>
+ 
          Description: when a bot broadcasts something on the botnet (see
            'dccbroadcast' above), it invokes this binding. flags are ignored;
            the mask is matched against the message text and can contain
-           wildcards.
+           wildcards. 'channel' argument will always be '-1' since broadcasts
+           are not directed to any partyline channel.
+ 
+           It is also invoked when a BOT (not a person, as with the CHAT bind)
+           'says' something on a channel. In this case, the 'channel' argument
+           will be a valid channel, and not '-1'.
          Module: core
 
     (35) CHJN (stackable)
@@ -2051,7 +2064,7 @@ FixMe: Need to go through all this and document every command/bind/variable
          Description: when someone joins a botnet channel, it invokes this
            binding. The mask is matched against the channel and can contain
            wildcards. flag is one of: * (owner), + (master), @ (op), or %
-           (botnet master).
+           (botnet master). Flags are ignored.
          Module: core
 
     (36) CHPT (stackable)
@@ -2059,8 +2072,8 @@ FixMe: Need to go through all this and document every command/bind/variable
          proc-name <botname> <handle> <idx> <channel#>
 
          Description: when someone parts a botnet channel, it invokes this
-           binding. flags are ignored; the mask is matched against the
-           channel and can contain wildcards.
+           binding. The mask is matched against the channel and can contain
+           wildcards. Flags are ignored.
          Module: core
 
     (37) TIME (stackable)
@@ -2071,7 +2084,7 @@ FixMe: Need to go through all this and document every command/bind/variable
            times. mask matches 5 space separated integers of the form:
            "minute hour day month year". minute, hour, day, month have a
            zero padding so they are exactly two characters long; year is
-           extended to four characters in the same way.
+           four characters. Flags are ignored.
          Module: core
 
     (38) AWAY (stackable)
@@ -2118,60 +2131,54 @@ FixMe: Need to go through all this and document every command/bind/variable
 
          Description: triggered whenever one of these events happen. flags
            are ignored; valid events are:
-             sighup     - called on a kill -HUP <pid>
-             sigterm    - called on a kill -TERM <pid>
-             sigill     - called on a kill -ILL <pid>
-             sigquit    - called on a kill -QUIT <pid>
-             save       - called when the userfile is saved
-             prestart   - called when the bot is first starting up in place of the prerestart event
-             start      - called when the bot is first starting up in place of the restart event
-             prerestart - called just before a restart
-             restart    - called just after a restart
-#             logfile    - called when the logs are switched daily
-             prerehash  - called just before a rehash
-             rehash     - called just after a rehash
-             loaded     - called when the bot is done loading, after the start/restart events
-             init       - called when the bot is first started up, just after the loaded events
+             sighup          - called on a kill -HUP <pid>
+             sigterm         - called on a kill -TERM <pid>
+             sigill          - called on a kill -ILL <pid>
+             sigquit         - called on a kill -QUIT <pid>
+             save            - called when the userfile is saved
+             rehash          - called just after a rehash
+             prerehash       - called just before a rehash
+             prerestart      - called just before a restart
+             logfile         - called when the logs are switched daily
+             loaded          - called when the bot is done loading
+             userfile-loaded - called after userfile has been loaded
+
              connect-server    - called just before we connect to an IRC server
              init-server       - called when we actually get on our IRC server
              disconnect-server - called when we disconnect from our IRC server
          Module: core
 
-#    (43) LOST (stackable)
-#         bind lost <flags> <mask> <proc>
-#         proc-name <handle> <nick> <path> <bytes-transferred> <length-of-file>
-#
-#         Description: triggered when a DCC SEND transfer gets lost, such as
-#           when the connection is terminated before all data was successfully
-#           sent/received. This is typically caused by a user abort.
-#         Module: transfer
-#
-#    (44) TOUT (stackable)
-#         bind tout <flags> <mask> <proc>
-#         proc-name <handle> <nick> <path> <bytes-transferred> <length-of-file>
-#
-#         Description: triggered when a DCC SEND transfer times out. This may
-#           either happen because the dcc connection was not accepted or
-#           because the data transfer stalled for some reason.
-#         Module: transfer
+    (43) LOST (stackable)
+         bind lost <flags> <mask> <proc>
+         proc-name <handle> <nick> <path> <bytes-transferred> <length-of-file>
+
+         Description: triggered when a DCC SEND transfer gets lost, such as
+           when the connection is terminated before all data was successfully
+           sent/received. This is typically caused by a user abort.
+         Module: transfer
+
+    (44) TOUT (stackable)
+         bind tout <flags> <mask> <proc>
+         proc-name <handle> <nick> <path> <bytes-transferred> <length-of-file>
+
+         Description: triggered when a DCC SEND transfer times out. This may
+           either happen because the dcc connection was not accepted or
+           because the data transfer stalled for some reason.
+         Module: transfer
 
 |   (45) OUT (stackable)
 |        bind out <flags> <mask> <proc>
 |        proc-name <queue> <message> <queued|sent>
 |
-|        Description: triggered when a message is sent to the server. Normally
+|        Description: triggered whenever output is sent to the server. Normally
 |          the event will occur twice for each line sent: once before entering
 |          a server queue and once after the message is actually sent. This
-|          allows for more flexible logging of server output and message
-|          cancelation.
+|          allows for more flexible logging of server output and introduces
+|          the ability to cancel the message.
 |          Mask is matched against "queue status", where status is either
 |          'queued' or 'sent'. Queues are: mode, server, help, noqueue.
 |          noqueue is only used by the putnow tcl command.
 |        Module: server
-
-
-# FixMe: Document the LOG bind type.
-
 
   (B) RETURN VALUES
 
@@ -2185,58 +2192,57 @@ FixMe: Need to go through all this and document every command/bind/variable
     Here's a list of the bindings that use the return value from procs
     they trigger:
 
-    (1) MSG   Return 1 to make the command get logged like so:
+    (1) MSG   Return 1 to make Eggdrop log the command as:
                 (nick!user@host) !handle! command
 
-#    (2) DCC   Return 1 to make the command get logged like so:
-#                #handle# command
+    (2) DCC   Return 1 to make Eggdrop log the command as:
+                #handle# command
 
-#    (3) FIL   Return 1 to make the command get logged like so:
-#                #handle# files: command
+    (3) FIL   Return 1 to make Eggdrop log the command as:
+                #handle# files: command
 
-#    (4) PUB   Return 1 to make the command get logged like so:
-#                <<nick>> !handle! command
+    (4) PUB   Return 1 to make Eggdrop log the command as:
+                <<nick>> !handle! command
 
-#    (5) CTCP  Return 1 to ask the bot not to process the CTCP command on its
-#              own. Otherwise, it would send its own response to the CTCP
-#              (possibly an error message if it doesn't know how to deal with
-#              it).
+    (5) CTCP  Return 1 to ask the bot not to process the CTCP command on its
+              own. Otherwise, it would send its own response to the CTCP
+              (possibly an error message if it doesn't know how to deal with
+              it).
 
-#    (6) FILT  Return "" to indicate the text has been processed, and the bot
-#              should just ignore it. Otherwise, it will treat the text like
-#              any other.
+    (6) FILT  Return "" to indicate the text has been processed, and the bot
+              should just ignore it. Otherwise, it will treat the text like
+              any other.
 
-#    (7) FLUD  Return 1 to ask the bot not to take action on the flood.
-#              Otherwise it will do its normal punishment.
+    (7) FLUD  Return 1 to ask the bot not to take action on the flood.
+              Otherwise it will do its normal punishment.
 
     (8) RAW   Return 1 to ask the bot not to process the server text. This
               can affect the bot's performance by causing it to miss things
               that it would normally act on -- you have been warned.
 
-#    (9) CHON  Return 1 to ask the bot not to process the partyline join event.
+    (9) CHON  Return 1 to ask the bot not to process the partyline join event.
 
-#    (10) CHOF  Return 1 to ask the bot not to process the partyline part event.
+    (10) CHOF  Return 1 to ask the bot not to process the partyline part event.
 
-#|   (11) WALL  Return 1 to make Eggdrop not log the message that triggered
-#|              this bind.
+|   (11) WALL  Return 1 to make Eggdrop not log the message that triggered
+|              this bind.
 
-#|   (12) NOTE  Return 1 to make Eggdrop not process the note any further.
-#|              This includes stacked note bindings that would be processed
-#|              after this one, as well as the built-in eggdrop note handling
-#|              routines.
+|   (12) NOTE  Return 1 to make Eggdrop not process the note any further.
+|              This includes stacked note bindings that would be processed
+|              after this one, as well as the built-in eggdrop note handling
+|              routines.
 
-#|   (13) MSGM  Return 1 to make Eggdrop not log the message that triggered
-#|              this bind.
+|   (13) MSGM  Return 1 to make Eggdrop not log the message that triggered
+|              this bind.
 
-#|   (14) PUBM  Return 1 to make Eggdrop not log the message that triggered
-#|              this bind.
+|   (14) PUBM  Return 1 to make Eggdrop not log the message that triggered
+|              this bind.
 
-#|   (15) NOTC  Return 1 to make Eggdrop not log the message that triggered
-#|              this bind.
+|   (15) NOTC  Return 1 to make Eggdrop not log the message that triggered
+|              this bind.
 
-|   (16) OUT   Return 1 to make Eggdrop drop the message instead of sending it.
-|              Only meaningful for messages with status "queued".
-
+|   (16) OUT   Return 1 to make Eggdrop drop the message instead of sending
+|              it. Only meaningful for messages with status "queued".
 
 *** CONTROL PROCEDURES ***
 
@@ -2324,18 +2330,18 @@ FixMe: Need to go through all this and document every command/bind/variable
   uses them and follow it carefully. However, hopefully this has given you
   a good start.
 
-#
-#*** MATCH CHARACTERS ***
-#
-#  Many of the bindings allow match characters in the arguments. Here
-#  are the four special characters:
-#
+
+*** MATCH CHARACTERS ***
+
+  Many of the bindings allow match characters in the arguments. Here
+  are the four special characters:
+
   ?  matches any single character
   *  matches 0 or more characters of any type
-#  %  matches 0 or more non-space characters (can be used to match a single
-#     word)
-#  ~  matches 1 or more space characters (can be used for whitespace between
-#     words)
-     _________________________________________________________________
+  %  matches 0 or more non-space characters (can be used to match a single
+     word)
+  ~  matches 1 or more space characters (can be used for whitespace between
+     words)
+    _____________________________________________________________________
 
-$Id$
+  Copyright (C) 1999 - 2006 Eggheads Development Team
