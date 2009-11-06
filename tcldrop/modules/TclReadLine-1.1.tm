@@ -11,6 +11,7 @@ package provide TclReadLine 1.1
 #	signal ignore SIGINT
 #}
 
+
 namespace eval TclReadLine {
 		namespace export interact
 		# Initialise our own env variables:
@@ -31,6 +32,24 @@ namespace eval TclReadLine {
 		# Resource & history files:
 		variable HISTFILE $env(HOME)/.tclline_history
 		variable  RCFILE $env(HOME)/.tcllinerc
+}
+
+if {![catch { package require Expect }] && [info commands stty] ne {}} {
+	interp alias {} TclReadLine::getColumns {} stty columns
+} else {
+	# Calls to stty will be exec'd:
+	proc TclReadLine::stty {args} {
+		exec stty {*}$args
+	}
+	proc TclReadLine::getColumns {} {
+		if {(![catch {exec stty -a} err]) && ([regexp {rows (= )?(\d+); columns (= )?(\d+)} $err -> i1 rows i2 cols] || [regexp {; (\d+) columns;} $err -> cols])} {
+			return $cols
+		} elseif {[info exists ::env(COLUMNS)]} {
+			return $::env(COLUMNS)
+		}
+		# At least default to 80, to avoid the stupid "divide by zero" error..
+		return 80
+	}
 }
 
 proc TclReadLine::ESC {} { return "\033" }
@@ -70,16 +89,6 @@ proc TclReadLine::clear {} {
 
 proc TclReadLine::clearline {} {
 	print "[ESC]\[2K\r" nowait
-}
-
-proc TclReadLine::getColumns {} {
-	if {(![catch {exec stty -a} err]) && ([regexp {rows (= )?(\d+); columns (= )?(\d+)} $err -> i1 rows i2 cols] || [regexp {; (\d+) columns;} $err -> cols])} {
-		return $cols
-	} elseif {[info exists ::env(COLUMNS)]} {
-		return $::env(COLUMNS)
-	}
-	# At least default to 80, to avoid the stupid "divide by zero" error..
-	return 80
 }
 
 proc TclReadLine::localInfo {args} {
@@ -586,13 +595,13 @@ proc TclReadLine::prompt {{txt ""}} {
   proc TclReadLine::rawInput {} {
 		fconfigure stdin -buffering none -blocking 0
 		fconfigure stdout -buffering none -translation crlf
-		exec stty raw -echo
+		catch { stty raw -echo }
   }
 
   proc TclReadLine::lineInput {} {
 		fconfigure stdin -buffering line -blocking 1
 		fconfigure stdout -buffering line
-		exec stty -raw echo
+		catch { stty -raw echo }
   }
 
   proc TclReadLine::doExit {{code 0}} {
