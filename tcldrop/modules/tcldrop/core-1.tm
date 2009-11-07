@@ -1469,9 +1469,8 @@ proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
 # Detects if critcl is present and creates Sysup procs for different systems
 proc ::tcldrop::core::CreateSysupProcs {} {
-	if {![info exists $::tcl_platform(os)]} { return }
-	if {![catch { package require critcl }]} {
-		switch -- $::tcl_platform(os)
+	if {![info exists $::tcl_platform(os)] || ![catch { package require critcl }]} { return 0 }
+	switch -- $::tcl_platform(os) {
 		{Linux} {
 			::critcl::ccode {
 				#include <linux/kernel.h>
@@ -1509,8 +1508,9 @@ proc ::tcldrop::core::CreateSysupProcs {} {
 				size_t len = sizeof(result);
 				int boot_time;
 				if (sysctl(mib, 2, &result, &len, NULL, 0) >= 0) return result.tv_sec;
+			}
 		}
-		default { return }
+		default { return 0 }
 	}
 	# Delete the proc if it fails to compile
 	if {[catch {Sysup}]} {
