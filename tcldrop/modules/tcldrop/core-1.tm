@@ -1467,6 +1467,77 @@ proc ::tcldrop::core::textsubst {handle text args} {
 
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
+# This proc should be called when Tcldrop starts, and the value should be stored somewhere for later use.
+# Returns: unixtime timestamp when the system went up
+# FixMe: add more methods of getting system uptime
+proc ::tcldrop::core::Sysuptime {} {
+	if {![info exists $::tcl_platform(platform)]} { return -1 }
+	switch -- $::tcl_platform(platform) {
+		{unix} {
+			# Try to read /proc/uptime. This _should_ work on at least all Linux systems, unless access is denied for security/paranoia reasons.
+			if {[file readable /proc/uptime] && ![catch {open /proc/uptime r} fd]} {
+				set sysup [expr {int([lindex [split [read $fd]] 0])}]
+				close $fd
+				# Time reported is in seconds since boot, so we calculate the real timestamp
+				return [expr {[clock seconds] - $sysup}]
+			# This should work on FreeBSD, OpenBSD, NetBSD (possibly others).
+			# FreeBSD: { sec = 1245048471, usec = 860218 } Sun Jun 14 23:47:51 2009
+			# OpenBSD: 1255930302
+			# NetBSD: 1255930302
+			} elseif {[file exists /sbin/sysctl] && ![catch {exec /sbin/sysctl -n kern.boottime} Sysup] && [regexp -- {(\d+)} $Sysup - sysup]} {
+				return $sysup
+			# Try using Critcl if this is Linux
+			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {Linux} && ![catch { package require critcl }] && ![catch {::critcl::ccode { #include <linux/kernel.h> }; ::critcl::cproc ::tcldrop::core::Sysup {} int { struct sysinfo s_info; int error; error = sysinfo(&s_info); return s_info.uptime; }}] && ![catch {Sysup} sysup]} {
+				return $sysup
+			# Try using Critcl if this is FreeBSD
+			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {FreeBSD} && ![catch { package require critcl }]} {
+				# FixMe: implement this method
+			# FixMe: implement reading file creation date of /proc
+			# Exec the uptime command and parse it. This is not very reliable and shoud be used as the last option.
+			} elseif {![catch {exec uptime} Sysup]} {
+				# FixMe: find out what the output is if uptime < 1 min
+				# Linux:  23:30:24 up 132 days,  3:28,  2 users,  load average: 0.00, 0.00, 0.00
+				# FreeBSD:  2:31PM  up 144 days, 15:43, 1 user, load averages: 0.59, 0.56, 0.5
+				# Linux:  23:50:51 up 35 min,  2 users,  load average: 2.01, 0.61, 0.21
+				# Linux:  00:14:56 up  1:00,  2 users,  load average: 0.00, 0.02, 0.03
+				regexp -nocase -- {up\s+(?:(\d+) days?)?(?:,?\s+(\d+):(\d+))?(?:(\d+) min)?} $Sysup - days h m min
+				set sec 0
+				if {$days ne {}} { set sec [expr {$days * 86400}] }
+				if {$h ne {}} { set sec [expr {($h * 3600) + $sec}] }
+				if {$m ne {}} { set sec [expr {($m * 60) + $sec}] }
+				if {$min ne {}} { set sec [expr {($min * 60) + $sec}] }
+				if {$sec == 0} {
+					return -1
+				} else {
+					return [expr {[clock seconds] - $sec}]
+				}
+			} else {
+				return -1
+			}
+		}
+		{windows} {
+			# Windows 2000, XP, Vista, etc
+			if {[info exists env(SystemDrive)] && ![catch {exec cmd.exe /c dir /a:h /t:w /4 ${env(SystemDrive)}\\pagefile.sys} Sysup] && [regexp -line -nocase -- {^(.+?)[^\s]+? pagefile.sys} $Sysup - sysup] && ![catch {clock scan $sysup} sysup]} {
+				return $sysup
+			# Windows 95, 98, and ME (untested)
+			} elseif {[info exists env(SystemDrive)] && ![catch {exec command.exe /c dir /a:h ${env(SystemDrive)}\\pagefile.sys} Sysup] && [regexp -line -nocase -- {^(.+?)[^\s]+? pagefile.sys} $Sysup - sysup] && ![catch {clock scan $sysup} sysup]} {
+				return $sysup
+			# Grab uptime from "net statistics work". This method might break for various reasons.
+			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {Windows NT} && ![catch {exec cmd.exe /c net statistics work} stat] && ![catch {clock scan [regsub -- {(^[^\d]+)} [lindex [split $stat \n] 3] {}]} sysup]} {
+				return $sysup
+			} else {
+				return -1
+			}
+		}
+		{default} {
+			# Mac OS 8 and 9 identifies as "macintosh". OS X and later as "unix". 
+			# Jacl identifies as "java".
+			# Others might identify in other, still unknown, funky ways.
+			return -1
+		}
+	}
+}
+
 # Rename the exit command, so that we can handle exits better:
 if {![llength [info commands ::tcldrop::core::Exit]]} {
 	rename ::exit ::tcldrop::core::Exit
