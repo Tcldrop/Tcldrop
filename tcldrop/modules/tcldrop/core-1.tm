@@ -1467,6 +1467,60 @@ proc ::tcldrop::core::textsubst {handle text args} {
 
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
+# Detects if critcl is present and creates Sysup procs for different systems
+proc ::tcldrop::core::CreateSysupProcs {} {
+	if {![info exists $::tcl_platform(os)]} { return }
+	if {![catch { package require critcl }]} {
+		switch -- $::tcl_platform(os)
+		{Linux} {
+			::critcl::ccode {
+				#include <linux/kernel.h>
+			}
+			::critcl::cproc ::tcldrop::core::Sysup {} int {
+				struct sysinfo s_info;
+				int error;
+				error = sysinfo(&s_info);
+				return s_info.uptime;
+			} 
+		}
+		{FreeBSD} {
+			::critcl::ccode {
+				#include <sys/types.h>
+				#include <sys/sysctl.h>
+				#include <sys/time.h>
+			}
+			::critcl::cproc ::tcldrop::core::Sysup {} int {
+				static int mib[2] = { CTL_KERN, KERN_BOOTTIME };
+				struct timeval result;
+				size_t len = sizeof(result);
+				int boot_time;
+				if (sysctl(mib, 2, &result, &len, NULL, 0) >= 0) return result.tv_sec;
+			}
+		}
+		{OpenBSD} - {NetBSD} {;# untested
+			::critcl::ccode {
+				#include <sys/param.h>
+				#include <sys/sysctl.h>
+				#include <sys/time.h>
+			}
+			::critcl::cproc ::tcldrop::core::Sysup {} int {
+				static int mib[2] = { CTL_KERN, KERN_BOOTTIME };
+				struct timeval result;
+				size_t len = sizeof(result);
+				int boot_time;
+				if (sysctl(mib, 2, &result, &len, NULL, 0) >= 0) return result.tv_sec;
+		}
+		default { return }
+	}
+	# Delete the proc if it fails to compile
+	if {[catch {Sysup}]} {
+		catch {rename ::tcldrop::core::Sysup {}}
+		return 0
+	} else {
+		return 1
+	}
+}
+
 # This proc should be called when Tcldrop starts, and the value should be stored somewhere for later use.
 # Returns: unixtime timestamp when the system went up
 # FixMe: add more methods of getting system uptime
@@ -1486,12 +1540,9 @@ proc ::tcldrop::core::Sysuptime {} {
 			# NetBSD: 1255930302
 			} elseif {[file exists /sbin/sysctl] && ![catch {exec /sbin/sysctl -n kern.boottime} Sysup] && [regexp -- {(\d+)} $Sysup - sysup]} {
 				return $sysup
-			# Try using Critcl if this is Linux
-			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {Linux} && ![catch { package require critcl }] && ![catch {::critcl::ccode { #include <linux/kernel.h> }; ::critcl::cproc ::tcldrop::core::Sysup {} int { struct sysinfo s_info; int error; error = sysinfo(&s_info); return s_info.uptime; }}] && ![catch {Sysup} sysup]} {
-				return $sysup
-			# Try using Critcl if this is FreeBSD
-			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {FreeBSD} && ![catch { package require critcl }]} {
-				# FixMe: implement this method
+			# Try using Critcl
+			} elseif {CreateSysupProcs == 1} {
+				return [Sysup]
 			# FixMe: implement reading file creation date of /proc
 			# Exec the uptime command and parse it. This is not very reliable and shoud be used as the last option.
 			} elseif {![catch {exec uptime} Sysup]} {
