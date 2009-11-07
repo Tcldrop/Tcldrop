@@ -1468,18 +1468,26 @@ proc ::tcldrop::core::textsubst {handle text args} {
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
 # Detects if critcl is present and creates Sysup procs for different systems
-proc ::tcldrop::core::CreateSysupProcs {} {
+proc ::tcldrop::core::CreateSysupProc {} {
 	if {![info exists $::tcl_platform(os)] || ![catch { package require critcl }]} { return 0 }
 	switch -- $::tcl_platform(os) {
 		{Linux} {
 			::critcl::ccode {
-				#include <linux/kernel.h>
+				#include <sys/sysinfo.h>
+				#include <time.h>
 			}
-			::critcl::cproc ::tcldrop::core::Sysup {} int {
+			::critcl::cproc ::tcldrop::core::Sysup {} unsigned long {
 				struct sysinfo s_info;
-				int error;
-				error = sysinfo(&s_info);
-				return s_info.uptime;
+				sysinfo(&s_info);
+				unsigned long now = time(NULL);
+				unsigned long a = now;
+				unsigned long b = s_info.uptime;
+				// reported system uptime might be ahead of the current time.
+				// so, if the they're not the same (even/odd), substract one from the system uptime
+				if ((now & 1) != (b & 1))
+					b--;
+				long diff = a - b;
+				return diff;
 			} 
 		}
 		{FreeBSD} {
@@ -1496,7 +1504,7 @@ proc ::tcldrop::core::CreateSysupProcs {} {
 				if (sysctl(mib, 2, &result, &len, NULL, 0) >= 0) return result.tv_sec;
 			}
 		}
-		{OpenBSD} - {NetBSD} {;# untested
+		{OpenBSD} - {NetBSD} {
 			::critcl::ccode {
 				#include <sys/param.h>
 				#include <sys/sysctl.h>
@@ -1522,6 +1530,8 @@ proc ::tcldrop::core::CreateSysupProcs {} {
 }
 
 # This proc should be called when Tcldrop starts, and the value should be stored somewhere for later use.
+# This is because the uptime on Windows (unclear which versions & which circumstances) rolls over every 49.7 days.
+# FixMe: figure out which windows uptime retrieval implementations are affected by this bug and prioritize those lower.
 # Returns: unixtime timestamp when the system went up
 # FixMe: add more methods of getting system uptime
 proc ::tcldrop::core::Sysuptime {} {
@@ -1532,6 +1542,7 @@ proc ::tcldrop::core::Sysuptime {} {
 			if {[file readable /proc/uptime] && ![catch {open /proc/uptime r} fd]} {
 				set sysup [expr {int([lindex [split [read $fd]] 0])}]
 				close $fd
+				if {![string is digit $sysup]} { return -1 }; # FixMe: work this into the if statement somehow
 				# Time reported is in seconds since boot, so we calculate the real timestamp
 				return [expr {[clock seconds] - $sysup}]
 			# This should work on FreeBSD, OpenBSD, NetBSD (possibly others).
@@ -1541,9 +1552,12 @@ proc ::tcldrop::core::Sysuptime {} {
 			} elseif {[file exists /sbin/sysctl] && ![catch {exec /sbin/sysctl -n kern.boottime} Sysup] && [regexp -- {(\d+)} $Sysup - sysup]} {
 				return $sysup
 			# Try using Critcl
-			} elseif {CreateSysupProcs == 1} {
+			} elseif {[CreateSysupProc] == 1} {
 				return [Sysup]
-			# FixMe: implement reading file creation date of /proc
+			# Read file modified time of /proc. This will likely be the system uptime on all/most Linux systems.
+			# Fails on cygwin for whatever reason. /proc/uptime should work fine on Cygwin though.
+			} elseif {[file exists /proc] && ![catch {file mtime /proc} sysup]} {
+				return $sysup
 			# Exec the uptime command and parse it. This is not very reliable and shoud be used as the last option.
 			} elseif {![catch {exec uptime} Sysup]} {
 				# FixMe: find out what the output is if uptime < 1 min
