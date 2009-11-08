@@ -1483,7 +1483,7 @@ proc ::tcldrop::core::CreateSysupProc {} {
 				unsigned long a = now;
 				unsigned long b = s_info.uptime;
 				// reported system uptime might be ahead of the current time.
-				// so, if the they're not the same (even/odd), substract one from the system uptime
+				// so, if the they're not the same (even/odd), subtract one from the system uptime
 				if ((now & 1) != (b & 1))
 					b--;
 				long diff = a - b;
@@ -1531,9 +1531,8 @@ proc ::tcldrop::core::CreateSysupProc {} {
 
 # This proc should be called when Tcldrop starts, and the value should be stored somewhere for later use.
 # This is because the uptime on Windows (unclear which versions & which circumstances) rolls over every 49.7 days.
-# FixMe: figure out which windows uptime retrieval implementations are affected by this bug and prioritize those lower.
 # Returns: unixtime timestamp when the system went up
-# FixMe: add more methods of getting system uptime
+# FixMe: add some reasonable method of getting system uptime in windows 95, 98, me.
 proc ::tcldrop::core::Sysuptime {} {
 	if {![info exists $::tcl_platform(platform)]} { return -1 }
 	switch -- $::tcl_platform(platform) {
@@ -1581,15 +1580,25 @@ proc ::tcldrop::core::Sysuptime {} {
 			}
 		}
 		{windows} {
-			# Windows 2000, XP, Vista, etc
+			# Read file mdate of pagefile.sys for NT based versions.
+			# Just doing file mdate on it doesn't work because of a bug in Tcl, so we exec dir and parse the output.
+			# This method is not affected by the rollover issue
 			if {[info exists env(SystemDrive)] && ![catch {exec cmd.exe /c dir /a:h /t:w /4 ${env(SystemDrive)}\\pagefile.sys} Sysup] && [regexp -line -nocase -- {^(.+?)[^\s]+? pagefile.sys} $Sysup - sysup] && ![catch {clock scan $sysup} sysup]} {
 				return $sysup
-			# Windows 95, 98, and ME (untested)
-			} elseif {[info exists env(SystemDrive)] && ![catch {exec command.exe /c dir /a:h ${env(SystemDrive)}\\pagefile.sys} Sysup] && [regexp -line -nocase -- {^(.+?)[^\s]+? pagefile.sys} $Sysup - sysup] && ![catch {clock scan $sysup} sysup]} {
-				return $sysup
 			# Grab uptime from "net statistics work". This method might break for various reasons.
+			# This method _probably_ isn't affected by the rollover issue
 			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {Windows NT} && ![catch {exec cmd.exe /c net statistics work} stat] && ![catch {clock scan [regsub -- {(^[^\d]+)} [lindex [split $stat \n] 3] {}]} sysup]} {
 				return $sysup
+			# Grab uptime using TWAPI. This method _may_ be affected by the rollover issue.
+			# This works on NT based versions (Windows 2000 and later) only.
+			} elseif {![catch {package require twapi}] && ![catch {::twapi::get_system_uptime} sysup]} {
+				# Current time might be ahead of reported system uptime.
+				# so, if the they're not the same (even/odd), add one to the system uptime
+				if {[expr {[set unixtime [clock seconds]] & 1}] != [expr {$sysup & 1}]} { incr sysup }
+				return [expr {$unixtime - $sysup}]
+			# Try calling kernel32.dll using Ffidl. This method IS affected by the rollover issue.
+			} elseif {![catch {package require Ffidl}] && ![catch {ffidl::callout ::tcldrop::core::Sysup {} long [ffidl::symbol kernel32.dll GetTickCount]}] && ![catch {Sysup} sysup]}
+				return [expr {([clock milliseconds] - $sysup) / 1000}]
 			} else {
 				return -1
 			}
