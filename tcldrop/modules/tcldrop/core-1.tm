@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -121,6 +121,14 @@ namespace eval ::tcldrop::core {
 	}
 	unset m
 }
+
+proc ::tcldrop::core::dict'sort {dict args} {
+	set res {}
+	foreach key [lsort {*}$args [dict keys $dict]] { dict set res $key [dict get $dict $key] }
+	set res
+}
+
+proc ::tcldrop::core::getenv {key {defaultvalue {}}} { expr {[info exist ::env($key)]?$::env($key):$defaultvalue} }
 
 # Provided by Dossy@EFNet:
 # Contains bugs: 1. It cuts words longer than $maxlen.  2. It only supports maxlen's up to 255.
@@ -705,6 +713,23 @@ proc ::tcldrop::core::stripcodes {strip-flags string} {
 	} else {
 		set string
 	}
+}
+
+# This will register a new bind type. And provide info on how the binds should be called when callbinds is run.
+proc ::tcldrop::core::addbindtype {type args} {
+	variable BindTypes
+	# FixMe: This should simply store the info for the new bind type, and make sure any required info is provided.
+	# I'm still working out what should be stored.
+}
+
+# This will call the binds of $type with $args being whatever's necessary for that type.
+# This command can replace the individual call<type> commands, but doesn't have to.  The individual call<type> commands can even use callbinds themselves if they want.
+proc ::tcldrop::core::callbinds {type args} {
+	variable BindTypes
+	# FixMe: This should use the stored info for the bind type to call the binds.
+	# It needs to know what binds of $type should be triggered, based on flags and masks and whatever else.
+	# It also needs to know when to abort processing the binds.
+	# And what this proc should return when it's done. (So it could be used as, perhaps, a filter)
 }
 
 # Used to define bind's, works just like Eggdrop's bind command.
@@ -1488,7 +1513,7 @@ proc ::tcldrop::core::CreateSysupProc {} {
 					b--;
 				long diff = a - b;
 				return diff;
-			} 
+			}
 		}
 		{FreeBSD} {
 			::critcl::ccode {
@@ -1604,7 +1629,7 @@ proc ::tcldrop::core::Sysuptime {} {
 			}
 		}
 		{default} {
-			# Mac OS 8 and 9 identifies as "macintosh". OS X and later as "unix". 
+			# Mac OS 8 and 9 identifies as "macintosh". OS X and later as "unix".
 			# Jacl identifies as "java".
 			# Others might identify in other, still unknown, funky ways.
 			return -1

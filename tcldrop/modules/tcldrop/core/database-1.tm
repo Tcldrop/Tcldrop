@@ -219,14 +219,14 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			#	-file <filename>
 			#	-permissions <file permissions>
 			# Returns: Nothing.
-			upvar 1 "::tcldrop::core::database::OPT_$database" opt
-			array set opt $arguments
+			variable "OPT_$database"
+			array set "OPT_$database" $arguments
 		}
 		{reload} - {load} - {open} {
 			# Description: This is the command used to (re)load a database from disk.
 			# Usage: database dbName reload ?options?
 			# Returns: Tcl error on failure.
-			upvar 1 "::tcldrop::core::database::OPT_$database" opt
+			namespace upvar ::tcldrop::core::database "OPT_$database" opt
 			array set opt $arguments
 			if {![info exists opt(-file)] || $opt(-file) eq {}} { set opt(-file) "${::database-basename}.$database" }
 			if {![file exists $opt(-file)]} {
@@ -250,7 +250,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			# Description: This will save a database to disk.
 			# Usage: database dbName save ?options?
 			# Returns: Tcl error for failure.
-			upvar 1 "::tcldrop::core::database::OPT_$database" opt
+			namespace upvar ::tcldrop::core::database "OPT_$database" opt
 			array set opt $arguments
 			if {![info exists opt(-file)] || $opt(-file) eq {}} { set opt(-file) "${::database-basename}.$database" }
 			if {![catch { fconfigure [set fid [open $opt(-file) w]] -blocking 0 -buffering full } return]} {
@@ -269,7 +269,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 			}
 		}
 		{backup} {
-			upvar 1 "::tcldrop::core::database::OPT_$database" opt
+			namespace upvar ::tcldrop::core::database "OPT_$database" opt
 			if {[catch { file copy -force -- $opt(-file) "$opt(-file).bak" }]} {
 				return -code error "database backup: Unable to create a backup of $opt(-file)"
 			}
