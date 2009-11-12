@@ -1494,7 +1494,7 @@ proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
 # Detects if critcl is present and creates Sysup procs for different systems
 proc ::tcldrop::core::CreateSysupProc {} {
-	if {![info exists $::tcl_platform(os)] || ![catch { package require critcl }]} { return 0 }
+	if {![info exists ::tcl_platform(os)] || ![catch { package require critcl }]} { return 0 }
 	switch -- $::tcl_platform(os) {
 		{Linux} {
 			::critcl::ccode {
@@ -1559,7 +1559,7 @@ proc ::tcldrop::core::CreateSysupProc {} {
 # Returns: unixtime timestamp when the system went up
 # FixMe: add some reasonable method of getting system uptime in windows 95, 98, me.
 proc ::tcldrop::core::Sysuptime {} {
-	if {![info exists $::tcl_platform(platform)]} { return -1 }
+	if {![info exists ::tcl_platform(platform)]} { return -1 }
 	switch -- $::tcl_platform(platform) {
 		{unix} {
 			# Try to read /proc/uptime. This _should_ work on at least all Linux systems, unless access is denied for security/paranoia reasons.
@@ -1612,7 +1612,7 @@ proc ::tcldrop::core::Sysuptime {} {
 				return $sysup
 			# Grab uptime from "net statistics work". This method might break for various reasons.
 			# This method _probably_ isn't affected by the rollover issue
-			} elseif {[info exists $::tcl_platform(os)] && $::tcl_platform(os) eq {Windows NT} && ![catch {exec cmd.exe /c net statistics work} stat] && ![catch {clock scan [regsub -- {(^[^\d]+)} [lindex [split $stat \n] 3] {}]} sysup]} {
+			} elseif {[info exists ::tcl_platform(os)] && $::tcl_platform(os) eq {Windows NT} && ![catch {exec cmd.exe /c net statistics work} stat] && ![catch {clock scan [regsub -- {(^[^\d]+)} [lindex [split $stat \n] 3] {}]} sysup]} {
 				return $sysup
 			# Grab uptime using TWAPI. This method _may_ be affected by the rollover issue.
 			# This works on NT based versions (Windows 2000 and later) only.
