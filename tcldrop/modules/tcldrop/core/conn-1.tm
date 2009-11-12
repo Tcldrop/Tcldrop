@@ -142,11 +142,11 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		{default} { set info "$options(-address):$options(-port)  (via $proxycount proxies)" }
 	}
 	# Buried in the next line is the call to ::proxy::connect, which BTW can make direct connections as well as proxied connections:
-	if {[catch { registeridx [set idx [assignidx]] {*}[array get options] idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -command [list ::tcldrop::core::conn::ProxyControl $idx] -ssl $options(-ssl) -socket-command $options(-socket-command) -buffering $options(-buffering) -blocking $options(-blocking) -encoding $options(-encoding) -translation $options(-translation) -myaddr $options(-myaddr) -async $options(-async) -fconfigure $options(-fconfigure) -connect-timeout $options(-connect-timeout) -timeout $options(-connect-timeout) -writable [list ::tcldrop::core::conn::Write $idx] -readable [list ::tcldrop::core::conn::Read $idx]]] -proxychain $options(-proxychain) -proxyinfo $options(-proxyinfo) remote "$options(-address):$options(-port)" info $info } error]} {
+	if {[catch { registeridx [set idx [assignidx]] {*}[array get options] idx $idx timestamp [clock seconds] sock [set sock [::proxy::connect $options(-proxychain) -command [namespace code [list ProxyControl $idx]] -ssl $options(-ssl) -socket-command $options(-socket-command) -buffering $options(-buffering) -blocking $options(-blocking) -encoding $options(-encoding) -translation $options(-translation) -myaddr $options(-myaddr) -async $options(-async) -fconfigure $options(-fconfigure) -connect-timeout $options(-connect-timeout) -timeout $options(-connect-timeout) -writable [namespace code [list Write $idx]] -readable [namespace code [list Read $idx]]]] -proxychain $options(-proxychain) -proxyinfo $options(-proxyinfo) remote "$options(-address):$options(-port)" info $info } error]} {
 		return -code error $error
 	} else {
 		# catch { if {$options(-myaddr) eq {} || $options(-myaddr) eq {0.0.0.0} || ${::default-ip} eq {}} { set ::default-ip [lindex [fconfigure $sock -sockname] 0] } }
-		timeout start $idx -timeout [expr { $options(-connect-timeout) * 1000 }] -callback [list ::tcldrop::core::conn::ConnectTimeout $idx]
+		timeout start $idx -timeout [expr { $options(-connect-timeout) * 1000 }] -callback [namespace code [list ConnectTimeout $idx]]
 		return $idx
 	}
 }
@@ -156,8 +156,8 @@ proc ::tcldrop::core::conn::ProxyControl {idx sock status id {reason {}}} {
 	if {[info exists ::idxlist($idx)]} {
 		if {$status eq {ok} && ![eof $sock]} {
 			fconfigure $sock -buffering [dict get $::idxlist($idx) -buffering] -blocking [dict get $::idxlist($idx) -blocking] -encoding [dict get $::idxlist($idx) -encoding] -translation [dict get $::idxlist($idx) -translation] {*}[dict get $::idxlist($idx) -fconfigure]
-			fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
-			fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
+			fileevent $sock writable [namespace code [list Write $idx $sock]]
+			fileevent $sock readable [namespace code [list Read $idx $sock]]
 			lassign [fconfigure $sock -sockname] local-ip local-hostname local-port
 			dict set ::idxlist($idx) local-ip ${local-ip}
 			dict set ::idxlist($idx) local-hostname ${local-hostname}
@@ -180,9 +180,9 @@ proc ::tcldrop::core::conn::ControlSock {sock opts} {
 		array set idxinfo $opts
 		registeridx $idx {*}[array get idxinfo]
 		fconfigure $sock -buffering $idxinfo(-buffering) -blocking $idxinfo(-blocking)
-		fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
-		fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
-		timeout start $idx -timeout [expr { $idxinfo(-connect-timeout) * 1000 }] -callback [list ::tcldrop::core::conn::ConnectTimeout $idx]
+		fileevent $sock writable [namespace code [list Write $idx $sock]]
+		fileevent $sock readable [namespace code [list Read $idx $sock]]
+		timeout start $idx -timeout [expr { $idxinfo(-connect-timeout) * 1000 }] -callback [namespace code [list ConnectTimeout $idx]]
 		return $idx
 	} else {
 		return -code error "EOF on $sock"
@@ -448,10 +448,10 @@ proc ::tcldrop::core::conn::listen {port type args} {
 	}
 	switch -- $myaddr {
 		{} - {*} - {0.0.0.0} - {-} - {INADDR_ANY} - {ANY} - {ALL} {
-			set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect $options] $port } sock]
+			set fail [catch { $socket -server [namespace code [list ListenConnect $options]] $port } sock]
 			set myaddr {0.0.0.0}
 		}
-		{default} { set fail [catch { $socket -server [list ::tcldrop::core::conn::ListenConnect $options] -myaddr $myaddr $port } sock] }
+		{default} { set fail [catch { $socket -server [namespace code [list ListenConnect $options]] -myaddr $myaddr $port } sock] }
 	}
 	if {!$fail} {
 		fconfigure $sock -buffering line -blocking 0
@@ -512,7 +512,7 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 	if {[testip $idxinfo(remote-hostname)]} {
 		switch -- $optinfo(dns) {
 			{1} - {2} - {default} {
-				after idle [list dnslookup $ip ::tcldrop::core::conn::DNSLookup $idx [array get optinfo]]
+				after idle [list dnslookup $ip [namespace code [list DNSLookup $idx [array get optinfo]]]]
 			}
 		}
 	} else {
@@ -520,11 +520,11 @@ proc ::tcldrop::core::conn::ListenConnect {options sock ip port} {
 	}
 	switch -- $optinfo(ident) {
 		{1} - {2} - {default} {
-			::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [list ::tcldrop::core::conn::Ident $idx [array get optinfo]]
+			::ident::ident -sock $sock -timeout [expr { ${::ident-timeout} * 1001 }] -command [namespace code [list Ident $idx [array get optinfo]]]
 		}
 	}
-	fileevent $sock writable [list ::tcldrop::core::conn::Write $idx $sock]
-	fileevent $sock readable [list ::tcldrop::core::conn::Read $idx $sock]
+	fileevent $sock writable [namespace code [list Write $idx $sock]]
+	fileevent $sock readable [namespace code [list Read $idx $sock]]
 	if {$optinfo(connect) ne {}} { $optinfo(connect) $idx }
 }
 
