@@ -158,10 +158,10 @@ proc ::tcldrop::core::users::getuser {handle args} {
 		switch -- [string tolower [lindex $args 0]] {
 			{xtra} - {flags} - {console} - {hosts} - {pass} - {comment} {
 				# These fields are special, because Eggdrop doesn't return an error if you try to get a non-existant one.
-				if {[catch { dict get $::database(users) $lowerhandle {*}[string tolower $args] } return ]} {
-					return {}
+				if {[dict exists $::database(users) $lowerhandle {*}[string tolower $args]]} {
+					return [dict get $::database(users) $lowerhandle {*}[string tolower $args]]
 				} else {
-					return $return
+					return {}
 				}
 			}
 			{default} {
