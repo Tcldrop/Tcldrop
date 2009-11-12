@@ -201,26 +201,22 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 			# Start a timeout session for $id
 			if {[info exists Timeout($id)]} {
 				# $id already exists, so cancel it's afterid..
-				array set options $Timeout($id)
-				after cancel $options(afterid)
+				after cancel [dict get $Timeout($id) afterid]
 			}
-			array set options [list -timeout 0 -callback {}]
-			array set options $arg
-			if {$options(-timeout) && $options(-callback) ne {}} {
-				set Timeout($id) [concat [array get options] [list timeout [set timeout [list [namespace current]::Timeout timeout $id]] afterid [after $options(-timeout) $timeout]]]
+			# Make sure -timeout and -callback options exist and are valid:
+			if {([llength $arg] % 2 == 0) && ([dict exists $arg -timeout] && [dict get $arg -timeout] > 0) && ([dict exists $arg -callback] && [dict get $arg -callback] ne {})} {
+				set Timeout($id) [dict merge $arg [dict create timeout [set timeout [namespace code [list Timeout timeout $id]]] afterid [after [dict get $arg -timeout] $timeout]]]
 				return 1
 			} else {
+				# FixMe: Perhaps it should return a useful error message..
 				return 0
 			}
 		}
 		{reset} {
 			# Reset the timeout to the starting amount..
 			if {[info exists Timeout($id)]} {
-				array set idinfo $Timeout($id)
-				array set idinfo $arg
-				after cancel $idinfo(afterid)
-				set idinfo(afterid) [after $idinfo(-timeout) $idinfo(timeout)]
-				set Timeout($id) [array get idinfo]
+				after cancel [dict get $Timeout($id) afterid]
+				dict set Timeout($id) afterid [after [dict get $Timeout($id) -timeout] [dict get $Timeout($id) timeout]]
 				return 1
 			} else {
 				# It doesn't already exist, so attempt to start a new timeout session..
@@ -230,10 +226,10 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 		{timeout} {
 			# This when the timeout actually occurs.
 			if {[info exists Timeout($id)]} {
-				array set idinfo $Timeout($id)
-				unset Timeout($id)
 				# Do the callback as an idle event..
-				after idle $idinfo(-callback)
+				after idle [dict get $Timeout($id) -callback]
+				# FixMe: Should it unset as an idle event too?
+				unset Timeout($id)
 				return 1
 			} else {
 				return 0
@@ -242,9 +238,8 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 		{cancel} {
 			# Cancels a timeout.
 			if {[info exists Timeout($id)]} {
-				array set idinfo $Timeout($id)
+				after cancel [dict get $Timeout($id) afterid]
 				unset Timeout($id)
-				after cancel $idinfo(afterid)
 				return 1
 			} else {
 				return 0
@@ -745,6 +740,8 @@ proc ::tcldrop::core::conn::LOAD {module} {
 	setdefault proxy {} -protect 1
 	variable Traffic
 	array set Traffic {}
+	variable Timeout
+	array set Timeout {}
 	array set ::idxlist {}
 	# Protect the idxlist global from being deleted during restarts:
 	if {{idxlist} ni $::protected(globals)} { lappend ::protected(globals) {idxlist} }
