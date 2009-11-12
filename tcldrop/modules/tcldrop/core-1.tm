@@ -1622,7 +1622,7 @@ proc ::tcldrop::core::Sysuptime {} {
 				if {[expr {[set unixtime [clock seconds]] & 1}] != [expr {$sysup & 1}]} { incr sysup }
 				return [expr {$unixtime - $sysup}]
 			# Try calling kernel32.dll using Ffidl. This method IS affected by the rollover issue.
-			} elseif {![catch {package require Ffidl}] && ![catch {ffidl::callout ::tcldrop::core::Sysup {} long [ffidl::symbol kernel32.dll GetTickCount]}] && ![catch {Sysup} sysup]}
+			} elseif {![catch {package require Ffidl}] && ![catch {ffidl::callout ::tcldrop::core::Sysup {} long [ffidl::symbol kernel32.dll GetTickCount]}] && ![catch {Sysup} sysup]} {
 				return [expr {([clock milliseconds] - $sysup) / 1000}]
 			} else {
 				return -1
