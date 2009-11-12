@@ -256,42 +256,41 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 proc ::tcldrop::core::conn::timeout {command id args} { Timeout $command $id $args }
 
 proc ::tcldrop::core::conn::Read {idx {sock {}}} {
-	global idxlist
+	global idxlist errorInfo
 	if {![info exists idxlist($idx)]} {
 		putloglev d * "net: error!(read) idx $idx  Invalid IDX"
 		catch { close $sock }
 	} else {
-		array set idxinfo $::idxlist($idx)
-		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error ne {}} {
+		if {[catch { fconfigure [dict get $idxlist($idx) sock] -error } error] || $error ne {}} {
 			set error "net: error!(read) idx $idx  $error"
-		} elseif {[info exists idxinfo(-control)]} {
+		} elseif {[dict exists $idxlist($idx) -control]} {
 			# For speed, we process all available lines.  (This is absolutely necessary when running inside an Eggdrop, because Eggdrop's event loops are 1 second apart)
 			set trafficlength 0
-			while {[info exists idxlist($idx)] && [set length [gets $idxinfo(sock) line]] != -1} {
-				if {[catch { $idxinfo(-control) $idx $line } retval]} {
-					putlog [set error "Error in $idxinfo(-control): $retval"]
-					puterrlog $::errorInfo
+			while {[info exists idxlist($idx)] && [set length [gets [dict get $idxlist($idx) sock] line]] != -1} {
+				if {[catch { [dict get $idxlist($idx) -control] $idx $line } retval]} {
+					putlog [set error "Error in [dict get $idxlist($idx) -control]: $retval"]
+					puterrlog $errorInfo
 					break
 				} elseif {$retval eq {1}} {
 					# The control proc requested a killidx by returning 1.
-					putloglev d * "net: killidx! idx $idx (socket $sock)  (Requested by $idxinfo(-control))"
+					putloglev d * "net: killidx! idx $idx (socket $sock)  (Requested by [dict get $idxlist($idx) -control])"
 					Timeout cancel $idx
 					killidx $idx
 					break
 				}
 				incr trafficlength $length
 			}
-			traffic $idxinfo(traffictype) in $trafficlength
-			if {[eof $idxinfo(sock)]} { set error "net: eof!(read) idx $idx" }
+			traffic [dict get $idxlist($idx) traffictype] in $trafficlength
+			if {[eof [dict get $idxlist($idx) sock]]} { set error "net: eof!(read) idx $idx" }
 		} else {
 			set error "net: control!(read) idx $idx  (no control proc defined!)"
 		}
 		if {$error ne {} && [info exists idxlist($idx)]} {
 			putloglev d * $error
 			# Tell the errors proc about the error, if they have one defined.
-			if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev e * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
+			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev e * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc (This is the Eggdrop way)..
-			if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev e * "Error in $idxinfo(-control): $error" }
+			if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev e * "Error in [dict get $idxlist($idx) -control]: $error" }
 			Timeout cancel $idx
 			killidx $idx
 		} else {
@@ -302,63 +301,64 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 }
 
 proc ::tcldrop::core::conn::Write {idx {sock {}}} {
+	global idxlist
 	Timeout cancel $idx
-	if {[info exists ::idxlist($idx)]} {
-		# FixMe: Change this proc to reference ::idxlist directly rather than using the idxinfo array..
-		array set idxinfo $::idxlist($idx)
-		catch { fileevent $idxinfo(sock) writable {} }
+	if {[info exists idxlist($idx)]} {
+		catch { fileevent [dict get $idxlist($idx) sock] writable {} }
 		# Note, I don't know if it's possible to get an error or EOF from here, but just in case:
-		if {[catch { fconfigure $idxinfo(sock) -error } error] || $error ne {}} {
+		if {[catch { fconfigure [dict get $idxlist($idx) sock] -error } error] || $error ne {}} {
 			set error "net: error!(write) idx $idx  $error"
-		} elseif {[eof $idxinfo(sock)]} {
+		} elseif {[eof [dict get $idxlist($idx) sock]]} {
 			set error "net: error!(write) idx $idx  EOF"
 		}
 		if {$error ne {}} {
 			putloglev d * "${error}"
 			# Tell the errors proc about the error, if they have one defined.
-			if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev de * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
+			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 			killidx $idx
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
 			# FixMe: Find out if Eggdrop calls the control proc with "" even though the connection was never established.
-			#if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev d * "Error in $idxinfo(-control): $error" }
+			#if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev d * "Error in [dict get $idxlist($idx) -control]: $error" }
 		} else {
 			# Try to set the remote-* things now (in case they failed to get set from ProxyControl):
 			catch {
-				lassign [fconfigure $sock -peername] idxinfo(remote-ip) idxinfo(remote-hostname) idxinfo(remote-port)
-				idxinfo $idx {*}[array get idxinfo]
+				lassign [fconfigure $sock -peername] remote-ip remote-hostname remote-port
+				dict set idxlist($idx) remote-ip ${remote-ip}
+				dict set idxlist($idx) remote-hostname ${remote-hostname}
+				dict set idxlist($idx) remote-port ${remote-port}
 			}
-			if {[info exists idxinfo(-writable)]} {
-				$idxinfo(-writable) $idx
+			if {[dict exists $idxlist($idx) -writable]} {
+				[dict get $idxlist($idx) -writable] $idx
 			}
 		}
 		# Start the inactive-timeout timer:
-		if {$error eq {}} { timeout start $idx -timeout [expr { $idxinfo(-inactive-timeout) * 1000 }] -callback [list ::tcldrop::core::conn::InactiveTimeout $idx] }
+		if {$error eq {}} { timeout start $idx -timeout [expr { [dict get $idxlist($idx) -inactive-timeout] * 1000 }] -callback [namespace code [list InactiveTimeout $idx]] }
 	} else {
 		catch { close $sock }
 	}
 }
 
 proc ::tcldrop::core::conn::ConnectTimeout {idx} {
-	if {[info exists ::idxlist($idx)]} {
-		array set idxinfo $::idxlist($idx)
+	global idxlist
+	if {[info exists idxlist($idx)]} {
 		putloglev d * [set error "net: timeout!(connect) idx $idx"]
 		# Tell the errors proc about the error, if they have one defined.
-		if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev de * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
+		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 		killidx $idx
 		# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
-		if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev de * "Error in $idxinfo(-control): $error" }
+		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "Error in [dict get $idxlist($idx) -control]: $error" }
 	}
 }
 
 proc ::tcldrop::core::conn::InactiveTimeout {idx} {
-	if {[info exists ::idxlist($idx)]} {
+	global idxlist
+	if {[info exists idxlist($idx)]} {
 		putloglev d * [set error "net: timeout!(inactive) idx $idx"]
-		array set idxinfo $::idxlist($idx)
 		# Tell the errors proc about the error, if they have one defined.
-		if {[info exists idxinfo(-errors)]} { if {[set trycontrol [catch { $idxinfo(-errors) $idx $error } error]]} { putloglev de * "Error in $idxinfo(-errors): $error" } } else { set trycontrol 1 }
+		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 		killidx $idx
 		# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
-		if {$trycontrol && [info exists idxinfo(-control)] && [catch { $idxinfo(-control) $idx {} } error]} { putloglev de * "Error in $idxinfo(-control): $error" }
+		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "Error in [dict get $idxlist($idx) -control]: $error" }
 	}
 }
 
