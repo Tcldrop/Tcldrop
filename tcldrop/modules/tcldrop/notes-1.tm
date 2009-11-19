@@ -96,10 +96,14 @@ proc ::tcldrop::notes::do {command args} {
 			if {(![validuser $from]) || (![validuser $to])} {
 				return -code error "wrong # args: should be \"do $command <from> <to> <message>\" - the recipient and the sender should be a valid username."
 			}
+			if {($from eq $to) && (!$::selfnotes)} {
+				return -code error "you can't send notes to yourself due by admin configuration."
+			}
 			if {$message eq ""} {
 				return -code error "wrong # args: should be \"do $command <from> <to> <message>\" - specify a text to send."
 			}
-			
+			# TODO: don't allow duplicate the same message (lsearch -exact or regexp?)
+			database notes lappend $to [list $from [unixtime] $message]
 		}
 		{erase} {
 			
@@ -140,6 +144,8 @@ proc ::tcldrop::notes::LOAD {module} {
 	setdefault notify-onjoin 1
 	# Let the sender know when the recepicient read the message
 	# setdefault read-time 0
+	# Do we allow send notes to themselves? (tribute to those people that has no memory)
+	setdefault selfnotes 1
 	loadnotes
 	bind evnt - save ::tcldrop::notes::Save -priority 3
 	bind evnt - hourly-updates ::tcldrop::notes::Save -priority 4
