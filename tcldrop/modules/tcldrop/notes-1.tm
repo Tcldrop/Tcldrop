@@ -46,10 +46,19 @@ proc ::tcldrop::notes::loadnotes {} {
 	do loadnotes
 }
 
-proc ::tcldrop::notes::Save {} {
+proc ::tcldrop::notes::Save {type} {
 	do savenotes
 }
-
+proc ::tcldrop::notes::pattern {string} {
+	regsub -all -- {(\[|\]|\\)} $text {\\\1}
+}
+proc ::tcldrop::notes::boolean {data} {
+	if {($data eq "true") || ($data == 1)} {
+		return 1
+	} else {
+		return 0
+	}
+}
 proc ::tcldrop::notes::do {command args} {
 	
 	# Keeping the format of original eggdrop module notes (no need import command then)
@@ -83,27 +92,40 @@ proc ::tcldrop::notes::do {command args} {
 			if {![validuser $recipient]} {
 				return -code error "wrong # args: should be \"do $command <user>\""
 			} else {
-				return [llength [database notes keys $recipient]
+				return [llength [database notes keys $recipient]]
 			}
 		}
 		{send} {
 			# Description: This stores a mesage for the given recipient
-			# Usage: do send <from> <to> <message>
-			# Returns: the queuesize for the recipient or -1 if can't store it
-			set from [lindex $args 0]
-			set to [lindex $args 0]
-			set message [lindex $args 2]
-			if {(![validuser $from]) || (![validuser $to])} {
-				return -code error "wrong # args: should be \"do $command <from> <to> <message>\" - the recipient and the sender should be a valid username."
+			# Usage: do send <recipient> <sender> <message>
+			# Returns: the queue position (0 or higher) for the recipient or -1 if can't store it
+			set recipient [lindex $args 0]
+			set sender [lindex $args 1]
+			set message [join [lrange $args 2 end]]
+			if {![validuser $recipient]} {
+				return -code error "wrong # args: should be \"do $command <recipient> <sender> <message>\" - the recipient and the sender must be a valid username."
 			}
-			if {($from eq $to) && (!$::selfnotes)} {
-				return -code error "you can't send notes to yourself due by admin configuration."
+			if {(![validuser $sender]) && (![boolean $::fakesender])} {
+				return -code error "the sender must be a valid username due to admin configuration."
+			}
+			if {($recipient eq $sender) && (![boolean $::selfnotes])} {
+				return -code error "you can't send notes to yourself due to admin configuration."
 			}
 			if {$message eq ""} {
-				return -code error "wrong # args: should be \"do $command <from> <to> <message>\" - specify a text to send."
+				return -code error "wrong # args: should be \"do $command <recipient> <sender> <message>\" - specify a text to send."
 			}
-			# TODO: don't allow duplicate the same message (lsearch -exact or regexp?)
-			database notes lappend $to [list $from [unixtime] $message]
+			if {![database notes exists $recipient]} {
+				database notes set $recipient [list [list $sender [unixtime] $message]]
+			} else {
+				set data [lsearch -all -inline -exact -index 0 [database notes get $recipient] $sender]
+				if {[lsearch -exact -index 2 $data $message] != -1} {
+					return -1
+				} else {
+					database notes lappend $recipient [list $sender [unixtime] $message]
+			
+				}
+			}
+			return [llength [database notes get $recipient]]
 		}
 		{erase} {
 			
@@ -144,6 +166,8 @@ proc ::tcldrop::notes::LOAD {module} {
 	setdefault notify-onjoin 1
 	# Let the sender know when the recepicient read the message
 	# setdefault read-time 0
+	# Allow (1) fake senders? this may be useful for 3rd-party script notifications
+	setdefault fakesender 1
 	# Do we allow send notes to themselves? (tribute to those people that has no memory)
 	setdefault selfnotes 1
 	loadnotes
