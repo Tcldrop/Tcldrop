@@ -79,20 +79,32 @@ proc ::tcldrop::notes::do {command args} {
 		{receive} {
 			# Description: This shows the first message for the given recipient if exists.
 			# Usage: do receive <recipient>
-			# Returns: string with whatever is in database if there's something to return
+			# Returns: string with whatever is in database, nothing if it's empty
 			set recipient [lindex $args 0]
-			if {![validuser $recipient]} {
+			if {$recipient eq ""} {
 				return -code error "wrong # args: should be \"do $command <user>\""
 			}
-			#set get [database notes get $recipient]
+			if {![validuser $recipient]} {
+				return -code error "$recipient is not a valid user."
+			}
+			if {[database notes exists $recipient]} {
+				return [lindex [lsort -increasing -index 1 [database notes get $recipient]] 0]
+			}
 		}
 		{listnum} {
 			# Description: This returns how much messages an user has received
 			set recipient [lindex $args 0]
+			if {$recipient eq ""} {
+				return -code error "wrong # args: should be \"do $command <user>\""
+			}			
 			if {![validuser $recipient]} {
 				return -code error "wrong # args: should be \"do $command <user>\""
 			} else {
-				return [llength [database notes keys $recipient]]
+				if {![database notes exists $recipient]} {
+					return 0
+				} else {
+					return [llength [database notes get $recipient]]
+				}
 			}
 		}
 		{send} {
@@ -139,16 +151,16 @@ proc ::tcldrop::notes::do {command args} {
 				putlog "loading notes database..."
 			} elseif {![catch { database notes create }]} {
 				putlog "no notes database exists... yet"
-			}			
+			} 		
 		}
 		{savenotes} {
 			if {[info exists ::notefile]} { set filename $::notefile } else { set filename {} }
 			database notes save -file $filename 
 		}
 		expire {}
-		{default} - {} {
+		{} - {default} {
 			# FixMe: is this next line smart enough? I don't like it at all
-			return -code error "Valid subcommands are: read, send, erase, list, loadnotes, expire"
+			return -code error "unknown or ambiguous subcommand \"$command\": must be receive, listnum, erase, list, loadnotes, savenotes, or expire"
 		}
 	}
 }
