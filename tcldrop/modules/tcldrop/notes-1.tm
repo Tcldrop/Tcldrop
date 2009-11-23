@@ -41,7 +41,6 @@ namespace eval ::tcldrop::notes {
 }
 
 # Preserving intuitive commands
-# Note: or is it better to remove the redundant suffix notes?
 proc ::tcldrop::notes::loadnotes {} {
 	do loadnotes
 }
@@ -52,12 +51,38 @@ proc ::tcldrop::notes::Save {type} {
 proc ::tcldrop::notes::pattern {string} {
 	regsub -all -- {(\[|\]|\\)} $text {\\\1}
 }
-proc ::tcldrop::notes::boolean {data} {
-	if {($data eq "true") || ($data == 1)} {
-		return 1
-	} else {
-		return 0
+
+proc ::tcldrop::notes::parse {parsing user} {
+	# Description: This proc convert a string like "2-4;8;16-"
+	# in an array {2, 4, 8, 8, 16, maxnotes, -1}
+	set list [list]
+	foreach p [split $parsing {:;,}] {
+		# Ensure the min->max order and non duplicated values
+		# Note: this can throw errors if $p is not strict digit
+		set maxnotes [do listnum $user]
+		# Allow to use [parse - userName] for get the total list
+		if {[string index $p 0] eq {-}} {
+			set p "1$p"
+		}
+		if {[string index $p end] eq {-}} {
+			append p $maxnotes
+		}
+		set p [lsort -unique -real [split $p {-}]]
+		set min [lindex $p 0]
+		set max [lindex $p 1]
+		lappend list $min
+		if {$max ne ""} {
+			for {set i [incr $min]} {$i <= $max} {incr i} {
+				lappend list $i
+				if {$i >= $maxnotes} { break }
+			}
+		}
 	}
+	return [lsort -unique -real $list]
+}
+
+proc ::tcldrop::notes::boolean {data} {
+	string is boolean -strict $data
 }
 proc ::tcldrop::notes::do {command args} {
 	
@@ -93,12 +118,14 @@ proc ::tcldrop::notes::do {command args} {
 		}
 		{listnum} {
 			# Description: This returns how much messages an user has received
+			# Usage: do listnum <recipient>
+			# Returns: the number of entries in database 
 			set recipient [lindex $args 0]
 			if {$recipient eq ""} {
 				return -code error "wrong # args: should be \"do $command <user>\""
 			}			
 			if {![validuser $recipient]} {
-				return -code error "wrong # args: should be \"do $command <user>\""
+				return -code error "$recipient is not a valid user."
 			} else {
 				if {![database notes exists $recipient]} {
 					return 0
@@ -134,7 +161,6 @@ proc ::tcldrop::notes::do {command args} {
 					return -1
 				} else {
 					database notes lappend $recipient [list $sender [unixtime] $message]
-			
 				}
 			}
 			return [llength [database notes get $recipient]]
@@ -142,7 +168,37 @@ proc ::tcldrop::notes::do {command args} {
 		{erase} {
 			
 		}
-		{list} {}
+		{list} {
+			# Description: This returns a list with every messages of an user
+			# Usage: do list <recipient> [2;3-5;10-]
+			# Returns: a human-readable list containing information
+			set recipient [lindex $args 0]
+			set list [lindex $args 1]
+			if {$recipient eq ""} {
+				return -code error "wrong # args: should be \"do $command <recipient> \[2\;3-10\;12-\]\""
+			}
+			if {![validuser $recipient]} {
+				return -code error "$recipient is not a valid user."
+			}
+			if {$list eq ""} {
+				set list {-}
+			}
+			set list [parse $list $recipient]
+			puts ":: $list"
+			if {![database notes exists $recipient]} {
+				return -code error "$recipient has no messages."
+			} else {
+				set data [database notes get $recipient]
+				set show [list]
+				foreach idx $list {
+					set ldata [lindex $data [incr idx -1]]
+					if {$ldata ne ""} {
+						lappend show $ldata
+					}
+				}
+				return $show
+			}
+		}
 		{loadnotes} {
 			# Description: This loads the notes database, bassed on channels module
 			# so I'm sure it will work
