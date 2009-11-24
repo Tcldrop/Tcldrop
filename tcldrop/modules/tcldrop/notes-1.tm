@@ -86,20 +86,11 @@ proc ::tcldrop::notes::boolean {data} {
 }
 proc ::tcldrop::notes::do {command args} {
 	
-	# Keeping the format of original eggdrop module notes (no need import command then)
+	# Keeping the format of original eggdrop module notes (no need import command then yet)
 	# Recipient Sender Unixtime Message / Example:
 	# Sentencia Lamestbot 1232881957 Welcome to eggdrop! :)
 	# TODO: my goal is make this module similar to pop3. Mark as read, unread, preserve a history...
-	set options [list -from -to -message]
-	#foreach {option value} $args {
-	#	if {[lsearch -exact $options $option] == -1} {
-	#		# stop or continue?
-	#		return -code error "$option is not a valid option"
-	#		# continue
-	#	}
-	#	set opt([string trimleft $option {-}]) $value
-	#}
-	
+	set options [list -from -to -message]	
 	switch -- $command {
 		{receive} {
 			# Description: This shows the first message for the given recipient if exists.
@@ -166,12 +157,33 @@ proc ::tcldrop::notes::do {command args} {
 			return [llength [database notes get $recipient]]
 		}
 		{erase} {
-			
+			# Description: this deletes the message specified by ID
+			# Usage: do erase <recipient> [2;3-5;10-]
+			# Returns: 0 if was erased successfully or 1 if not
+			set recipient [lindex $args 0]
+			set idx [lindex $args 1]
+			if {$recipient eq ""} {
+				return -code error "wrong # args: should be \"do $command <recipient> \[2\;3-10\;12-\]\""
+			}
+			if {![validuser $recipient]} {
+				return -code error "$recipient is not a valid user."
+			}
+			if {![database notes exists $recipient]} {
+				return -code error "$recipient has no messages."
+			} else {
+				set data [database notes get $recipient]
+				set list [parse $idx $recipient]
+				foreach id $list {
+					incr id -1
+					set data [lreplace $data $id $id {}]
+				}
+				return [catch {database notes set $recipient $data}]
+			}			
 		}
 		{list} {
-			# Description: This returns a list with every messages of an user
+			# Description: This returns a list with every <ID> messages of an user
 			# Usage: do list <recipient> [2;3-5;10-]
-			# Returns: a human-readable list containing information
+			# Returns: a list containing information
 			set recipient [lindex $args 0]
 			set list [lindex $args 1]
 			if {$recipient eq ""} {
@@ -183,17 +195,16 @@ proc ::tcldrop::notes::do {command args} {
 			if {$list eq ""} {
 				set list {-}
 			}
-			set list [parse $list $recipient]
-			puts ":: $list"
 			if {![database notes exists $recipient]} {
 				return -code error "$recipient has no messages."
 			} else {
 				set data [database notes get $recipient]
+				set list [parse $list $recipient]
 				set show [list]
 				foreach idx $list {
 					set ldata [lindex $data [incr idx -1]]
 					if {$ldata ne ""} {
-						lappend show $ldata
+						lappend show [list $idx $ldata]
 					}
 				}
 				return $show
@@ -213,7 +224,9 @@ proc ::tcldrop::notes::do {command args} {
 			if {[info exists ::notefile]} { set filename $::notefile } else { set filename {} }
 			database notes save -file $filename 
 		}
-		expire {}
+		expire {
+			
+		}
 		{} - {default} {
 			# FixMe: is this next line smart enough? I don't like it at all
 			return -code error "unknown or ambiguous subcommand \"$command\": must be receive, listnum, erase, list, loadnotes, savenotes, or expire"
