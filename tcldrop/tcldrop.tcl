@@ -55,9 +55,15 @@
 # This whole .tcl is kind of sloppy.. Probably the most sloppy of all the .tcl's in Tcldrop.
 # FixMe: Rewrite this, possibly splitting it up into different .tcl files, possibly one for each Tcl-environment (wish, eggdrop, tclsh, etc.) ...
 
-
 namespace eval ::tcldrop {
 	if {[catch {package require Tcl 8.5}]} { puts "Error! Tcldrop requires Tcl 8.5 or above to run."; exit}
+	# Append to the ::auto_path some more common paths (if they exist):
+	# Note: I do this because when I compile Tcl from source, it doesn't add the Debian/Ubuntu-specific paths..
+	foreach p [list /usr/share/tcltk/tcl[info tclversion] /usr/local/lib/tcltk /usr/local/share/tcltk /usr/lib/tcltk /usr/share/tcltk] {
+		if {$p ni $::auto_path && [file isdirectory $p]} {
+			lappend ::auto_path $p
+		}
+	}
 	variable version {0.6.1}
 	variable numversion {00060100}
 	variable script [info script]
