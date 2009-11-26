@@ -240,6 +240,9 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 				# Delete all data matching $type:
 				database users unset $lowerhandle $type [string tolower $setting]
 			}
+			# Update the console flags to remove any flags that aren't allowed by the users new flags:
+			# FixMe: This next line is kind of a hack (because it's wrong to do this here):
+			catch { if {$type eq {flags} && [set idx [hand2idx $handle]] != -1} { console $idx + } }
 		}
 		{laston} {
 			# $setting = where
@@ -345,7 +348,7 @@ proc ::tcldrop::core::users::chflags {handle type {flags {}} {channel {}}} {
 	if {$channel != {}} {
 		if {[catch { set current [getuser $handle $type $channel] }]} { set current {} }
 		if {[set addflags [lindex [split $flags {|}] end]] != {}} {
-			append out "|[setuser $handle flags $channel [mergeflags $addflags $current]]"
+			append out "|[setuser $handle $type $channel [mergeflags $addflags $current]]"
 		}
 	}
 	return $out

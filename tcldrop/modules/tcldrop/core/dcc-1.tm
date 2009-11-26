@@ -155,7 +155,7 @@ proc ::tcldrop::core::dcc::callfilt {idx line} {
 # Returns the idx that $handle is on:
 proc ::tcldrop::core::dcc::hand2idx {handle} {
 	# FixMe: Make it return the last active user.
-	lindex [listidx [list handle $handle]] 0
+	if {[set return [lindex [listidx handle $handle] 0]] eq {}} { return -1 } else { return $return }
 }
 
 proc ::tcldrop::core::dcc::idx2hand {idx} { getidxinfo $idx handle }
