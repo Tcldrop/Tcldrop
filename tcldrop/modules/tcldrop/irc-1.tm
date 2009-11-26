@@ -100,13 +100,15 @@ proc ischanjuped {channel} {
 #    Returns: nothing
 #    Module: irc
 proc ::tcldrop::irc::resetchan {channel {flags {beImtw}}} {
-	switch -- [split $flags {}] {
-		{b} { pushmode $channel +b }
-		{e} { pushmode $channel +e }
-		{I} { pushmode $channel +I }
-		{m} { putquick "MODE $channel" }
-		{t} { puthelp "TOPIC $channel" }
-		{w} { putquick "WHO $channel" }
+	foreach f [split $flags {}] {
+		switch -- $f {
+			{b} { pushmode $channel +b }
+			{e} { pushmode $channel +e }
+			{I} { pushmode $channel +I }
+			{m} { putquick "MODE $channel" }
+			{t} { puthelp "TOPIC $channel" }
+			{w} { putquick "WHO $channel" }
+		}
 	}
 }
 
