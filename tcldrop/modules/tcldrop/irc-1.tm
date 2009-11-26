@@ -38,7 +38,7 @@ namespace eval ::tcldrop::irc {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all IRC related commands.}
 	variable rcsid {$Id$}
-	variable commands [list resetchan onchan dumpfile botonchan nick2hand hand2nick handonchan getchanhost getchanjoin onchansplit chanlist getchanidle getchanmode pushmode flushmode topic ischanjuped botisop botishalfop botisvoice isop ishalfop wasop washalfop isvoice ischanban ischanexempt ischaninvite chanbans chanexempts chaninvites resetbans resetexempts resetinvites callmsgm callpubm callmsg callpub callmode callneed callflud callsign calljoin callpart callsplt callrejn calltopc callnick callkick callnotc +enforcebans callne callneop callnein callneky callnelm callbeub]
+	variable commands [list resetchan onchan dumpfile botonchan nick2hand hand2nick handonchan getchanhost getchanjoin resetchanjoin onchansplit chanlist getchanidle resetchanidle getchanmode pushmode flushmode topic ischanjuped botisop botishalfop botisvoice isop ishalfop wasop washalfop isvoice ischanban ischanexempt ischaninvite chanbans chanexempts chaninvites resetbans resetexempts resetinvites callmsgm callpubm callmsg callpub callmode callneed callflud callsign calljoin callpart callsplt callrejn calltopc callnick callkick callnotc +enforcebans callne callneop callnein callneky callnelm callbeub]
 	# Pre-depends on these modules:
 	checkmodule server
 	checkmodule channels
@@ -87,12 +87,27 @@ proc ischanjuped {channel} {
 	return 0
 }
 
-proc ::tcldrop::irc::resetchan {channel} {
-	putquick "MODE $channel +b"
-	putquick "MODE $channel"
-	putquick "WHO $channel"
-	# I think all servers send the topic by default on join, so explicitly asking for it is probably unnecessary...
-	puthelp "TOPIC $channel"
+#  resetchan <channel> [flags]
+#    Description: rereads in the channel info from the server. If flags are
+#      specified, only the required information will be reset, according to
+#      the given flags. Available flags:
+#   b - reset channel bans
+#   e - reset channel exempts
+#   I - reset channel invites
+#   m - refresh channel modes
+#   t - refresh channel topic
+#   w - refresh memberlist
+#    Returns: nothing
+#    Module: irc
+proc ::tcldrop::irc::resetchan {channel {flags {beImtw}}} {
+	switch -- [split $flags {}] {
+		{b} { pushmode $channel +b }
+		{e} { pushmode $channel +e }
+		{I} { pushmode $channel +I }
+		{m} { putquick "MODE $channel" }
+		{t} { puthelp "TOPIC $channel" }
+		{w} { putquick "WHO $channel" }
+	}
 }
 
 # This calls all of the MSGM binds, and MSG binds (if allowed by $exclusive-binds):
@@ -1285,6 +1300,23 @@ proc ::tcldrop::irc::getchanjoin {nick channel} {
 	}
 }
 
+#  resetchanjoin [nick] <channel>
+#    Description: resets the channel join time for the given nick or for all
+#      nicks on the channel if no nick is specified.
+#    Returns: nothing
+#    Module: irc
+proc ::tcldrop::irc::resetchanjoin {nick channel} {
+	if {$channel eq {}} {
+		set channel $nick
+		set nick {*}
+	}
+	global channelnicks
+	foreach a [array names channelnicks [irctoupper "$channel,$nick"]] {
+		dict set channelnicks($a) jointime [clock seconds]
+	}
+	return {}
+}
+
 #  chanlist <channel> [flags[&chanflags]]
 #    Description: flags are any global flags; the '&' denotes to look for
 #      channel specific flags. Examples:
@@ -1316,11 +1348,29 @@ proc ::tcldrop::irc::chanlist {channel {flags {*}}} {
 #    Returns: number of minutes that person has been idle; 0 if the specified user isn't on the channel.
 proc ::tcldrop::irc::getchanidle {nick channel} {
 	if {[info exists ::channelnicks([set element [irctoupper $channel,$nick]])]} {
-		dict get $::channelnicks($element) idletime
+		expr { ([clock seconds] - [dict get $::channelnicks($element) idletime]) / 60 }
 	} else {
 		return 0
 	}
 }
+
+#  resetchanidle [nick] <channel>
+#    Description: resets the channel idle time for the given nick or for all
+#      nicks on the channel if no nick is specified.
+#    Returns: nothing
+#    Module: irc
+proc ::tcldrop::irc::resetchanidle {nick {channel {}}} {
+	if {$channel eq {}} {
+		set channel $nick
+		set nick {*}
+	}
+	global channelnicks
+	foreach a [array names channelnicks [irctoupper "$channel,$nick"]] {
+		dict set channelnicks($a) idletime [clock seconds]
+	}
+	return {}
+}
+
 
 #  getchanmode <channel>
 #    Returns: string of the type "+ntik key" for the channel specified
