@@ -121,7 +121,7 @@ proc ::tcldrop::notes::do {command args} {
 				if {![database notes exists $recipient]} {
 					return 0
 				} else {
-					return [llength [database notes get $recipient]]
+					return [database notes llength $recipient]
 				}
 			}
 		}
@@ -136,10 +136,10 @@ proc ::tcldrop::notes::do {command args} {
 				return -code error "wrong # args: should be \"do $command <recipient> <sender> <message>\" - the recipient and the sender must be a valid username."
 			}
 			if {(![validuser $sender]) && (![boolean $::fakesender])} {
-				return -code error "the sender must be a valid username due to admin configuration."
+				return -code error {the sender must be a valid username due to admin configuration.}
 			}
 			if {($recipient eq $sender) && (![boolean $::selfnotes])} {
-				return -code error "you can't send notes to yourself due to admin configuration."
+				return -code error {you can't send notes to yourself due to admin configuration.}
 			}
 			if {$message eq ""} {
 				return -code error "wrong # args: should be \"do $command <recipient> <sender> <message>\" - specify a text to send."
@@ -224,8 +224,29 @@ proc ::tcldrop::notes::do {command args} {
 			if {[info exists ::notefile]} { set filename $::notefile } else { set filename {} }
 			database notes save -file $filename 
 		}
-		expire {
-			
+		{expire} {
+			# Description: This deletes those notes that has expired
+			# Usage: do expire [recipient] ; dont add any recipient to check all
+			# Returns: the number with total notes purged
+			set recipient [lindex $args 0]
+			if {[database notes exists $recipient]} {
+				set data [database notes get $recipient]
+				set limit [expr ${::note-life} * 86400]
+				set idx 0
+				set deleted 0
+				foreach line $data {
+					set timedata [lindex $line 1]
+					# FixMe: deleting notes creates an empty line hence can't find a valid data format
+					if {($timedata ne {}) && ([expr ([unixtime]-$timedata)] > $limit)} {
+						putlog "removing $recipient $idx [lindex $data $idx]"
+						set data [lreplace $data $idx $idx {}]
+						incr deleted
+					}
+					incr idx
+				}
+				catch {database notes set $recipient $data}
+				return $deleted
+			}
 		}
 		{} - {default} {
 			# FixMe: is this next line smart enough? I don't like it at all
@@ -233,7 +254,6 @@ proc ::tcldrop::notes::do {command args} {
 		}
 	}
 }
-
 
 proc ::tcldrop::notes::LOAD {module} {
 	
