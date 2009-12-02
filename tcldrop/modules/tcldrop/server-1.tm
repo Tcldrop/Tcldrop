@@ -89,7 +89,7 @@ proc ::tcldrop::server::Write {idx} {
 		global nick username realname my-hostname my-host serveraddress server-idx check-stoned
 		set server-idx $idx
 		callevent preinit-server
-		# FixMe: Send the PASS command here, if necessary.
+		if {[set pass [getidxinfo ${idx} -pass]] ne {}} { puthelp "PASS $pass" }
 		puthelp "NICK $nick"
 		if {[info exists my-hostname] && ${my-hostname} != {}} { set hostname ${my-hostname} } elseif {[info exists my-host] && ${my-host} != {}} { set hostname ${my-host} } else { set hostname [info hostname] }
 		puthelp "USER $username $hostname [lindex [split $serveraddress {:}] 0] :$realname"
@@ -177,10 +177,6 @@ proc ::tcldrop::server::Server {opts} {
 	global server serveraddress network server-online server-idx server-cycle-wait
 	array set options [list -control ::tcldrop::server::callserver -errors ::tcldrop::server::Error -writable ::tcldrop::server::Write]
 	array set options $opts
-	if {[info exists options(-pass)]} {
-		# FixMe: Store the password somewhere so we can use it during login to the ircd.
-		unset options(-pass)
-	}
 	if {![catch { ::tcldrop::core::conn::Connect [array get options] } idx]} {
 		switch -- $network {
 			{Unknown} - {I.didn't.edit.my.config.file.net} - {unknown-net} - {} { set handle {(server)} }
