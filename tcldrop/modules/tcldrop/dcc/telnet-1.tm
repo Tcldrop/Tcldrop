@@ -49,7 +49,7 @@ namespace eval ::tcldrop::dcc::telnet {
 	#checkmodule party
 }
 
-proc ::tcldrop::dcc::telnet::Connect {idx} { idxinfo $idx -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle * }
+proc ::tcldrop::dcc::telnet::Connect {idx} { idxinfo $idx state TELNET_CONN -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle * }
 
 proc ::tcldrop::dcc::telnet::Error {idx {error {}}} {
 	array set chatinfo [idxinfo $idx]
@@ -57,16 +57,21 @@ proc ::tcldrop::dcc::telnet::Error {idx {error {}}} {
 }
 
 proc ::tcldrop::dcc::telnet::Write {idx} {
-	idxinfo $idx state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline
-	if {[info exists use-telnet-banner] && ${::use-telnet-banner}} { dccdumpfile $idx ${::telnet-banner} }
-	if {${::open-telnets} || [countusers] == 0} { putdcc $idx {(If you are new, enter 'NEW' here.)} }
-	putdcc $idx {Handle: } -nonewline 1 -flush 1
+	if {[getidxinfo $idx state] eq {TELNET_CONN}} {
+		idxinfo $idx state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline
+		if {[info exists use-telnet-banner] && ${::use-telnet-banner}} { dccdumpfile $idx ${::telnet-banner} }
+		if {${::open-telnets} || [countusers] == 0} { putdcc $idx {(If you are new, enter 'NEW' here.)} }
+		putdcc $idx {Handle: } -nonewline 1 -flush 1
+	}
 }
 
 proc ::tcldrop::dcc::telnet::Read {idx line} {
 	if {[info exists ::idxlist($idx)]} { array set chatinfo $::idxlist($idx) } else { killidx $idx }
 	switch -- $chatinfo(state) {
-		{TELNET_ID} {
+		{TELNET_ID} - {TELNET_CONN} {
+			# We process TELNET_CONN here too, because the Read proc can get triggered before the Write.
+			# Such as when they connect and send their handle immediately rather than waiting for us to ask for it.
+			# In that case, we treat it like we've already sent the Handle: prompt.
 			if {[string equal -nocase {new} $line]} {
 				# They want to sign-in as a NEW user.
 				if {${::open-telnets} || [countusers] == 0} {
