@@ -272,7 +272,8 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 					Timeout cancel $idx
 					killidx $idx
 					break
-				} elseif {[incr trafficlength $length] >= {262144}} {
+				}
+				if {[incr trafficlength $length] >= {262144}} {
 					# Only process 256KiB at a time. (If there's more, the fileevent will immediately trigger this proc again..but other connections will probably get a turn)..
 					# (This helps to prevent any one connection from starving the others.)
 					# It's unknown how this will affect Tcldrop running inside an Eggdrop with its 1-second event loops.
