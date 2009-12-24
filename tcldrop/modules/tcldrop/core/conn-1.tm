@@ -272,8 +272,14 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 					Timeout cancel $idx
 					killidx $idx
 					break
+				} elseif {[incr trafficlength $length] >= {262144}} {
+					# Only process 256KiB at a time. (If there's more, the fileevent will immediately trigger this proc again..but other connections will probably get a turn)..
+					# (This helps to prevent any one connection from starving the others.)
+					# It's unknown how this will affect Tcldrop running inside an Eggdrop with its 1-second event loops.
+					# FixMe: We could/should make this an option.
+					# FixMe: We could also give each connection a time limit rather than/in addition to a byte limit.
+					break
 				}
-				incr trafficlength $length
 			}
 			traffic [dict get $idxlist($idx) traffictype] in $trafficlength
 			if {[eof [dict get $idxlist($idx) sock]]} { set error "net: eof!(read) idx $idx" }
