@@ -388,9 +388,9 @@ namespace eval pubsafetcl {
 					set string
 				}
 			}
-			proc string2list {string} { regexp -inline -all -- {\S+} $string }
-			proc slindex {string index} { lindex [regexp -inline -all -- {\S+} $string] $index }
-			proc slrange {string start {end {end}}} { lrange [regexp -inline -all -- {\S+} $string] $start $end }
+			proc string2list {string} { lsearch -inline -not -all [split $string] {} }
+			proc slindex {string index} { lindex [lsearch -inline -not -all [split $string] {}] $index }
+			proc slrange {string {start {0}} {end {end}}} { lrange [lsearch -inline -not -all [split $string] {}] $start $end }
 			proc sllength {string} { regexp -all -- {\S+} $string }
 			# removes duplicates without sorting the input list:
 			proc luniq {L} {

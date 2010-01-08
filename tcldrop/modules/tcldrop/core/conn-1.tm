@@ -1,11 +1,11 @@
 # core/conn --
 #	Provides:
-#		* The connect and control commands, used for all outgoing connections.
+#		* The commands used for all outgoing/incoming "dcc" connections.
 #	Depends: core.
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
+# Copyright (C) 2003-2010 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,12 +24,8 @@
 #
 # The author of this project can be reached at FireEgl@Tcldrop.US
 # Or can be found on IRC (EFNet or FreeNode) as FireEgl.
-#
-# Notes:
-# connect address port -buffering line -control procname -proxytype https -proxyhost address -proxytype socks5 -proxyhost address
 
 ::package require proxy
-::package require proxy::https
 
 namespace eval ::tcldrop::core::conn {
 	variable version {0.7}
@@ -104,6 +100,7 @@ proc ::tcldrop::core::conn::traffic {{type {}} {direction {}} {bytes {0}}} {
 	}
 }
 
+# connect address port -buffering line -control procname -proxytype https -proxyhost address -proxytype socks5 -proxyhost address
 proc ::tcldrop::core::conn::connect {args} { Connect $args }
 proc ::tcldrop::core::conn::Connect {opts} {
 	# Set default values:
@@ -477,7 +474,7 @@ proc ::tcldrop::core::conn::addlistentype {type args} {
 }
 
 # This is a callback to the ::ident::ident command,
-# it simply updates the idx info to show the ident responce.
+# it simply updates the idx info to show the ident response.
 proc ::tcldrop::core::conn::Ident {idx options id status response} {
 	if {[info exists ::idxlist($idx)]} {
 		if {$status eq {ok}} {

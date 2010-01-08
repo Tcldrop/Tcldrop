@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
+# Copyright (C) 2003-2010 Tcldrop Development Team <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -542,6 +542,7 @@ proc ::tcldrop::server::001 {from key arg} {
 # http://www.irc.org/tech_docs/005.html
 # http://www.irc.org/tech_docs/draft-brocklesby-irc-isupport-03.txt
 # http://www.unrealircd.com/files/docs/unreal32docs.html#userchannelmodes
+# http://bugzilla.eggheads.org/show_bug.cgi?id=461
 proc ::tcldrop::server::005 {from key arg} { isupport set {*}[lrange [split $arg] 1 end] }
 
 # isupport set <key>=<value> key -key ...
