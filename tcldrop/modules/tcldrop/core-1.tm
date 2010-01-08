@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <Tcldrop-Dev>
+# Copyright (C) 2003-2010 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -87,7 +87,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -126,6 +126,18 @@ proc ::tcldrop::core::dict'sort {dict args} {
 	set res {}
 	foreach key [lsort {*}$args [dict keys $dict]] { dict set res $key [dict get $dict $key] }
 	set res
+}
+
+proc ::tcldrop::core::clockres {{testlength {1000}}} {
+	set startms [clock clicks -milliseconds]
+	while {[clock clicks -milliseconds] - $startms < $testlength} {
+		incr all([expr {-[clock clicks -milliseconds] + [after 1 ; clock clicks -milliseconds]}])
+	}
+	foreach res [lsort -integer -decreasing [array names all]] {
+		# Return the highest resolution less than 100ms (I think if it's over 100ms then the calculation was wrong due to excessive CPU/System load from other processes.)
+		if {$res < 100} { return $res }
+	}
+	return 1
 }
 
 proc ::tcldrop::core::getenv {key {defaultvalue {}}} { expr {[info exist ::env($key)]?$::env($key):$defaultvalue} }
@@ -1004,8 +1016,8 @@ proc ::tcldrop::core::calltime {} {
 	}
 }
 
-# Runs $args after we're truly idle.
-proc ::tcldrop::core::afteridle {args} { after idle [list after 0 $args] }
+# Runs $args after we're idle, and after a short amount of time:
+proc ::tcldrop::core::afteridle {args} { after idle [list after $::tcldrop(clockres) $args] }
 
 #  maskhost <nick!user@host>
 #    Returns: masked hostmask for the string given ("n!u@1.2.3.4" -> "*!u@1.2.3.*",
@@ -2087,6 +2099,8 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
 	global restart tcldrop env tcl_interactive
+	# This basically calculates how often this process gets CPU cycles (in milliseconds):
+	set tcldrop(clockres) [clockres 250]
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
 	if {![info exists restart]} {
 		## This works around a bug in Tcl v8.5+ that gives the wrong results.  We decrease ::tcl_precision until we get the right results...
