@@ -90,16 +90,6 @@ proc ::tcldrop::irc::msg::IDENT {nick host hand text} {
 
 }
 
-# FixMe: do more error checking & logging
-# VOICE <password> <channel>
-proc ::tcldrop::irc::msg::VOICE {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
-		foreach chan [lrange $text 1 end] { if {[validchan $chan]} { lappend channels $chan } }
-		if {![info exists channels]} { set channels [channels] }
-		foreach chan $channels { if {[onchan $nick $chan] && [matchattr $hand nmolv|nmolv $chan]} { pushmode $chan +v $nick } }
-	}
-}
-
 # WHOIS <hand>
 proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
 	if {$hand eq {*}} {
@@ -188,20 +178,133 @@ proc ::tcldrop::irc::msg::PASS {nick host hand text} {
 	}
 }
 
-# FixMe: do more error checking & logging
 # OP <password> [channel]
 proc ::tcldrop::irc::msg::OP {nick host hand text} {
-	if {![passwdok $hand -] && [passwdok $hand [lindex [set text [split $text]] 0]]} {
-		foreach c [lrange $text 1 end] { if {[validchan $c]} { lappend channels $c } }
-		if {![info exists channels]} { set channels [channels] }
-		foreach c $channels { if {[onchan $nick $c] && [matchattr $hand o|o $c]} { pushmode $c +o $nick } }
+	upvar 1 flags flags
+	lassign [split $text] pass chan
+	if {![passwdok $hand -] && [passwdok $hand $pass]} {
+		if {$chan eq {}} {
+			set channels [channels]
+		} else {
+			set channels $chan
+			if {![validchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed OP $chan (no such channel)"
+				return 0
+			} elseif {![botonchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed OP $chan (I'm not on that channel)"
+				return 0
+			} elseif {![botisop $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed OP $chan (I'm not chop)"
+				return 0
+			}
+		}
+		foreach c $channels {
+			# FixMe: figure out a way to get rid of these hard coded flags
+			if {[matchattr $hand $flags $c] && ![matchattr $hand d|d $c]} {
+				set hasAccess 1
+				if {[onchan $nick $c] && [botonchan $c] && [botisop $c]} {
+					lappend opChans $chan
+					pushmode $c +o $nick
+				}
+			}
+		}
+		if {![info exists hasAccess]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed OP (No access)"
+			return 0
+		} elseif {![info exists opChans]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed OP ($nick is not on any channels)"
+			return 0
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! OP [join $opChans {, }]."
+			return 0
+		}
 	}
 }
 
-# FixMe: finish this
 # HALFOP <password> [channel]
 proc ::tcldrop::irc::msg::HALFOP {nick uhost hand text} {
+	upvar 1 flags flags
+	lassign [split $text] pass chan
+	if {![passwdok $hand -] && [passwdok $hand $pass]} {
+		if {$chan eq {}} {
+			set channels [channels]
+		} else {
+			set channels $chan
+			if {![validchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed HALFOP $chan (no such channel)"
+				return 0
+			} elseif {![botonchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed HALFOP $chan (I'm not on that channel)"
+				return 0
+			} elseif {![botisop $chan] && ![botishalfop $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed HALFOP $chan (I'm not chop)"
+				return 0
+			}
+		}
+		foreach c $channels {
+			# FixMe: figure out a way to get rid of these hard coded flags
+			if {[matchattr $hand $flags $c] && ![matchattr $hand r|r $c]} {
+				set hasAccess 1
+				if {[onchan $nick $c] && [botonchan $c] && ([botisop $c] || [botishalfop $c])} {
+					lappend opChans $chan
+					pushmode $c +h $nick
+				}
+			}
+		}
+		if {![info exists hasAccess]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed HALFOP (No access)"
+			return 0
+		} elseif {![info exists opChans]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed HALFOP ($nick is not on any channels)"
+			return 0
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! HALFOP [join $opChans {, }]."
+			return 0
+		}
+	}
+}
 
+# VOICE <password> [channel]
+proc ::tcldrop::irc::msg::VOICE {nick host hand text} {
+	upvar 1 flags flags
+	lassign [split $text] pass chan
+	if {![passwdok $hand -] && [passwdok $hand $pass]} {
+		if {$chan eq {}} {
+			set channels [channels]
+		} else {
+			set channels $chan
+			if {![validchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed VOICE $chan (no such channel)"
+				return 0
+			} elseif {![botonchan $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed VOICE $chan (I'm not on that channel)"
+				return 0
+			} elseif {![botisop $chan] && ![botishalfop $chan]} {
+				putcmdlog "(${nick}!${host}) !${hand}! failed VOICE $chan (I'm not chop)"
+				return 0
+			}
+		}
+		foreach c $channels {
+			# FixMe: figure out a way to get rid of these hard coded flags
+			if {[matchattr $hand $flags $c] && ![matchattr $hand q|q $c]} {
+				set hasAccess 1
+				if {[onchan $nick $c] && [botonchan $c] && ([botisop $c] || [botishalfop $c])} {
+					lappend voiceChans $chan
+					pushmode $c +v $nick
+				}
+			}
+		}
+		if {![info exists hasAccess]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed VOICE (No access)"
+			return 0
+		} elseif {![info exists voiceChans]} {
+			putcmdlog "(${nick}!${host}) !${hand}! failed VOICE ($nick is not on any channels)"
+			return 0
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! VOICE [join $voiceChans {, }]."
+			return 0
+		}
+	}
 }
 
 # INVITE <password> <channel>
@@ -396,21 +499,21 @@ proc ::tcldrop::irc::msg::LOAD {module} {
 	bind msg -|- info ::tcldrop::irc::msg::INFO
 	bind msg -|- who ::tcldrop::irc::msg::WHO
 	bind msg -|- ident ::tcldrop::irc::msg::IDENT
-	bind msg -|- voice ::tcldrop::irc::msg::VOICE
+	bind msg nmolv|nmolv voice ::tcldrop::irc::msg::VOICE
 	bind msg -|- whois ::tcldrop::irc::msg::WHOIS
 	bind msg -|- pass ::tcldrop::irc::msg::PASS
-	bind msg o|o op ::tcldrop::irc::msg::OP
-	bind msg l|l halfop ::tcldrop::irc::msg::HALFOP
-	bind msg l|l invite ::tcldrop::irc::msg::INVITE
+	bind msg nmo|nmo op ::tcldrop::irc::msg::OP
+	bind msg nmol|nmol halfop ::tcldrop::irc::msg::HALFOP
+	bind msg nmol|nmol invite ::tcldrop::irc::msg::INVITE
 	bind msg -|- go ::tcldrop::irc::msg::GO
-	bind msg l|l key ::tcldrop::irc::msg::KEY
+	bind msg nmol|nmol key ::tcldrop::irc::msg::KEY
 	bind msg n|- die ::tcldrop::irc::msg::DIE
 	bind msg n|- jump ::tcldrop::irc::msg::JUMP
 	bind msg n|- memory ::tcldrop::irc::msg::MEMORY
-	bind msg m|n save ::tcldrop::irc::msg::SAVE
+	bind msg nm|n save ::tcldrop::irc::msg::SAVE
 	bind msg n|- rehash ::tcldrop::irc::msg::REHASH
-	bind msg m|m reset ::tcldrop::irc::msg::RESET
-	bind msg m|m status ::tcldrop::irc::msg::STATUS
+	bind msg nm|nm reset ::tcldrop::irc::msg::RESET
+	bind msg nm|nm status ::tcldrop::irc::msg::STATUS
 	loadhelp [file join msg irc.help] msg
 }
 
