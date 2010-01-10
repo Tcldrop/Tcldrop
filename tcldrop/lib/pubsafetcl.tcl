@@ -476,6 +476,16 @@ namespace eval pubsafetcl {
 			proc chef {args} { set subs [list {a([nu])} {u\1} {A([nu])} {U\1} {a\Y} e {A\Y} E {en\y} ee {\Yew} oo {\Ye\y} e-a {\ye} i {\yE} I {\Yf} ff {\Yir} ur {(\w+?)i(\w+?)$} {\1ee\2} {\Yow} oo {\yo} oo {\yO} Oo {^the$} zee {^The$} Zee {th\y} t {\Ytion} shun {\Yu} {oo} {\YU} {Oo} v f V F w w W W {([a-z])[.]} {\1. Bork Bork Bork!}]
 				foreach word $args { foreach {exp subSpec} $subs { set word [regsub -all -- $exp $word $subSpec] } ; lappend retval $word } ; puts unknown [join $retval]
 			}
+			proc rainbow {args} {
+				array set col {0 04 1 07 2 08 3 09 4 03 5 10 6 11 7 12 8 02 9 06 10 13 11 05}
+				set pos 0
+				foreach c [split [join $args] {}] {
+					if {$c eq { }} { append r { }; continue }
+					append r "\003$col($pos)$c"
+					if {$pos == 11} { set pos 0 } else { incr pos }
+				}
+				puts unknown $r\003
+			}
 
 			# If $args in the current scope is a list that contains: a b c d e f g
 			# Running: args varname1 varname2 args varname3 varname4
