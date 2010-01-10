@@ -87,7 +87,52 @@ proc ::tcldrop::irc::msg::WHO {nick host hand text} {
 
 # IDENT <password> [nickname]
 proc ::tcldrop::irc::msg::IDENT {nick host hand text} {
-
+	lassign [split $text] pass target
+	if {[info exists {::quiet-reject}]} { set quiet ${::quiet-reject} } else { set quiet 1 }
+	if {$pass eq {}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed IDENT (no password given)"
+		return 0
+	} elseif {$target eq {}} {
+		if {[validuser $nick]} {
+			set target $nick
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! failed IDENT $nick (no such user)"
+			return 0
+		}
+	}
+	if {[matchattr $hand c]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed IDENT $target (user is at a common site)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x61a]";# You're at a common site; you can't IDENT.
+		}
+		return 0
+	} elseif {$hand ne {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed IDENT $target (already recognized)"
+		if {!$quiet && ![string equal -nocase $hand $target]} {
+			# whoever added this lang string to eggdrop must have been high on crack
+			puthelp [format [lang 0x61b] $nick $target $hand];# NOTICE %s :You're not %s, you're %s.\n
+		} elseif {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x61d]";# I recognize you there.
+		}
+		return 0
+	} elseif {[passwdok $hand -]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed IDENT $target (no password set)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x613]";# You don't have a password set.
+		}
+		return 0
+	} elseif {![passwdok $hand $pass]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed IDENT $target (invalid password)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x61c]";# Access denied.
+		}
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! IDENT $target"
+		addhost $target [set hostmask [maskhost ${nick}!${uhost}]]
+		puthelp "NOTICE $nick :[lang 0x61e]: $hostmask";# Added hostmask
+		return 0
+	}
 }
 
 # WHOIS <hand>
