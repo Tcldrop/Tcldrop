@@ -70,6 +70,8 @@ namespace eval ::tcldrop {
 	set ::modules(tcldrop) [array get ::tcldrop]
 	set ::version [list $::tcldrop(version) $::tcldrop(numversion)]
 	namespace unknown unknown
+	package require msgcat
+	namespace import ::msgcat::mc
 }
 
 # This is helpful to update the screen when running in wish for some reason:
@@ -128,16 +130,16 @@ proc ::tcldrop::core::dict'sort {dict args} {
 	set res
 }
 
-proc ::tcldrop::core::clockres {{testlength {1000}}} {
+proc ::tcldrop::core::clockres {{testlength {1000}} {min {1}} {max {100}}} {
 	set startms [clock clicks -milliseconds]
 	while {[clock clicks -milliseconds] - $startms < $testlength} {
 		incr all([expr {-[clock clicks -milliseconds] + [after 1 ; clock clicks -milliseconds]}])
 	}
 	foreach res [lsort -integer -decreasing [array names all]] {
 		# Return the highest resolution less than 100ms (I think if it's over 100ms then the calculation was wrong due to excessive CPU/System load from other processes.)
-		if {$res < 100} { return $res }
+		if {$res <= $max} { return $res }
 	}
-	return 1
+	return $min
 }
 
 proc ::tcldrop::core::getenv {key {defaultvalue {}}} { expr {[info exist ::env($key)]?$::env($key):$defaultvalue} }
@@ -520,7 +522,7 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 			return $filename
 		}
 		if {[array size Logfiles] >= ${::max-logs}} {
-			return -code error "Maximum number of logs are already open (${::max-logs})."
+			return -code error "[mc {Maximum number of logs are already open}] (${::max-logs})."
 		} else {
 			set Logfiles($levels,[string tolower $channel],$filename) [dict create levels $levels channel $channel filename $filename fileid [open $filename a]]
 			bind log $levels $channel ::tcldrop::core::LOG
@@ -1110,9 +1112,9 @@ if {![llength [info commands matchcidr]] || [llength [info procs matchcidr]]} {
 	package require ip
 	proc ::tcldrop::core::matchcidr {block address prefix} {
 		if {[set ver [ip::version $block]] ni {4 6} || [ip::version $address] ni {4 6}} {
-			return -code error "Invalid IP address format."
+			return -code error [mc {Invalid IP address format.}]
 		} elseif {($ver == 4 && $prefix > 32) || ($ver == 6) && ($prefix > 128) || $prefix < 0} {
-			return -code error "Invalid prefix format."
+			return -code error [mc {Invalid prefix format.}]
 		}
 		if {$prefix ne {}} {
 			set pfx [ip::prefix $address/$prefix]
@@ -1208,7 +1210,7 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 	array set opts [list -version {0} -force {0} -required {1}]
 	array set opts $options
 	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err])} {
-		putlog "[format [lang 0x209 core]] $module $opts(-version): $err"
+		putlog "[mc {Error loading module:}] $module $opts(-version): $err"
 		puterrlog "ERROR:\n$::errorInfo"
 		if {$opts(-required)} {
 			# If -required is true it means this module is required for basic Tcldrop functions, so failure to load it means the bot will be useless and should [exit] after showing the related $::errorInfo.
@@ -1259,9 +1261,9 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 		# Load the corresponding .lang file:
 		# FixMe: Modules should do addlangsections themselves from their own LOAD binds..shouldn't they?
 		if {[addlangsection [lindex [split $module :] 0]]} {
-			putlog "[format [lang 0x20f core] $module]    (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
+			putlog "[mc {Module loaded: %-16s (with lang support)} $module]    (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
 		} else {
-			putlog "[format [lang 0x210 core] $module]                        (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
+			putlog "[mc {Module loaded: %-16s} $module]                        (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
 		}
 		return 1
 	}
@@ -1323,10 +1325,10 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 		}
 		if {$success} {
 			set msg "([join $msg {, }])"
-			putlog "[format {%-2.40s %-18.32s %-0.38s} [lang 0x206 core] $m $msg]"
+			putlog "[format {%-2.40s %-18.32s %-0.38s} [mc {Module unloaded:}] $m $msg]"
 			unset -nocomplain modules($m)
 		} else {
-			set out [format [lang 0x207 core]]
+			set out [mc {No such module}]
 		}
 		set msg [list]
 	}
@@ -1382,7 +1384,7 @@ proc ::tcldrop::core::loadhelp {filename {type {dcc}}} {
 	if {![file exists [set filepath [file join ${::help-path} $filename]]] && ![file exists [append filepath .help]]} { return 0 }
 	global help-path help help-files
 	if {![catch { open $filepath r } fid]} {
-		putlog "Loading help $filename ..."
+		putlog "[mc {Loading help}] $filename ..."
 		set flags {-}
 		set command {unknown}
 		while {[gets $fid line] >= 0} {
@@ -1418,8 +1420,8 @@ proc ::tcldrop::core::loadhelp {filename {type {dcc}}} {
 proc ::tcldrop::core::reloadhelp {args} {
 	if {[llength $args] == 0} { set args [array names ::help-files] }
 	foreach file $args {
-		putlog "Reloading help $file ..."
-		if {[unloadhelp $file] && [loadhelp $file]} { putlog "Done!" }
+		putlog "[mc {Reloading help}] $file ..."
+		if {[unloadhelp $file] && [loadhelp $file]} { putlog "[mc {Done.}]" }
 	}
 }
 
@@ -1428,7 +1430,7 @@ proc ::tcldrop::core::unloadhelp {args} {
 	global help-files help
 	if {[llength $args] == 0} { set args [array names help-files] }
 	foreach file $args {
-		putlog "Unloading help $file ..."
+		putlog "[mc {Unloading help}] $file ..."
 		foreach typecommandfilename [set help-files($file)] {
 			array unset help $typecommandfilename
 		}
@@ -1670,7 +1672,7 @@ proc ::tcldrop::core::calldie {{reason {die}} {code {0}}} {
 	foreach {type flags mask proc} [bindlist die] {
 		if {[string match -nocase $mask $reason]} {
 			if {[catch { $proc $reason } err]} {
-				putlog "Error in $proc $reason: $err"
+				putlog "[mc {Error in}] $proc $reason: $err"
 				puterrlog $::errorInfo
 			}
 			#countbind $type $mask $proc
@@ -1682,7 +1684,7 @@ proc ::tcldrop::core::callshutdown {{reason {shutdown}} {code {0}}} {
 	foreach {type flags mask proc} [bindlist shutdown] {
 		if {[string match -nocase $mask $reason]} {
 			if {[catch { $proc $reason } err]} {
-				putlog "Error in $proc $reason: $err"
+				putlog "[mc {Error in}] $proc $reason: $err"
 				puterrlog $::errorInfo
 			}
 			#countbind $type $mask $proc
@@ -1725,7 +1727,7 @@ proc ::tcldrop::core::rehash {{type {}}} {
 	if {$tcldrop(config-eval) != {}} {
 		putlog "Evaling \$tcldrop(config-eval) ..."
 		if {![catch { uplevel #0 $tcldrop(config-eval) } error]} { set success 1 } else {
-			putlog [lang 0x534 core]
+			putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
 			puterrlog $::errorInfo
 			set success 0
 		}
@@ -1744,15 +1746,15 @@ proc ::tcldrop::core::rehash {{type {}}} {
 			}
 		}
 		if {[file exists [file join ${config-path} $config]]} {
-			putlog "Loading Configuration $config ..."
+			putlog "[mc {Loading Configuration}] $config ..."
 			# The script gets source'd inside the context of this proc without the uplevel command...  O_o
 			if {![catch { uplevel \#0 [list source [file join ${config-path} $config]] } error]} { set success 1 } else {
-				putlog [lang 0x534 core]
+				putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
 				puterrlog $::errorInfo
 				set success 0
 			}
 		} else {
-			putlog [lang 0x534 core]
+			putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
 			set success 0
 		}
 	}
@@ -1788,7 +1790,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	# Load the language specified in the EGG_LANG env variable (Eggdrop uses this too):
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
-	putlog "--- Loading Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
+	putlog "--- [mc {Loading}] Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
 	setdefault die-on-sighup 0
 	setdefault rehash-on-sighup 1
 	setdefault die-on-sigterm 15
@@ -1862,7 +1864,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	bind unld - core ::tcldrop::core::UNLD
 	# Commented out to see if it's necessary: if {(![info exists ::botnet-nick] || ${::botnet-nick} eq {}) && [info exists ::nick]} { set ::botnet-nick $::nick }
 	if {$type eq {restart}} {
-		putlog "Restart Completed in [expr { [clock clicks -milliseconds] - $StartTime } ]ms."
+		putlog "[mc {Restart Completed in}] [expr { [clock clicks -milliseconds] - $StartTime } ]ms."
 	} else {
 		# We wanna display how many channels and users there are (like Eggdrop):
 		if {[catch { PutLogLev o - "=== ${::botnet-nick}: [countchannels] channels, [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }]} { PutLogLev o - "=== ${::botnet-nick}: [countusers] users.  Load Time: [expr { [clock clicks -milliseconds] - $::tcldrop::core::StartTime }]ms" }
