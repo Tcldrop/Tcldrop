@@ -234,6 +234,19 @@ proc ::tcldrop::channels::loadchannels {} {
 # Returns 1 if a channel exists in the channel database, or 0 if it doesn't:
 proc ::tcldrop::channels::validchan {channel} { dict exists $::database(channels) [irctoupper $channel] }
 
+# Returns 1 if a channel name is valid to use on IRC, 0 if it's not.
+# FixMe: this could probably use some more checking
+proc ::tcldrop::channels::validchanname {channel} {
+	if {[set chanmeta [isupport get CHANTYPES]] eq {}} { set chanmeta {#} }
+	if {[string index $channel 0] il [split $chanmeta {}]} {
+		return 0
+	} elseif {[string match $channel { }]} {
+		return 0
+	} else {
+		return 1
+	}
+}
+
 # Note, types for udef's should be: flag, int, str, and list.
 # In the case of lists, the channel command should provide lappend, lreplace, and lremove commands.
 
