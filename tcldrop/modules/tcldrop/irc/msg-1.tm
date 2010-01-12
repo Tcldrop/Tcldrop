@@ -5,7 +5,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2005,2006,2007 Tcldrop Development Team <Tcldrop-Dev>
+# Copyright (C) 2005-2010 Tcldrop Development Team <Tcldrop-Dev>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -59,30 +59,185 @@ proc ::tcldrop::irc::msg::HELP {nick host hand text} {
 	return 0
 }
 
-# ADDHOST <password> <hostmask>
-proc ::tcldrop::irc::msg::ADDHOST {nick host hand text} {
-	if {[set hostmask [lindex [split $text] end]] == {}} {
-		# They neglected to specify the hostmask, so just do a regular IDENT instead.
-		::tcldrop::irc::msg::IDENT $nick $host $hand $text
-	} elseif {![passwdok $hand -] && [passwdok $hand [lindex [split $text] 0]]} {
-		if {[addhost $hand $hostmask]} {
-			# FixMe: Tell them it was added successfully. (use lang!)
-		} else {
-			# FixMe: Tell them it wasn't added, (maybe because it already existed).
-		}
-	} else {
-		# FixMe: Tell them they gave a bad password.
-	}
+
+proc ::tcldrop::irc::msg::HELLO {nick host hand text} {
+	# remember to find hello in the conf and bind it here
 }
 
 # INFO <password> [channel] [an info line]
 proc ::tcldrop::irc::msg::INFO {nick host hand text} {
-
+	lassign [set arg [split $text]] pass chan
+	if {![validchanname $chan]} {
+		set info [lrange $arg 1 end]
+		unset chan
+		set lineIsGlobal 1
+	} else {
+		set info [lrange $arg 2 end]
+		set lineIsGlobal 0
+	}
+	if {![info exists {::use-info}] || ${::use-info} == 0} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (command disabled)"
+		return 0
+	} elseif {$hand eq {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (no access)"
+		return 0
+	} elseif {[matchattr $hand c]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (user is at a common site)"
+		return 0
+	} elseif {[passwdok $hand -]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (no password set)"
+		if {[info exists {::quiet-reject}] && ${::quiet-reject} == 0} {
+			puthelp "NOTICE $nick :[lang 0x613]";# You don't have a password set.
+		}
+		return 0
+	} elseif {![passwdok $hand $pass]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (invalid password)"
+		return 0
+	} elseif {!$lineIsGlobal && (![validchan $chan] || ![botonchan $chan])} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO $chan (invalid channel)"
+		puthelp "NOTICE $nick :[lang 0x629]";# I don't monitor that channel.
+		return 0
+	} elseif {($lineIsGlobal) && ($info ne {}) && ([string index [getuser $hand INFO] 0] eq {@})} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO (info line locked)"
+		puthelp "NOTICE $nick :[lang 0x624]";# Your info line is locked
+		return 0
+	} elseif {(!$lineIsGlobal) && ($info ne {}) && ([string index [getchaninfo $hand $chan] 0] eq {@})} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed INFO $chan (info line locked)"
+		puthelp "NOTICE $nick :[lang 0x624]";# Your info line is locked
+		return 0
+	} elseif {$info eq {}} {
+		if {$lineIsGlobal} {
+			putcmdlog "(${nick}!${host}) !${hand}! INFO"
+			if {[set currInfo [getuser $hand INFO]] ne {}} {
+				puthelp "NOTICE $nick :[lang 0x620] $currInfo";# Currently:
+				puthelp "NOTICE $nick :[lang 0x622] /msg $::botnick info <password> none";# To remove it:
+			} else {
+				puthelp "NOTICE $nick [lang 0x628]";# You have no info set.
+			}
+		} else {
+			if {[set currInfo [getchaninfo $hand $chan]] ne {}} {
+				putcmdlog "(${nick}!${host}) !${hand}! INFO $chan"
+				puthelp "NOTICE $nick :[lang 0x620] $currInfo";# Currently:
+				puthelp "NOTICE $nick :[lang 0x622] /msg $::botnick info <password> $chan none";# To remove it:
+			} else {
+				puthelp "NOTICE $nick [lang 0x627] ${chan}.";# You have no info set on
+			}
+		}
+		return 0
+	} elseif {[string equal -nocase $info {none}]} {
+		if {$lineIsGlobal} {
+			putcmdlog "(${nick}!${host}) !${hand}! INFO NONE"
+			setuser $hand INFO {}
+			puthelp "NOTICE $nick :[lang 0x626]";# Removed your info line.
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! INFO $chan NONE"
+			setchaninfo $hand $chan {}
+			puthelp "NOTICE $nick :[lang 0x625] $chan";# Removed your info line on
+		}
+		return 0
+	} else {
+		if {$lineIsGlobal} {
+			putcmdlog "(${nick}!${host}) !${hand}! INFO ..."
+			setuser $hand INFO $info
+		} else {
+			putcmdlog "(${nick}!${host}) !${hand}! INFO $chan ..."
+			setchaninfo $hand $chan $info
+		}
+		puthelp "NOTICE $nick :[lang 0x621] $info";# Now: 
+		return 0
+	}
 }
 
 # WHO <channel>
 proc ::tcldrop::irc::msg::WHO {nick host hand text} {
+	if {$hand eq {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHO (no access)"
+		return 0
+	} elseif {$text eq {}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHO (no channel specified)"
+		puthelp "NOTICE $nick :[lang 0x001]: /msg $::botnick who <channel>";# Usage
+		return 0
+	} elseif {![validchan [set chan [lindex [split $text] 0]]] || ![botonchan $chan]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHO $chan (invalid channel)"
+		puthelp "NOTICE $nick :[lang 0x629]";# I don't monitor that channel.
+		return 0
+	} elseif {[channel get $chan secret] && ![matchattr $hand nmol|nmolf $chan]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed WHO $chan (channel is hidden)"
+		puthelp "NOTICE $nick :[lang 0x62c]";# Channel is currently hidden.
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! WHO $chan"
+		set maxNickLen 0
+		foreach member [set chanlist [chanlist $chan]] {
+			if {[set len [string length $member]] > $maxNickLen} { set maxNickLen $len }
+		}
+		foreach member [lsort $chanlist] {
+			set memberHand [nick2hand $member]
+			if {$member eq $::botnick} {
+				puthelp "NOTICE $nick :[format "\[%${maxNickLen}s\] <-- I'm the bot, of course." $member]"
+			} elseif {[matchattr $memberHand b]} {
+				if {[matchbotattr $memberHand ps]} {
+					puthelp "NOTICE $nick :[format "\[%${maxNickLen}s\] <-- a twin of me" $member]"
+				} else {
+					puthelp "NOTICE $nick :[format "\[%${maxNickLen}s\] <-- another bot" $member]"
+				}
+			} elseif {[set info [getuser $memberHand INFO]] ne {}} {
+				puthelp "NOTICE $nick :[format "\[%${maxNickLen}s\] $info"]"
+			} else {
+				lappend noInfoMembers $member
+			}
+		}
+		if {[info exists noInfoMembers]} {
+			foreach line [wrapit "No info: [join $noInfoMembers {, }]" 350] {
+				puthelp "NOTICE $nick : $line"
+			}
+		}
+	}
+}
 
+# ADDHOST <password> <hostmask>
+proc ::tcldrop::irc::msg::ADDHOST {nick host hand text} {
+	lassign [split $text] pass hostmask
+	if {[info exists {::quiet-reject}]} { set quiet ${::quiet-reject} } else { set quiet 1 }
+	if {$pass eq {}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST (no password given)"
+		return 0
+	} elseif {$hostmask eq {}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST (no hostmask given)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :You must supply a hostmask"
+		}
+		return 0
+	} elseif {[matchattr $hand c]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST $hostmask (user is at a common site)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x61a]";# You're at a common site; you can't IDENT.
+		}
+		return 0
+	} elseif {[passwdok $hand -]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST $hostmask (no password set)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x613]";# You don't have a password set.
+		}
+		return 0
+	} elseif {![passwdok $hand $pass]} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST $hostmask (invalid password)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :[lang 0x61c]";# Access denied.
+		}
+		return 0
+	} elseif {[finduser $hostmask] ne {*}} {
+		putcmdlog "(${nick}!${host}) !${hand}! failed ADDHOST $hostmask (clashing hostmask)"
+		if {!$quiet} {
+			puthelp "NOTICE $nick :That hostmask clashes with another already in use."
+		}
+		return 0
+	} else {
+		putcmdlog "(${nick}!${host}) !${hand}! ADDHOST $hostmask"
+		addhost $hand [set hostmask [maskhost ${nick}!${host}]]
+		puthelp "NOTICE $nick :[lang 0x61e]: $hostmask";# Added hostmask
+		return 0
+	}
 }
 
 # IDENT <password> [nickname]
@@ -129,7 +284,7 @@ proc ::tcldrop::irc::msg::IDENT {nick host hand text} {
 		return 0
 	} else {
 		putcmdlog "(${nick}!${host}) !${hand}! IDENT $target"
-		addhost $target [set hostmask [maskhost ${nick}!${uhost}]]
+		addhost $target [set hostmask [maskhost ${nick}!${host}]]
 		puthelp "NOTICE $nick :[lang 0x61e]: $hostmask";# Added hostmask
 		return 0
 	}
@@ -267,7 +422,7 @@ proc ::tcldrop::irc::msg::OP {nick host hand text} {
 }
 
 # HALFOP <password> [channel]
-proc ::tcldrop::irc::msg::HALFOP {nick uhost hand text} {
+proc ::tcldrop::irc::msg::HALFOP {nick host hand text} {
 	upvar 1 flags flags
 	lassign [split $text] pass chan
 	if {![passwdok $hand -] && [passwdok $hand $pass]} {
