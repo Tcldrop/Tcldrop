@@ -156,10 +156,17 @@ proc ::tcldrop::core::users::passwdok {handle {pass {-}} args} {
 proc ::tcldrop::core::users::getuser {handle args} {
 	if {[dict exists $::database(users) [set lowerhandle [string tolower $handle]]]} {
 		switch -- [string tolower [lindex $args 0]] {
-			{xtra} - {flags} - {console} - {hosts} - {pass} - {info} - {botfl} - {comment} - {handle} - {laston} {
+			{xtra} - {flags} - {console} - {hosts} - {pass} - {botfl} - {comment} - {handle} - {laston} {
 				# These fields are special, because Eggdrop doesn't return an error if you try to get a non-existant one.
 				if {[dict exists $::database(users) $lowerhandle {*}[string tolower $args]]} {
 					return [dict get $::database(users) $lowerhandle {*}[string tolower $args]]
+				} else {
+					return {}
+				}
+			}
+			{info} {
+				if {[dict exists $::database(users) $lowerhandle info global]} {
+					return [dict get $::database(users) $lowerhandle info global]
 				} else {
 					return {}
 				}
@@ -230,7 +237,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 				database users unset $lowerhandle $type
 			}
 		}
-		{flags} - {botfl} - {info} {
+		{flags} - {botfl} {
 			# Note, this REPLACES the flags/botfl/info with the new info (This is what happens in Eggdrop too).
 			# So use chflags (or chattr or botattr) if you want to add (merge) to the existing flags.
 			if {$xtra != {}} {
@@ -243,6 +250,10 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 			# Update the console flags to remove any flags that aren't allowed by the users new flags:
 			# FixMe: This next line is kind of a hack (because it's wrong to do this here):
 			catch { if {$type eq {flags} && [set idx [hand2idx $handle]] != -1} { console $idx + } }
+		}
+		{info} {
+			# $setting = the global info line.
+			database users set $lowerhandle $type global $setting
 		}
 		{laston} {
 			# $setting = where
@@ -324,10 +335,18 @@ proc ::tcldrop::core::users::setlaston {handle {where {global}} {when {0}}} {
 }
 
 # Gets a users channel INFO line:
-proc ::tcldrop::core::users::getchaninfo {handle channel} { getuser $handle info $channel }
+proc ::tcldrop::core::users::getchaninfo {handle {channel {global}}} {
+	if {[dict exists $::database(users) [set lowerhandle [string tolower $handle]] info $channel]} {
+		return [dict get $::database(users) $lowerhandle info $channel]
+	} else {
+		return {}
+	}
+}
 
 # Sets a users channel INFO line:
-proc ::tcldrop::core::users::setchaninfo {handle channel {text {}}} { setuser $handle info $channel $text }
+proc ::tcldrop::core::users::setchaninfo {handle channel {text {}}} {
+	database users set [string tolower $handle] info $channel $text
+}
 
 # Renames (or deletes) a user account.
 proc ::tcldrop::core::users::chhandle {oldhandle {newhandle {}}} { setuser $oldhandle handle $newhandle }
