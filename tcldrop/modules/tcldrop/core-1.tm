@@ -122,7 +122,6 @@ namespace eval ::tcldrop::core {
 if {(([info exists ::tcldrop(profiler)] && $tcldrop(profiler)) || [info exists ::env(profiler)] && $::env(profiler)) && ![catch { package require profiler }]} {
 	# Use the profiler package from tcllib.
 	::profiler::init
-	set ::profiler 11111
 } elseif {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info exists ::env(proc_counter)] && $::env(proc_counter)} {
 	# This is just a way to count how many times each proc is called..
 	rename proc ::tcl::Proc

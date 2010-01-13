@@ -802,6 +802,23 @@ proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 	return 0
 }
 
+proc ::tcldrop::core::dcc::PROFILER {handle idx text} {
+	if {[set commands [info commands ::profiler::[slindex $text 0]]] ne {}} {
+		if {[slrange $text 1 end] eq {}} {
+			putdcc $idx [[lindex $commands 0]]
+		} else {
+			putdcc $idx [[lindex $commands 0] {*}[slrange $text 1 end]]
+		}
+	} elseif {[info commands ::profiler::print] ne {}} {
+		if {$text eq {}} {
+			putdcc $idx [::profiler::print]
+		} else {
+			putdcc $idx [::profiler::print $text]
+		}
+	}
+
+}
+
 # FixMe: Consider removing this proc and instead have separate log procs for each dcc::* module.
 proc ::tcldrop::core::dcc::LOG {levels channel text {tags {}}} {
 	global idxlist
@@ -880,6 +897,7 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	bind dcc - motd ::tcldrop::core::dcc::MOTD
 	bind dcc nm bind ::tcldrop::core::dcc::BINDS
 	bind dcc nm binds ::tcldrop::core::dcc::BINDS
+	bind dcc n profiler ::tcldrop::core::dcc::PROFILER
 	loadhelp core.help
 	loadhelp cmds1.help
 	loadhelp cmds2.help
