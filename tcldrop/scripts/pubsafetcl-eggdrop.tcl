@@ -113,6 +113,7 @@ namespace eval pubsafetcl::eggdrop {
 		ptmn {whom botlist bots getdccidle getdccaway}
 	}
 
+	namespace path [list ::tcldrop]
 	# Initialize/reset the safe interpreter:
 	::pubsafetcl::create safetcl -timelimit $timeLimit
 	package provide pubsafetcl::eggdrop 2.2.1

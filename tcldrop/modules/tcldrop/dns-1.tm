@@ -44,7 +44,7 @@ namespace eval ::tcldrop::dns {
 # FixMe: Need IPv6 support.
 proc ::tcldrop::dns::testip {ip} { regexp {^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$} $ip }
 
-bind load - dns ::tcldrop::dns::LOAD -priority 0
+::tcldrop::bind load - dns ::tcldrop::dns::LOAD -priority 0
 proc ::tcldrop::dns::LOAD {module} {
 	variable Counter
 	if {![info exists Counter]} { variable Counter 0 }

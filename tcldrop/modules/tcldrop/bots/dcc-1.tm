@@ -38,6 +38,7 @@ namespace eval ::tcldrop::bots::dcc {
 	variable description {Bot related DCC commands.}
 	variable rcsid {$Id$}
 	variable commands [list]
+	namespace path [list ::tcldrop]
 	# Pre-depends on the channels module:
 	checkmodule bots
 }
@@ -197,7 +198,7 @@ proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
 }
 
 
-bind load - bots::dcc ::tcldrop::bots::dcc::LOAD -priority 0
+::tcldrop::bind load - bots::dcc ::tcldrop::bots::dcc::LOAD -priority 0
 proc ::tcldrop::bots::dcc::LOAD {module} {
 	bind dcc nmt +bot ::tcldrop::bots::dcc::+BOT -priority 1000
 	bind dcc nmt -bot ::tcldrop::bots::dcc::-BOT -priority 1000
@@ -209,7 +210,6 @@ proc ::tcldrop::bots::dcc::LOAD {module} {
 	# FixMe: Add these dcc commands:
 	bind dcc nmt botinfo ::tcldrop::bots::dcc::BOTINFO -priority 1000
 	bind dcc nmt unlink ::tcldrop::bots::dcc::UNLINK -priority 1000
-	
 	bind unld - bots::dcc ::tcldrop::bots::dcc::UNLD -priority 0
 }
 

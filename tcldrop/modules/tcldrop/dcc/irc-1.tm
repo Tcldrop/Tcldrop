@@ -43,6 +43,7 @@ namespace eval ::tcldrop::dcc::irc {
 	if {![info exists ::tcldrop]} { return }
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
+	namespace path ::tcldrop
 }
 
 proc ::tcldrop::dcc::irc::Connect {idx} {
@@ -641,75 +642,75 @@ namespace eval ::tcldrop::dcc::irc {
 	}
 }
 
-bind sign - * ::tcldrop::dcc::irc::SIGN
+::tcldrop::bind sign - * ::tcldrop::dcc::irc::SIGN
 proc ::tcldrop::dcc::irc::SIGN {nick host hand chan reason} {
 	# Send to ircparty users who are on $chan:
 	# FixMe: Change this to a RAW bind, because QUIT's are NOT channel specific.. (We don't want to send a QUIT for every channel $nick was in.)
 	putircparty -chan $chan ":$nick!$host QUIT :$reason"
 }
 
-bind splt - * ::tcldrop::dcc::irc::SPLT
+::tcldrop::bind splt - * ::tcldrop::dcc::irc::SPLT
 proc ::tcldrop::dcc::irc::SPLT {nick host hand chan} {
 	# FixMe: Just make this a RAW bind to QUIT.
 }
 
-bind rejn - * ::tcldrop::dcc::irc::REJN
+::tcldrop::bind rejn - * ::tcldrop::dcc::irc::REJN
 proc ::tcldrop::dcc::irc::REJN {nick host hand chan} {
 	# FixMe: Just make this a RAW bind to JOIN.
 }
 
 # FixMe: Make this a RAW JOIN bind instead, so rejoins and joins can be treated the same.
-bind join - * ::tcldrop::dcc::irc::JOIN
+::tcldrop::bind join - * ::tcldrop::dcc::irc::JOIN
 proc ::tcldrop::dcc::irc::JOIN {nick host hand chan} {
 	# Send to ircparty users who are on $chan:
 	putircparty -chan $chan ":$nick!$host JOIN :$chan"
 }
 
-bind part - * ::tcldrop::dcc::irc::PART
+::tcldrop::bind part - * ::tcldrop::dcc::irc::PART
 proc ::tcldrop::dcc::irc::PART {nick host hand chan msg} {
 	# Send to ircparty users who are on $chan:
 	putircparty -chan $chan ":$nick!$host PART $chan"
 }
 
-bind topc - * ::tcldrop::dcc::irc::TOPC
+::tcldrop::bind topc - * ::tcldrop::dcc::irc::TOPC
 proc ::tcldrop::dcc::irc::TOPC {nick host hand chan topic} {
 	# Send to ircparty users who are on $chan:
 	putircparty -chan $chan ":$nick!$host TOPIC $chan :$topic"
 }
 
-bind kick - * ::tcldrop::dcc::irc::KICK
+::tcldrop::bind kick - * ::tcldrop::dcc::irc::KICK
 proc ::tcldrop::dcc::irc::KICK {nick host hand chan target reason} {
 	# Send to ircparty users who are on $chan:
 	putircparty -chan $chan ":$nick!$host KICK $chan $target :$reason"
 }
 
-bind nick - * ::tcldrop::dcc::irc::NICK
+::tcldrop::bind nick - * ::tcldrop::dcc::irc::NICK
 proc ::tcldrop::dcc::irc::NICK {nick host hand chan newnick} {
 	# Send to ircparty users who are on $chan:
 	# FixMe: Make this a RAW bind, because NICK's are NOT channel specific.
 	putircparty -chan $chan ":$nick!$host NICK :$newnick"
 }
 
-bind mode - * ::tcldrop::dcc::irc::MODE
+::tcldrop::bind mode - * ::tcldrop::dcc::irc::MODE
 proc ::tcldrop::dcc::irc::MODE {nick host hand chan mode {victim {}}} {
 	# Send to ircparty users who are on $chan:
 	# Note/FixMe: Consider making this a RAW bind, so that the modes will be together instead of split apart.
 	putircparty -chan $chan ":$nick!$host MODE $chan $mode $victim"
 }
 
-bind pubm - * ::tcldrop::dcc::irc::PUBM
+::tcldrop::bind pubm - * ::tcldrop::dcc::irc::PUBM
 proc ::tcldrop::dcc::irc::PUBM {nick host hand chan text} {
 	# Send to ircparty users who are on $chan:
 	putircparty -chan $chan ":$nick!$host PRIVMSG $chan :$text"
 }
 
-bind msgm - * ::tcldrop::dcc::irc::MSGM
+::tcldrop::bind msgm - * ::tcldrop::dcc::irc::MSGM
 proc ::tcldrop::dcc::irc::MSGM {nick host hand text} {
 	# Send to all ircparty users with global +n
 	putircparty -flags n ":$nick!$host PRIVMSG $::botnick :$text"
 }
 
-bind ctcp - * ::tcldrop::dcc::irc::CTCP
+::tcldrop::bind ctcp - * ::tcldrop::dcc::irc::CTCP
 proc ::tcldrop::dcc::irc::CTCP {nick host hand dest keyword text} {
 	if {[string equal -nocase $keyword {ACTION}]} {
 		# Only send ACTION's, becase ircparty users will try to respond to other CTCP's, which would be bad.
@@ -721,7 +722,7 @@ proc ::tcldrop::dcc::irc::CTCP {nick host hand dest keyword text} {
 	}
 }
 
-bind ctcr - * ::tcldrop::dcc::irc::CTCR
+::tcldrop::bind ctcr - * ::tcldrop::dcc::irc::CTCR
 proc ::tcldrop::dcc::irc::CTCR {nick host hand dest keyword text} {
 	if {[validchan $dest]} {
 		# Send to all ircparty users on channel $dest:
@@ -732,7 +733,7 @@ proc ::tcldrop::dcc::irc::CTCR {nick host hand dest keyword text} {
 	}
 }
 
-bind notc - * ::tcldrop::dcc::irc::NOTC
+::tcldrop::bind notc - * ::tcldrop::dcc::irc::NOTC
 proc ::tcldrop::dcc::irc::NOTC {nick host hand text dest} {
 	if {[validchan $dest]} {
 		# Send to ircparty users who are on $dest:
@@ -743,7 +744,7 @@ proc ::tcldrop::dcc::irc::NOTC {nick host hand text dest} {
 	}
 }
 
-bind wall - * ::tcldrop::dcc::irc::WALL
+::tcldrop::bind wall - * ::tcldrop::dcc::irc::WALL
 proc ::tcldrop::dcc::irc::WALL {hand msg} {
 	# FixMe: Make this send the walls to ircparty users with global +mn
 }
@@ -763,7 +764,7 @@ proc ::tcldrop::dcc::irc::callircparty {idx command arg} {
 	return 0
 }
 
-bind load - dcc::irc ::tcldrop::dcc::irc::LOAD
+::tcldrop::bind load - dcc::irc ::tcldrop::dcc::irc::LOAD
 proc ::tcldrop::dcc::irc::LOAD {module} {
 	setdefault open-telnets 1
 	setdefault info-party 0

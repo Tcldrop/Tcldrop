@@ -120,7 +120,7 @@ proc ::tcldrop::encryption::Decrypt {key string arguments} {
 	}
 }
 
-bind load - encryption ::tcldrop::encryption::LOAD -priority 0
+::tcldrop::bind load - encryption ::tcldrop::encryption::LOAD -priority 0
 proc ::tcldrop::encryption::LOAD {module} {
 	variable Types
 	array set Types [list]
@@ -142,5 +142,5 @@ proc ::tcldrop::encryption::LOAD {module} {
 	#::tcldrop::encryption::default encpass sha256
 }
 
-bind unld - encryption ::tcldrop::encryption::UNLD -priority 0
+::tcldrop::bind unld - encryption ::tcldrop::encryption::UNLD -priority 0
 proc ::tcldrop::encryption::UNLD {module} { return 1 }

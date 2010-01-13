@@ -47,7 +47,7 @@ namespace eval ::tcldrop::dcc::terminal {
 }
 
 # Simulate a telnet/dcc on stdin/stdout:
-bind evnt - start ::tcldrop::dcc::terminal::start
+::tcldrop::bind evnt - start ::tcldrop::dcc::terminal::start
 proc ::tcldrop::dcc::terminal::start {event} {
 	if {$::tcldrop(simulate-dcc) && !$::tcldrop(background-mode)} {
 		# Turn the console into a simulated DCC session:
@@ -95,7 +95,7 @@ proc ::tcldrop::dcc::terminal::EVNT_init {event} {
 # This is used when we're running in wish:
 proc ::tcldrop::dcc::terminal::IDXFilter {idx text args} { if {[catch { stdout $text }]} { return $text } }
 
-bind load - dcc::terminal ::tcldrop::dcc::terminal::LOAD -priority 0
+::tcldrop::bind load - dcc::terminal ::tcldrop::dcc::terminal::LOAD -priority 0
 proc ::tcldrop::dcc::terminal::LOAD {module} {
 	bind evnt - init ::tcldrop::dcc::terminal::EVNT_init -priority 10000
 	# Don't allow the module to unload:

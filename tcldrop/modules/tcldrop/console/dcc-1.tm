@@ -122,7 +122,7 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 	}
 }
 
-bind load - console::dcc ::tcldrop::console::dcc::LOAD -priority 0
+::tcldrop::bind load - console::dcc ::tcldrop::console::dcc::LOAD -priority 0
 proc ::tcldrop::console::dcc::LOAD {module} {
 	bind dcc - store ::tcldrop::console::dcc::STORE -priority 1000
 	bind dcc nmot|nmo console ::tcldrop::console::dcc::CONSOLE -priority 1000

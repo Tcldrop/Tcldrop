@@ -41,6 +41,7 @@ namespace eval ::tcldrop::encryption::blowfish {
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	namespace path [list ::tcldrop]
 	# Pre-depends on the encryption module:
 	checkmodule encryption
 	variable accel
@@ -80,8 +81,8 @@ namespace eval ::tcldrop::encryption::blowfish {
 	#namespace unknown unknown
 }
 
-bind load - encryption::blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0
-bind load - blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0
+::tcldrop::bind load - encryption::blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0
+::tcldrop::bind load - blowfish ::tcldrop::encryption::blowfish::LOAD -priority 0
 proc ::tcldrop::encryption::blowfish::LOAD {module} {
 	::tcldrop::encryption::register blowfish [list encrypt ::tcldrop::encryption::blowfish::encrypt decrypt ::tcldrop::encryption::blowfish::decrypt encpass ::tcldrop::encryption::blowfish::encpass]
 	#if {[info commands ::blowfish] eq {}} { namespace ensemble create -command ::blowfish -subcommands [list encrypt decrypt encpass] }

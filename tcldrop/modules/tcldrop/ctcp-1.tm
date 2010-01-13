@@ -41,6 +41,7 @@ namespace eval ::tcldrop::ctcp {
 	variable description {Provides responses to CTCPs on IRC.}
 	variable commands [list callctcp callctcr callctcps ctcr]
 	variable rcsid {$Id$}
+	namespace path [list ::tcldrop]
 	checkmodule irc
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands

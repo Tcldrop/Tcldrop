@@ -47,6 +47,17 @@ if {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info e
 # It's unusual to start Tcldrop with core/core.tcl directly and without first setting up some procs and variables,
 # but in case we were started without this basic stuff, we try to deal with it here:
 namespace eval ::tcldrop {
+	# FixMe: the Tcldrop/tcldrop commands should be namespace ensembles instead.. Oh, and they need a purpose too. =P
+	if {![llength [info commands Tcldrop]]} { proc Tcldrop {args} { namespace eval ::tcldrop $args } }
+	if {![llength [info commands tcldrop]]} { proc tcldrop {args} { namespace eval ::tcldrop $args } }
+	namespace export Tcldrop tcldrop PutLogLev stdout stderr
+	foreach {V D} [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version 0 numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}] {
+		if {![info exists ::tcldrop($V)]} { set ::tcldrop($V) $D }
+	}
+	unset V D
+	if {{eggdrop} in [package names]} { set ::tcldrop(host_env) {eggdrop} }
+	namespace export {*}$::tcldrop(commands)
+	set ::modules(tcldrop) [array get ::tcldrop]
 	# Stub commands, in case they don't already exist:
 	if {![llength [info commands stdout]]} { proc stdout {text} { if {[catch { puts $text }]} { stderr $text } } }
 	if {![llength [info commands stderr]]} { proc stderr {text} { if {[catch { puts stderr $text }]} { stdout $text } } }
@@ -58,17 +69,7 @@ namespace eval ::tcldrop {
 			}
 		}
 	}
-	# FixMe: the Tcldrop/tcldrop commands should be namespace ensembles instead.. Oh, and they need a purpose too. =P
-	if {![llength [info commands Tcldrop]]} { proc Tcldrop {args} { namespace eval ::tcldrop $args } }
-	if {![llength [info commands tcldrop]]} { proc tcldrop {args} { namespace eval ::tcldrop $args } }
-	namespace export Tcldrop tcldrop PutLogLev stdout stderr
-	if {![info exists ::tcldrop]} {
-		PutLogLev e * "Warning: The ::tcldrop array isn't set!\nPlease start Tcldrop using ./tcldrop or by source'ing tcldrop.tcl from within a Tcl-enabled application or by setting up the ::tcldrop array yourself before source'ing core.tcl.\nSetting up the ::tcldrop array with internal defaults for now...  =/"
-		array set ::tcldrop [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version $version numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}]
-		namespace export {*}$::tcldrop(commands)
-	}
-	set ::modules(tcldrop) [array get ::tcldrop]
-	set ::version [list $::tcldrop(version) $::tcldrop(numversion)]
+	catch { set ::version [list $::tcldrop(version) $::tcldrop(numversion)] }
 	namespace unknown unknown
 	package require msgcat
 	namespace import ::msgcat::mc
@@ -108,17 +109,17 @@ namespace eval ::tcldrop::core {
 	#package prefer latest
 	# Set a default mod-path if it's not already set:
 	if {![info exists ::mod-path]} { set ::mod-path {./modules} }
-	if {![info exists ::mod-paths]} { set ::mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ${::mod-path}] }
+	if {![info exists ::mod-paths]} { set ::mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ${::mod-path} [file dirname [file dirname [info script]]]] }
 	# Add to the paths to search for Tcl Modules:
 	foreach m ${::mod-paths} {
 		if {[file isdirectory $m]} {
 			::tcl::tm::path add $m
 			# Set the "official" Tcldrop mod-path:
-			set ::mod-path $m
+			catch { set ::mod-path $m }
 		}
 	}
 	# Add to the paths to search for Tcl packages:
-	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts] [file join / usr share tcltk tcl[info tclversion]] [file join / usr local share tcltk tcl[info tclversion]] [file join / usr local lib tcltk] [file join / usr local share tcltk] [file join / usr lib tcltk] [file join / usr share tcltk]] {
+	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts] [file join / usr share tcltk tcl[info tclversion]] [file join / usr local share tcltk tcl[info tclversion]] [file join / usr local lib tcltk] [file join / usr local share tcltk] [file join / usr lib tcltk] [file join / usr share tcltk] [file join [file dirname [info script]] .. .. lib]] {
 		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
 	}
 	unset m
@@ -1209,7 +1210,7 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0} -required {1}]
 	array set opts $options
-	if {(($opts(-version) > 0) && ([catch { ::package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { ::package require "tcldrop::$module" } err])} {
+	if {(($opts(-version) > 0) && ([catch { package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { package require "tcldrop::$module" } err])} {
 		putlog "[mc {Error loading module:}] $module $opts(-version): $err"
 		puterrlog "ERROR:\n$::errorInfo"
 		if {$opts(-required)} {
@@ -1244,7 +1245,7 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 				if {[namespace unknown] eq {}} { namespace unknown unknown }
 			}
 			# Import the modules' commands into the global namespace.  Modules may run namespace import themselves (either at the end of their script, or from the LOAD bind) (especially if they want to use the -force option), but for the ones that don't, we do it here:
-			if {[catch { ::uplevel \#0 [list ::namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* $err" }
+			if {[catch { ::uplevel \#0 [list ::namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* to global namespace: $err" }
 			# Import them into the ::tcldrop namespace also, using -force:
 			if {[catch { namespace eval ::tcldrop [list namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* $err" }
 		}
@@ -1740,21 +1741,21 @@ proc ::tcldrop::core::rehash {{type {}}} {
 		set config-path {}
 		# These are the search paths that we hope to find $config in:
 		foreach p [list {} {.} $tcldrop(dirname) [file join $tcldrop(dirname) ..] [file join $tcldrop(dirname) .. ..] [file join ${home-path} etc] ${home-path} [file join ${home-path} config] [file join ${home-path} configs] [pwd]] {
-			if {[file exists [file join $p $config]]} {
+			if {[file exists [file join ${config-path} $config]]} {
 				set config-path $p
 				break
 			}
 		}
-		if {[file exists [file join ${config-path} $config]]} {
+		if {[file exists [file join ${config-path} $tcldrop(config)]]} {
 			putlog "[mc {Loading Configuration}] $config ..."
 			# The script gets source'd inside the context of this proc without the uplevel command...  O_o
 			if {![catch { uplevel \#0 [list source [file join ${config-path} $config]] } error]} { set success 1 } else {
-				putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
+				putlog [mc {CONFIG FILE NOT LOADED (ERROR)}]
 				puterrlog $::errorInfo
 				set success 0
 			}
 		} else {
-			putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
+			putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND)}]
 			set success 0
 		}
 	}
@@ -2100,6 +2101,7 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 
 # Import the core Tcldrop commands into the global namespace:
 proc ::tcldrop::core::start {} {
+	variable start [clock seconds]
 	global restart tcldrop env tcl_interactive
 	# This basically calculates how often this process gets CPU cycles (in milliseconds):
 	set tcldrop(clockres) [clockres 250]
@@ -2126,6 +2128,7 @@ proc ::tcldrop::core::start {} {
 			# Add ::tcldrop to the global namespace path:
 			if {{::tcldrop} ni [namespace path]} { namespace path [concat [namespace path] {::tcldrop}] }
 		}
+
 		# The default console flags:
 		if {[info exists tcldrop(console)]} {
 			# tcldrop(console) may have been set by our parent interp (in ../../tcldrop.tcl)
@@ -2191,9 +2194,7 @@ proc ::tcldrop::core::start {} {
 	}
 }
 
-# Setting uptime here isn't important, what is important is having a variable to check on so we know if it's already started or not (This allows this file to be sourced in the future without causing it to try to start "fresh")
-if {![info exists ::uptime]} {
-	set ::uptime [clock seconds]
+if {![info exists ::tcldrop::core::start]} {
 	# And now we set everything into motion...  \o/
 	::tcldrop::core::start
 }

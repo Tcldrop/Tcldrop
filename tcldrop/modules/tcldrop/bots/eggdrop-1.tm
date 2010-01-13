@@ -404,12 +404,12 @@ proc ::tcldrop::bots::eggdrop::unlink {bot} {
 }
 
 # This is when the remote bot tells us a new password to use for future connections:
-bind eggdrop b handshake ::tcldrop::bots::eggdrop::Handshake -priority 1000
+::tcldrop::bind eggdrop b handshake ::tcldrop::bots::eggdrop::Handshake -priority 1000
 proc ::tcldrop::bots::eggdrop::Handshake {handle idx cmd arg} {
 	setuser $handle PASS [lindex [split $arg] end] -type null
 }
 
-bind eggdrop b version ::tcldrop::bots::eggdrop::Version -priority -1000
+::tcldrop::bind eggdrop b version ::tcldrop::bots::eggdrop::Version -priority -1000
 proc ::tcldrop::bots::eggdrop::Version {handle idx cmd arg} {
 	if {([string equal $cmd {version}] || [string equal $cmd {v}]) && [string is integer -strict [set handlen [lindex [set sline [split $arg]] 1]]]} {
 		lassign $sline numversion handlen bottype version network
@@ -421,8 +421,8 @@ proc ::tcldrop::bots::eggdrop::Version {handle idx cmd arg} {
 	}
 }
 
-bind eggdrop b thisbot ::tcldrop::bots::eggdrop::Thisbot -priority 1000
-bind eggdrop b tb ::tcldrop::bots::eggdrop::Thisbot -priority 1000
+::tcldrop::bind eggdrop b thisbot ::tcldrop::bots::eggdrop::Thisbot -priority 1000
+::tcldrop::bind eggdrop b tb ::tcldrop::bots::eggdrop::Thisbot -priority 1000
 proc ::tcldrop::bots::eggdrop::Thisbot {handle idx cmd arg} {
 	variable Peers
 	if {(![info exists Peers($idx)]) || ([string equal -nocase $Peers($idx) $handle] && ![string equal $Peers($idx) $handle])} {
@@ -440,8 +440,8 @@ proc ::tcldrop::bots::eggdrop::Thisbot {handle idx cmd arg} {
 }
 
 # zapf Yum Tcldrop mycmd testing 1 2 3 4 5 6
-bind eggdrop b zapf ::tcldrop::bots::eggdrop::Zapf -priority 1000
-bind eggdrop b z ::tcldrop::bots::eggdrop::Zapf -priority 1000
+::tcldrop::bind eggdrop b zapf ::tcldrop::bots::eggdrop::Zapf -priority 1000
+::tcldrop::bind eggdrop b z ::tcldrop::bots::eggdrop::Zapf -priority 1000
 proc ::tcldrop::bots::eggdrop::Zapf {handle idx cmd arg} {
 	if {[isbotnetnick [set bot [string tolower [lindex [set larg [split $arg]] 1]]]]} {
 		callbot [lindex $larg 0] [lindex $larg 2] [join [lrange $larg 3 end]]
@@ -455,8 +455,8 @@ proc ::tcldrop::bots::eggdrop::Zapf {handle idx cmd arg} {
 }
 
 # zapf-broad Atlantica mycommand testing 1 2 3 4 5
-bind eggdrop b zapf-broad ::tcldrop::bots::eggdrop::Zapf-broad -priority 1000
-bind eggdrop b zb ::tcldrop::bots::eggdrop::Zapf-broad -priority 1000
+::tcldrop::bind eggdrop b zapf-broad ::tcldrop::bots::eggdrop::Zapf-broad -priority 1000
+::tcldrop::bind eggdrop b zb ::tcldrop::bots::eggdrop::Zapf-broad -priority 1000
 proc ::tcldrop::bots::eggdrop::Zapf-broad {handle idx cmd arg} {
 	callbot $handle [lindex [set larg [split $arg]] 1] [join [lrange $larg 2 end]]
 	# Pass it along to all our peer bots (except the one that sent it to us):
@@ -470,7 +470,7 @@ proc ::tcldrop::bots::eggdrop::Zapf-broad {handle idx cmd arg} {
 # c KEEEEEEEL A Testing 1 2 3
 # chan KEEEEEEEL 0 Testing 1 2 3
 #bind eggdrop b chan ::tcldrop::bots::eggdrop::Chan -priority 1000
-bind eggdrop b c ::tcldrop::bots::eggdrop::Chan -priority 1000
+::tcldrop::bind eggdrop b c ::tcldrop::bots::eggdrop::Chan -priority 1000
 proc ::tcldrop::bots::eggdrop::Chan {handle idx cmd arg} {
 	set sarg [split $arg]
 	set remote [lindex $sarg 0]
@@ -488,7 +488,7 @@ proc ::tcldrop::bots::eggdrop::Chan {handle idx cmd arg} {
 
 # actchan FireEgl@KEEEEEEEL 0 this is an action.
 #bind eggdrop b actchan ::tcldrop::bots::eggdrop::Actchan -priority 1000
-bind eggdrop b a ::tcldrop::bots::eggdrop::Actchan -priority 1000
+::tcldrop::bind eggdrop b a ::tcldrop::bots::eggdrop::Actchan -priority 1000
 proc ::tcldrop::bots::eggdrop::Actchan {handle idx cmd arg} {
 	set sarg [split $arg]
 	set remote [lindex $sarg 0]
@@ -501,14 +501,14 @@ proc ::tcldrop::bots::eggdrop::Actchan {handle idx cmd arg} {
 # This is a [dccbroadcast] coming from KEEEEEEEL:
 # chat KEEEEEEEL Testing 1 2 3
 # ct KEEEEEEEL Testing 1 2 3
-bind eggdrop b chat ::tcldrop::bots::eggdrop::Chat -priority 1000
-bind eggdrop b ct ::tcldrop::bots::eggdrop::Chat -priority 1000
+::tcldrop::bind eggdrop b chat ::tcldrop::bots::eggdrop::Chat -priority 1000
+::tcldrop::bind eggdrop b ct ::tcldrop::bots::eggdrop::Chat -priority 1000
 proc ::tcldrop::bots::eggdrop::Chat {handle idx cmd arg} {
 	callparty broadcast [set bot [lindex [set sarg [split $arg]] 0]] bot $bot line [join [lrange $sarg 1 end]]
 	return 0
 }
 
-bind eggdrop b update ::tcldrop::bots::eggdrop::Update -priority 1000
+::tcldrop::bind eggdrop b update ::tcldrop::bots::eggdrop::Update -priority 1000
 proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
 	lassign [split $arg] bot numversion
 	botinfo icon [string index $numversion 0] numversion [string range $numversion 1 end]
@@ -517,8 +517,8 @@ proc ::tcldrop::bots::eggdrop::Update {handle idx cmd arg} {
 
 # <llength> *** (YSL) Linked to NauGhTy.
 # nlinked NauGhTy YSL -1061500
-bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
-bind eggdrop b n ::tcldrop::bots::eggdrop::Nlinked -priority 1000
+::tcldrop::bind eggdrop b nlinked ::tcldrop::bots::eggdrop::Nlinked -priority 1000
+::tcldrop::bind eggdrop b n ::tcldrop::bots::eggdrop::Nlinked -priority 1000
 proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
 	lassign [split $arg] bot uplink numversion
 	set icon [string index $numversion 0]
@@ -534,8 +534,8 @@ proc ::tcldrop::bots::eggdrop::Nlinked {handle idx cmd arg} {
 
 # unlinked WhiSPeR
 # un Flounder Unlinked from: Flounder (Atlantica) (lost 1 bot and 0 users)
-bind eggdrop b unlinked ::tcldrop::bots::eggdrop::Unlinked -priority 1000
-bind eggdrop b un ::tcldrop::bots::eggdrop::Unlinked -priority 1000
+::tcldrop::bind eggdrop b unlinked ::tcldrop::bots::eggdrop::Unlinked -priority 1000
+::tcldrop::bind eggdrop b un ::tcldrop::bots::eggdrop::Unlinked -priority 1000
 proc ::tcldrop::bots::eggdrop::Unlinked {handle idx cmd arg} {
 	variable Linked
 	array unset Linked *:[set bot [string tolower [lindex [set arg [split $arg]] 0]]]:*
@@ -548,7 +548,7 @@ proc ::tcldrop::bots::eggdrop::Unlinked {handle idx cmd arg} {
 # join SaHeR ZimoZimo 0 *9 rajeh@riy-t2p134.saudi.net.sa
 # j KEEEEEEEL FireEgl A *O Proteus-D@adsl-220-213-190.bhm.bellsouth.net
 #bind eggdrop b join ::tcldrop::bots::eggdrop::Join -priority 1000
-bind eggdrop b j ::tcldrop::bots::eggdrop::Join -priority 1000
+::tcldrop::bind eggdrop b j ::tcldrop::bots::eggdrop::Join -priority 1000
 proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
 	lassign [split $arg] bot handle chan flagidx userhost
 	# FixMe: Do callchjn here instead of callparty..callparty join should be invoked by a CHJN bind:
@@ -560,7 +560,7 @@ proc ::tcldrop::bots::eggdrop::Join {handle idx cmd arg} {
 # part KEEEEEEEL FireEgl 14
 # pt KEEEEEEEL FireEgl O byee...
 #bind eggdrop b part ::tcldrop::bots::eggdrop::Part -priority 1000
-bind eggdrop b pt ::tcldrop::bots::eggdrop::Part -priority 1000
+::tcldrop::bind eggdrop b pt ::tcldrop::bots::eggdrop::Part -priority 1000
 proc ::tcldrop::bots::eggdrop::Part {handle idx cmd arg} {
 	set partmsg [lassign [split $arg] bot usershandle usersidx]
 	set usersidx [::eggbase64::toint $usersidx]
@@ -573,7 +573,7 @@ proc ::tcldrop::bots::eggdrop::Part {handle idx cmd arg} {
 # away Atlantica 26 la la la...
 # aw KEEEEEEEL O fell asleep..
 #bind eggdrop b away ::tcldrop::bots::eggdrop::Away -priority 1000
-bind eggdrop b aw ::tcldrop::bots::eggdrop::Away -priority 1000
+::tcldrop::bind eggdrop b aw ::tcldrop::bots::eggdrop::Away -priority 1000
 proc ::tcldrop::bots::eggdrop::Away {handle idx cmd arg} {
 	callparty away [set usersidx [::eggbase64::toint [lindex [set arg [split $arg]] 1]]]:*@[set bot [lindex $arg 0]] bot $bot idx $usersidx line [join [lrange $arg 2 end]]
 	return 0
@@ -620,20 +620,20 @@ proc ::tcldrop::bots::eggdrop::Away {handle idx cmd arg} {
 # "End Link?" sent just after the link is fully established:
 # el
 
-bind eggdrop b ping ::tcldrop::bots::eggdrop::Ping -priority 1000
-bind eggdrop b pi ::tcldrop::bots::eggdrop::Ping -priority 1000
+::tcldrop::bind eggdrop b ping ::tcldrop::bots::eggdrop::Ping -priority 1000
+::tcldrop::bind eggdrop b pi ::tcldrop::bots::eggdrop::Ping -priority 1000
 proc ::tcldrop::bots::eggdrop::Ping {handle idx cmd arg} {
 	putidx $idx [string trimright "po $arg"]
 	return 0
 }
 
-bind eggdrop b pong ::tcldrop::bots::eggdrop::Ping -priority 1000
-bind eggdrop b po ::tcldrop::bots::eggdrop::Ping -priority 1000
+::tcldrop::bind eggdrop b pong ::tcldrop::bots::eggdrop::Ping -priority 1000
+::tcldrop::bind eggdrop b po ::tcldrop::bots::eggdrop::Ping -priority 1000
 proc ::tcldrop::bots::eggdrop::Pong {handle idx cmd arg} {
 	return 0
 }
 
-bind eggdrop b share ::tcldrop::bots::eggdrop::Share
+::tcldrop::bind eggdrop b share ::tcldrop::bots::eggdrop::Share
 proc ::tcldrop::bots::eggdrop::Share {handle idx cmd arg} {
 	# FixMe: Make sure we're receiving this from a share-bot.
 	foreach {type command arguments options} [split $arg] { break }
@@ -643,7 +643,7 @@ proc ::tcldrop::bots::eggdrop::Share {handle idx cmd arg} {
 }
 
 
-bind chat p * ::tcldrop::bots::eggdrop::CHAT
+::tcldrop::bind chat p * ::tcldrop::bots::eggdrop::CHAT
 proc ::tcldrop::bots::eggdrop::CHAT {handle chan text} {
 	variable Peers
 	if {![info exists ::bots([set bot [string tolower [lindex [split $handle @] end]]])] && ![string match {*@*} $handle] && ![isbotnetnick $bot]} {
@@ -685,12 +685,12 @@ proc ::tcldrop::bots::eggdrop::LOAD {module} {
 	addlistentype bots connect ::tcldrop::bots::eggdrop::Connect ident 1
 	# FixMe: It would be slightly more preferred if all the bind's were moved into this proc.
 }
-bind load - bots::eggdrop ::tcldrop::bots::eggdrop::LOAD -priority 0
+::tcldrop::bind load - bots::eggdrop ::tcldrop::bots::eggdrop::LOAD -priority 0
 
 proc ::tcldrop::bots::eggdrop::UNLD {module} {
 	# FixMe: Need to unbind all of the binds used in this .tcl
 	# FixMe: Need to delbottype and dellistentype here.
 	return 1
 }
-bind unld - bots::eggdrop ::tcldrop::bots::eggdrop::UNLD -priority 0
+::tcldrop::bind unld - bots::eggdrop ::tcldrop::bots::eggdrop::UNLD -priority 0
 

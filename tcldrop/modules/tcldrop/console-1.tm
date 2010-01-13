@@ -158,7 +158,7 @@ proc ::tcldrop::console::setconsole {idx setting value} {
 	return $value
 }
 
-bind load - console ::tcldrop::console::LOAD -priority 0
+::tcldrop::bind load - console ::tcldrop::console::LOAD -priority 0
 proc ::tcldrop::console::LOAD {module} {
 	setdefault console {ocmkbxs}
 	setdefault console-autosave 1
@@ -202,7 +202,7 @@ proc ::tcldrop::console::LOAD {module} {
 	checkmodule console::dcc
 }
 
-bind unld - console ::tcldrop::console::UNLD -priority 0
+::tcldrop::bind unld - console ::tcldrop::console::UNLD -priority 0
 proc ::tcldrop::console::UNLD {module} {
 	unloadmodule console::dcc
 	return 0

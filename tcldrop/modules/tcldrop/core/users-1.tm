@@ -488,7 +488,7 @@ proc ::tcldrop::core::users::Save {type} {
 	}
 }
 
-bind load - core::users ::tcldrop::core::users::LOAD -priority 0
+::tcldrop::bind load - core::users ::tcldrop::core::users::LOAD -priority 0
 proc ::tcldrop::core::users::LOAD {module} {
 	setdefault sort-users 0
 	setdefault default-flags {}
@@ -499,10 +499,10 @@ proc ::tcldrop::core::users::LOAD {module} {
 	#bind evnt - exit ::tcldrop::core::users::Save -priority 0
 }
 
-bind evnt - loaded ::tcldrop::core::users::EVNT_loaded -priority 0
+::tcldrop::bind evnt - loaded ::tcldrop::core::users::EVNT_loaded -priority 0
 proc ::tcldrop::core::users::EVNT_loaded {event} { reload }
 
-bind unld - core::users ::tcldrop::core::users::UNLD
+::tcldrop::bind unld - core::users ::tcldrop::core::users::UNLD
 proc ::tcldrop::core::users::UNLD {module} {
 	unbind evnt * * ::tcldrop::core::users::*
 	return 1

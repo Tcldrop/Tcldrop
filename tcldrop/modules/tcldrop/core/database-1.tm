@@ -308,16 +308,17 @@ proc ::tcldrop::core::database::calldatabase {database command {arguments {}} {o
 	}
 }
 
-bind load - core::database ::tcldrop::core::database::LOAD -priority 0
+::tcldrop::bind load - core::database ::tcldrop::core::database::LOAD -priority 0
+
 proc ::tcldrop::core::database::LOAD {module} {
 	array set ::database {}
 	setdefault database-basename {Database}
 	setdefault database-perm {0600}
 	setdefault quiet-save 1
 	protected globals database database-basename database-perm quiet-save
+	bind unld - core::database ::tcldrop::core::database::UNLD -priority 10
 }
 
-bind unld - core::database ::tcldrop::core::database::UNLD -priority 10
 proc ::tcldrop::core::database::UNLD {module} {
 	return 1
 }

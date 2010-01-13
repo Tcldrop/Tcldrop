@@ -344,7 +344,7 @@ proc ::tcldrop::party::callbcst {bot text} {
 	}
 }
 
-bind load - party ::tcldrop::party::LOAD -priority 0
+::tcldrop::bind load - party ::tcldrop::party::LOAD -priority 0
 proc ::tcldrop::party::LOAD {module} {
 	# This variable will store all the users who are on the partyline, each array name is in the form: 14:FireEgl@Botname
 	setdefault party_users {} -array 1 -protect 1
@@ -352,7 +352,7 @@ proc ::tcldrop::party::LOAD {module} {
 	setdefault party_chanusers {} -array 1 -protect 1
 }
 
-bind unld - party ::tcldrop::party::UNLD -priority 0
+::tcldrop::bind unld - party ::tcldrop::party::UNLD -priority 0
 proc ::tcldrop::party::UNLD {module} {
 	return 1
 }

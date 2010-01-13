@@ -340,19 +340,19 @@ proc ::tcldrop::bots::AutoLinkBots {minute hour day month year} {
 }
 
 
-bind disc - * ::tcldrop::party::DISC -priority -1000
+::tcldrop::bind disc - * ::tcldrop::party::DISC -priority -1000
 proc ::tcldrop::party::DISC {bot {reason {Unlinked.}}} {
 	callparty quit *:*@$bot line $reason
 	callparty disc $bot line $reason
 }
 
-bind link - * ::tcldrop::party::LINK -priority -1000
+::tcldrop::bind link - * ::tcldrop::party::LINK -priority -1000
 proc ::tcldrop::party::LINK {bot via} {
 	callparty link $bot handle $bot bot $bot via $via
 }
 
 
-bind load - bots ::tcldrop::bots::LOAD -priority 0
+::tcldrop::bind load - bots ::tcldrop::bots::LOAD -priority 0
 proc ::tcldrop::bots::LOAD {module} {
 	variable BotTypes
 	array set BotTypes {}

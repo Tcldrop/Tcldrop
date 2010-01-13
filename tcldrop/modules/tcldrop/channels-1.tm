@@ -812,4 +812,4 @@ proc ::tcldrop::channels::LOAD {module} {
 	bind unld - channels ::tcldrop::channels::UNLD -priority 100
 	checkmodule channels::dcc
 }
-bind load - channels ::tcldrop::channels::LOAD -priority 0
+::tcldrop::bind load - channels ::tcldrop::channels::LOAD -priority 0

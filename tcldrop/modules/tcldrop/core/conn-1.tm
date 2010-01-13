@@ -732,7 +732,7 @@ proc ::tcldrop::core::conn::delidxinfo {idx info} {
 proc ::tcldrop::core::conn::valididx {idx} { info exists ::idxlist($idx) }
 
 # This should stay as a LOAD bind:
-bind load - core::conn ::tcldrop::core::conn::LOAD -priority 0
+::tcldrop::bind load - core::conn ::tcldrop::core::conn::LOAD -priority 0
 proc ::tcldrop::core::conn::LOAD {module} {
 	setdefault my-hostname {}
 	setdefault my-ip {}
@@ -755,10 +755,10 @@ proc ::tcldrop::core::conn::LOAD {module} {
 	::uplevel #0 [list ::namespace import -force [namespace current]::*]
 }
 
-bind evnt - loaded ::tcldrop::core::conn::EVNT_loaded -priority 100000
+::tcldrop::bind evnt - loaded ::tcldrop::core::conn::EVNT_loaded -priority 100000
 proc ::tcldrop::core::conn::EVNT_loaded {event} { if {[setdefault max-dcc 99] > 998} { set ::max-dcc 997 } }
 
-bind evnt - prerestart ::tcldrop::core::conn::EVNT_prerestart -priority 100000
+::tcldrop::bind evnt - prerestart ::tcldrop::core::conn::EVNT_prerestart -priority 100000
 proc ::tcldrop::core::conn::EVNT_prerestart {event} {
 	global protected
 	counter start exemptidx
@@ -787,7 +787,7 @@ proc ::tcldrop::core::conn::EVNT_prerestart {event} {
 }
 
 # Don't allow the core::conn module to be unloaded:
-bind unld - core::conn ::tcldrop::core::conn::UNLD -priority 0
+::tcldrop::bind unld - core::conn ::tcldrop::core::conn::UNLD -priority 0
 proc ::tcldrop::core::conn::UNLD {module} {
 	::package forget ident
 	return 1

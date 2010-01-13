@@ -87,8 +87,8 @@ namespace eval ::tcldrop::encryption::md5 {
 	}
 	# FixMe: This should check for success or failure to find the md5 package:
 	FindMD5
-	bind load - encryption::md5 ::tcldrop::encryption::md5::LOAD -priority 0
-	bind load - md5 ::tcldrop::encryption::md5::LOAD -priority 0
+	::tcldrop::bind load - encryption::md5 ::tcldrop::encryption::md5::LOAD -priority 0
+	::tcldrop::bind load - md5 ::tcldrop::encryption::md5::LOAD -priority 0
 	proc LOAD {module} {
 		::tcldrop::encryption::register md5 [list encpass ::tcldrop::encryption::md5::encpass]
 		bind unld - encryption::md5 ::tcldrop::encryption::md5::UNLD

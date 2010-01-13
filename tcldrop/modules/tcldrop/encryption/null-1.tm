@@ -38,6 +38,7 @@ namespace eval ::tcldrop::encryption::null {
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
+	namespace path [list ::tcldrop]
 	# Pre-depends on the encryption module:
 	checkmodule encryption
 	proc encrypt {key string} { set string }
@@ -46,7 +47,7 @@ namespace eval ::tcldrop::encryption::null {
 	namespace path [list ::tcldrop::encryption ::tcldrop]
 }
 
-bind load - encryption::null ::tcldrop::encryption::null::LOAD -priority 0
+::tcldrop::bind load - encryption::null ::tcldrop::encryption::null::LOAD -priority 0
 proc ::tcldrop::encryption::null::LOAD {module} {
 	::tcldrop::encryption::register null [list encrypt ::tcldrop::encryption::null::encrypt decrypt ::tcldrop::encryption::null::decrypt encpass ::tcldrop::encryption::null::encpass]
 	bind unld - encryption::null ::tcldrop::encryption::null::UNLD -priority 0

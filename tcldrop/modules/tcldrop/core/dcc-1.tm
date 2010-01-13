@@ -841,7 +841,7 @@ if {[info exists ::tcl::proc_counter]} {
 	}
 }
 
-bind load - core::dcc ::tcldrop::core::dcc::LOAD -priority 0
+::tcldrop::bind load - core::dcc ::tcldrop::core::dcc::LOAD -priority 0
 proc ::tcldrop::core::dcc::LOAD {module} {
 	checkmodule console
 	# FixMe: Consider removing this bind and instead have separate log binds for each dcc::* module..
@@ -886,7 +886,7 @@ proc ::tcldrop::core::dcc::LOAD {module} {
 	loadhelp [file join set cmds1.help]
 }
 
-bind unld - core::dcc ::tcldrop::core::dcc::UNLD
+::tcldrop::bind unld - core::dcc ::tcldrop::core::dcc::UNLD
 proc ::tcldrop::core::dcc::UNLD {module} {
 	unbind dcc * * ::tcldrop::core::dcc::*
 	unloadhelp core.help

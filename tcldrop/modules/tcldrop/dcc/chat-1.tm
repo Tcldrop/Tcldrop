@@ -45,7 +45,7 @@ namespace eval ::tcldrop::dcc::chat {
 }
 
 # This is when they do a /dcc chat $botnick
-bind ctcp op|o DCC ::tcldrop::dcc::chat::DCC -priority 1000
+::tcldrop::bind ctcp op|o DCC ::tcldrop::dcc::chat::DCC -priority 1000
 proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
 	if {[info exists {::require-p}] && ${::require-p} && ![matchattr $hand p]} { return }
 	if {[isbotnick $dest]} {
@@ -67,7 +67,7 @@ proc ::tcldrop::dcc::chat::DCC {nick host hand dest key text} {
 }
 
 # This is when they do a /ctcp $botnick CHAT
-bind ctcp op|o CHAT ::tcldrop::dcc::chat::CHAT -priority 1000
+::tcldrop::bind ctcp op|o CHAT ::tcldrop::dcc::chat::CHAT -priority 1000
 proc ::tcldrop::dcc::chat::CHAT {nick uhost hand dest key text} {
 	if {[info exists {::require-p}] && ${::require-p} && ![matchattr $hand p]} { return }
 	if {[isbotnick $dest]} {
@@ -233,7 +233,7 @@ proc ::tcldrop::dcc::chat::dccchatcodefrompubsafetcl {} {
 	}
 }
 
-bind load - dcc::chat ::tcldrop::dcc::chat::LOAD -priority 0
+::tcldrop::bind load - dcc::chat ::tcldrop::dcc::chat::LOAD -priority 0
 proc ::tcldrop::dcc::chat::LOAD {module} {
 	# Add new listen types (these are used by the [listen] command):
 	addlistentype dccparty connect ::tcldrop::dcc::chat::Connect ident 1
