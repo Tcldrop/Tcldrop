@@ -119,7 +119,7 @@ namespace eval ::tcldrop::core {
 	unset m
 }
 
-if {(([info exists ::tcldrop(profiler)] && $tcldrop(profiler)) || [info exists ::env(profiler)] && $::env(profiler)) && ![catch { package require profiler }]} {
+if {[info commands ::_oldProc] eq {} && (([info exists ::tcldrop(profiler)] && $tcldrop(profiler)) || [info exists ::env(profiler)] && $::env(profiler)) && ![catch { package require profiler }]} {
 	# Use the profiler package from tcllib.
 	::profiler::init
 } elseif {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info exists ::env(proc_counter)] && $::env(proc_counter)} {
