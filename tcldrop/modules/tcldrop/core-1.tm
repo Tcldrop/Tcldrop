@@ -35,14 +35,8 @@
 # FixMe: $config should be loaded first if the variable exists, before we eval $config-eval.
 
 # Tcldrop requires at least Tcl v8.5.
-::package require Tcl 8.5
+package require Tcl 8.5
 # Cleanup/FixMe: Support/Kludges for Tcl v8.4 are to be removed.  Only Tcl v8.5+ is supported.
-
-# This is just a way to count how many times each proc is called:
-if {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info exists ::env(proc_counter)] && $::env(proc_counter)} {
-	rename proc ::tcl::Proc
-	::tcl::Proc proc {name arglist body} { uplevel [list ::tcl::Proc $name $arglist "incr ::tcl::proc_counter([string trimright [namespace current] {:}]::${name})\n$body"] }
-}
 
 # It's unusual to start Tcldrop with core/core.tcl directly and without first setting up some procs and variables,
 # but in case we were started without this basic stuff, we try to deal with it here:
@@ -123,6 +117,16 @@ namespace eval ::tcldrop::core {
 		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
 	}
 	unset m
+}
+
+if {(([info exists ::tcldrop(profiler)] && $tcldrop(profiler)) || [info exists ::env(profiler)] && $::env(profiler)) && ![catch { package require profiler }]} {
+	# Use the profiler package from tcllib.
+	::profiler::init
+	set ::profiler 11111
+} elseif {([info exists ::tcldrop(proc_counter)] && $tcldrop(proc_counter)) || [info exists ::env(proc_counter)] && $::env(proc_counter)} {
+	# This is just a way to count how many times each proc is called..
+	rename proc ::tcl::Proc
+	::tcl::Proc proc {name arglist body} { uplevel [list ::tcl::Proc $name $arglist "incr ::tcl::proc_counter([string trimright [namespace current] {:}]::${name})\n$body"] }
 }
 
 proc ::tcldrop::core::dict'sort {dict args} {
@@ -1639,6 +1643,9 @@ proc ::tcldrop::core::Sysuptime {} {
 			# Try calling kernel32.dll using Ffidl. This method IS affected by the rollover issue.
 			} elseif {![catch {package require Ffidl}] && ![catch {ffidl::callout ::tcldrop::core::Sysup {} long [ffidl::symbol kernel32.dll GetTickCount]}] && ![catch {Sysup} sysup]} {
 				return [expr {([clock milliseconds] - $sysup) / 1000}]
+			} elseif {![catch { package require winutils }]} {
+				# winutils is really old, probably nobody uses it anymore..but just in case:
+				return [expr { [clock seconds] - [::winutils::uptime] }]
 			} else {
 				return -1
 			}
@@ -1712,7 +1719,7 @@ proc ::tcldrop::core::shutdown {{reason {SHUTDOWN}} {code {0}}} {
 	catch { callevent shutdown }
 	catch { callshutdown $reason $code }
 	catch { putlog "* shutdown $code $reason" }
-	after idle [list after 99 [list die $reason $code]]
+	afteridle die $reason $code
 	# Set ::die now, so scripts that run between now and when we actually [die] can just check for $::die to know it's shutting down rather than both $::shutdown and $::die.
 	set ::die $reason
 }
@@ -1728,7 +1735,7 @@ proc ::tcldrop::core::rehash {{type {}}} {
 	if {$tcldrop(config-eval) != {}} {
 		putlog "Evaling \$tcldrop(config-eval) ..."
 		if {![catch { uplevel #0 $tcldrop(config-eval) } error]} { set success 1 } else {
-			putlog [mc {CONFIG FILE NOT LOADED (NOT FOUND, OR ERROR)}]
+			putlog [mc {CONFIG FILE NOT LOADED (ERROR)}]
 			puterrlog $::errorInfo
 			set success 0
 		}

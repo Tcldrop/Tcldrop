@@ -131,6 +131,7 @@ namespace eval ::tcldrop {
 									{c} { set tcldrop(channel-stats) 1 }
 									{t} { set tcldrop(simulate-dcc) 1 }
 									{m} { set tcldrop(userfile-create) 1 }
+									{p} { set tcldrop(profiler) 1 }
 									{v} {
 										variable Exit 0
 										return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"

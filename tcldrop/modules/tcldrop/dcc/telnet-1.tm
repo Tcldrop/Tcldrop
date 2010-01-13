@@ -164,22 +164,23 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 #}
 
 # This has to be a LOAD bind:
-::tcldrop::bind load - dcc::telnet ::tcldrop::dcc::telnet
-proc ::tcldrop::dcc::telnet {module} {
-	::tcldrop::setdefault open-telnets 1
-	::tcldrop::setdefault info-party 0
-	::tcldrop::setdefault connect-timeout 27
-	::tcldrop::setdefault use-telnet-banner 0
-	::tcldrop::setdefault text-path {text}
-	::tcldrop::setdefault telnet-banner {banner}
-	::tcldrop::setdefault motd {motd}
-	::tcldrop::setdefault network {Unknown}
-	::tcldrop::setdefault require-p 0
-	::tcldrop::setdefault default-flags {p}
+::tcldrop::bind load - dcc::telnet ::tcldrop::dcc::telnet::LOAD
+proc ::tcldrop::dcc::telnet::LOAD {module} {
+	setdefault open-telnets 1
+	setdefault info-party 0
+	setdefault connect-timeout 27
+	setdefault use-telnet-banner 0
+	setdefault text-path {text}
+	setdefault telnet-banner {banner}
+	setdefault motd {motd}
+	setdefault network {Unknown}
+	setdefault require-p 0
+	setdefault default-flags {p}
+	setdefault ident-timeout 30
 	# Add new listen types (these are used by the [listen] command):
-	addlistentype telnetparty connect ::tcldrop::dcc::telnet::Connect ident 1
-	addlistentype dcc::telnet connect ::tcldrop::dcc::telnet::Connect ident 1
-	addlistentype users connect ::tcldrop::dcc::telnet::Connect ident 1
+	addlistentype telnetparty connect ::tcldrop::dcc::telnet::Connect ident ${::ident-timeout}
+	addlistentype dcc::telnet connect ::tcldrop::dcc::telnet::Connect ident ${::ident-timeout}
+	addlistentype users connect ::tcldrop::dcc::telnet::Connect ident ${::ident-timeout}
 #	bind chat - * ::tcldrop::dcc::telnet::CHAT -priority -100
 #	bind bcst - * ::tcldrop::dcc::telnet::BCST -priority -100
 }
