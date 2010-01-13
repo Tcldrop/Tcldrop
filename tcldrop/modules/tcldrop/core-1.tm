@@ -1741,12 +1741,12 @@ proc ::tcldrop::core::rehash {{type {}}} {
 		set config-path {}
 		# These are the search paths that we hope to find $config in:
 		foreach p [list {} {.} $tcldrop(dirname) [file join $tcldrop(dirname) ..] [file join $tcldrop(dirname) .. ..] [file join ${home-path} etc] ${home-path} [file join ${home-path} config] [file join ${home-path} configs] [pwd]] {
-			if {[file exists [file join ${config-path} $config]]} {
+			if {[file exists [file join $p $config]]} {
 				set config-path $p
 				break
 			}
 		}
-		if {[file exists [file join ${config-path} $tcldrop(config)]]} {
+		if {[file exists [file join ${config-path} $config]]} {
 			putlog "[mc {Loading Configuration}] $config ..."
 			# The script gets source'd inside the context of this proc without the uplevel command...  O_o
 			if {![catch { uplevel \#0 [list source [file join ${config-path} $config]] } error]} { set success 1 } else {
