@@ -884,4 +884,3 @@ namespace eval ::tcldrop {
 	if {[info exists untrappedSignals]} { PutLogLev console o - "Unable to trap these signals: [join $untrappedSignals {, }]." }
 	unset -nocomplain trapSignals trappedSignals Signal error untrappedSignals
 }
-

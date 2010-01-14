@@ -62,10 +62,12 @@ namespace eval ::tcldrop {
 		fconfigure stdin -blocking 0 -buffering line
 		fconfigure stdout -blocking 0 -buffering line
 		fconfigure stderr -blocking 0 -buffering line
-		# Next 2 lines of code are a workaround for a Tcl bug *sigh*:
-		# Basically, fileevents on stdin in slave interps don't work unless their master has/had a fileevent.
-		fileevent stdin readable NOOP
-		fileevent stdin readable {}
+		if {[fileevent stdin readable] eq {}} {
+			# Next 2 lines of code are a workaround for an Expect bug:
+			# Basically, if Expect is loaded in the slave interp, fileevents on stdin in slave interp won't work unless their master has/had a fileevent.
+			fileevent stdin readable NOOP
+			fileevent stdin readable {}
+		}
 		if {!$tcldrop(background-mode) && !$tcldrop(simulate-dcc)} {
 			if {![catch { package require tclreadline }] && [info commands ::tclreadline::Loop] ne {}} {
 				# This is the real tclreadline.
