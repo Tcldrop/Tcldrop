@@ -2023,7 +2023,6 @@ proc ::tcldrop::core::counter {command {id {default}} {incr {1}}} {
 }
 
 proc ::tcldrop::core::EVNT_loaded {event} {
-	putdebuglog "::tcldrop::core::EVNT_loaded $event"
 	# resynch channels after a restart
 	foreach chan [channels] {
 		if {![botonchan $chan]} {
@@ -2150,9 +2149,9 @@ proc ::tcldrop::core::start {} {
 			if {![string match {*d*} $console]} { append console {d} }
 			# Setting an error trace, to catch hard to see errors:
 			proc ::tcldrop::core::TraceError {var var2 op} { variable LastError
-				switch -glob -- $::errorInfo {
-					{can't find package *} - {couldn't load file *} {
-						# These are "package require" errors most likely.
+				switch -glob -- [string trim $::errorInfo] {
+					{can't find package *} - {couldn't load file *} - {version conflict for package "Tcl": have *, need 8.6*} - {package TclOO 0.6 is not present*} - {} {
+						# Ignore this stuff.
 					}
 					{default} {
 						# Prevent error floods by only showing 1 per second:
@@ -2189,13 +2188,9 @@ proc ::tcldrop::core::start {} {
 		if {$tcldrop(background-mode)} {
 			# Disable showing logs to the "screen":
 			unbind log - * ::tcldrop::PutLogLev
-			if {!$tcldrop(simulate-dcc)} {
-				# We don't need these sockets open either (do we?):
-				#catch { close stderr }
-				#catch { close stdout }
-				#catch { close stdin }
-				set tcl_interactive 0
-			}
+			#if {!$tcldrop(simulate-dcc)} {
+				#set tcl_interactive 0
+			#}
 		}
 	}
 }

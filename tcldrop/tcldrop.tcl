@@ -59,6 +59,13 @@ namespace eval ::tcldrop {
 		# FixMe: Basically I want a readline or readline-like interface.  So that at least Tcl-commands can be entered on this interpreter (the bot(s) are running in slave interps).
 		# FixMe: In the future I'd like to see a screen-like interface, where each bot has its own "screen" that it runs on.
 		# FixMe: This code is untested...
+		fconfigure stdin -blocking 0 -buffering line
+		fconfigure stdout -blocking 0 -buffering line
+		fconfigure stderr -blocking 0 -buffering line
+		# Next 2 lines of code are a workaround for a Tcl bug *sigh*:
+		# Basically, fileevents on stdin in slave interps don't work unless their master has/had a fileevent.
+		fileevent stdin readable NOOP
+		fileevent stdin readable {}
 		if {!$tcldrop(background-mode) && !$tcldrop(simulate-dcc)} {
 			if {![catch { package require tclreadline }] && [info commands ::tclreadline::Loop] ne {}} {
 				# This is the real tclreadline.
@@ -75,10 +82,6 @@ namespace eval ::tcldrop {
 			} else {
 				catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 			}
-			#catch { close stdout }
-			#catch { close stdin }
-			#catch { close stderr }
-			#set tcl_interactive 0
 			exit $::tcldrop::Exit
 		} elseif {![catch { vwait ::tcldrop::Exit } error]} {
 			catch { puts "Exiting with error level $Exit ... $error" }

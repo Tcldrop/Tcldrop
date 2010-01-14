@@ -37,11 +37,13 @@ namespace eval ::tcldrop::dcc::terminal {
 	package provide tcldrop::$name $version
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
-	variable depends {party core::conn core}
+	variable predepends {dcc::telnet}
+	variable depends {dcc::telnet core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {The terminal interface for users to access the bot.}
 	variable rcsid {$Id$}
 	variable commands [list]
+	namespace path [list ::tcldrop]
 	# Pre-depends on the partyline module:
 	#checkmodule party
 }
@@ -64,14 +66,14 @@ proc ::tcldrop::dcc::terminal::start {event} {
 			while {[gets stdin line] >= 0} {
 				::tcldrop::dcc::telnet::Read $idx $line
 			}
-			if {[eof stdin]} { catch { close stdin } }
-			if {[eof stdout]} { catch { close stdout } }
-			if {[eof stderr]} { catch { close stderr } }
+			#if {[eof stdin]} { catch { close stdin } }
+			#if {[eof stdout]} { catch { close stdout } }
+			#if {[eof stderr]} { catch { close stderr } }
 		}
 		proc ::tcldrop::dcc::terminal::Write {idx} {
 			fileevent stdout writable {}
-			registeridx $idx idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_ID info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
-			putdcc $idx {### ENTERING DCC CHAT SIMULATION ###}
+			registeridx $idx idx $idx sock stdout handle * ident User hostname Console port 0 remote User@Console state TELNET_CONN info {Console} other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
+			putdcc $idx "### [mc {ENTERING DCC CHAT SIMULATION}] ###"
 			::tcldrop::dcc::telnet::Write $idx
 		}
 
@@ -87,7 +89,7 @@ proc ::tcldrop::dcc::terminal::EVNT_init {event} {
 	if {$::tcldrop(host_env) == {wish}} {
 		proc ::tcldrop::stdin {text} { ::tcldrop::dcc::telnet::Read 1 $text }
 		registeridx 1 idx 1 sock stdout filter ::tcldrop::dcc::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
-		putdcc 1 {### ENTERING DCC CHAT SIMULATION ###}
+		putdcc 1 "### [mc {ENTERING DCC CHAT SIMULATION}] ###"
 		::tcldrop::dcc::telnet::Write 1
 	}
 }
@@ -102,4 +104,3 @@ proc ::tcldrop::dcc::terminal::LOAD {module} {
 	bind unld - dcc::terminal ::tcldrop::dcc::terminal::UNLD
 	proc ::tcldrop::dcc::terminal::UNLD {module} { return 1 }
 }
-

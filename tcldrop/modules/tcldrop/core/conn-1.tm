@@ -565,7 +565,7 @@ proc ::tcldrop::core::conn::killidx {idx args} {
 	if {[info exists ::idxlist($idx)]} {
 		array set idxinfo $::idxlist($idx)
 		unset -nocomplain ::idxlist($idx)
-		if {[info exists idxinfo(sock)]} {
+		if {[info exists idxinfo(sock)] && $idxinfo(sock) in [file channels]} {
 			catch { fileevent $idxinfo(sock) writable {} }
 			catch { fileevent $idxinfo(sock) readable {} }
 			#catch { flush $idxinfo(sock) }

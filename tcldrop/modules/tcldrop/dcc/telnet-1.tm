@@ -50,7 +50,9 @@ namespace eval ::tcldrop::dcc::telnet {
 	namespace path [list ::tcldrop ::tcldrop::core]
 }
 
-proc ::tcldrop::dcc::telnet::Connect {idx} { idxinfo $idx state TELNET_CONN -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle * }
+proc ::tcldrop::dcc::telnet::Connect {idx} {
+	idxinfo $idx state TELNET_CONN -control ::tcldrop::dcc::telnet::Read -writable ::tcldrop::dcc::telnet::Write -errors ::tcldrop::dcc::telnet::Error module dcc::telnet handle *
+}
 
 proc ::tcldrop::dcc::telnet::Error {idx {error {}}} {
 	array set chatinfo [idxinfo $idx]
