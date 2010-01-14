@@ -258,14 +258,16 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 		} elseif {[dict exists $idxlist($idx) -control]} {
 			# For speed, we process all available lines.  (This is absolutely necessary when running inside an Eggdrop, because Eggdrop's event loops are 1 second apart)
 			set trafficlength 0
+			# Set idxinfo, because $idxlist($idx) could disappear while we're running the -control proc:
+			set idxinfo $idxlist($idx)
 			while {[info exists idxlist($idx)] && [set length [gets [dict get $idxlist($idx) sock] line]] != -1} {
-				if {[catch { [dict get $idxlist($idx) -control] $idx $line } retval]} {
-					putlog [set error "Error in [dict get $idxlist($idx) -control]: $retval"]
+				if {[catch { [dict get $idxinfo -control] $idx $line } retval]} {
+					putlog [set error "Error in [dict get $idxinfo -control]: $retval"]
 					puterrlog $errorInfo
 					break
 				} elseif {$retval eq {1}} {
 					# The control proc requested a killidx by returning 1.
-					putloglev d * "net: killidx! idx $idx (socket $sock)  (Requested by [dict get $idxlist($idx) -control])"
+					putloglev d * "net: killidx! idx $idx (socket $sock)  (Requested by [dict get $idxinfo -control])"
 					Timeout cancel $idx
 					killidx $idx
 					break
@@ -279,8 +281,8 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 					break
 				}
 			}
-			traffic [dict get $idxlist($idx) traffictype] in $trafficlength
-			if {[eof [dict get $idxlist($idx) sock]]} { set error "net: eof!(read) idx $idx" }
+			traffic [dict get $idxinfo traffictype] in $trafficlength
+			if {[eof [dict get $idxinfo sock]]} { set error "net: eof!(read) idx $idx" }
 		} else {
 			set error "net: control!(read) idx $idx  (no control proc defined!)"
 		}
@@ -600,7 +602,13 @@ proc ::tcldrop::core::conn::assignidx {args} {
 # args is a key/value pair list.
 # Required keys are: type sock idx hostname port timestamp handle other
 # See info about the dcclist command in eggdrop/doc/tcl-commands.doc, because it's dcclist that requires most of these keys.
-proc ::tcldrop::core::conn::registeridx {idx args} { set ::idxlist($idx) [dict set args idx $idx] }
+proc ::tcldrop::core::conn::registeridx {idx args} {
+	if {![info exists ::idxlist($idx)]} {
+		set ::idxlist($idx) [dict set args idx $idx]
+	} else {
+		return -code error "$idx already exists, you can't register it twice."
+	}
+}
 
 # Unregisters an idx:
 proc ::tcldrop::core::conn::unregisteridx {idx} { array unset ::idxlist $idx }

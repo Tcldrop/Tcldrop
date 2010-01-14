@@ -90,6 +90,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 							return 1
 						} elseif {[ircparty registered $idx]} {
 							idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
+							initconsole $idx
 							Welcome $idx
 						}
 						return 0
@@ -777,7 +778,10 @@ proc ::tcldrop::dcc::irc::LOAD {module} {
 	setdefault require-p 0
 	setdefault default-flags {p}
 	# Add new listen types (these are used by the [listen] command):
+	addlistentype dcc::irc connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
 	addlistentype ircparty connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
+	addlistentype irc connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
+	addlistentype ircd connect ::tcldrop::dcc::irc::Connect ident 1 dns 1
 	bind ircparty - PING ::tcldrop::dcc::irc::ircparty_PING
 	bind ircparty - PONG ::tcldrop::dcc::irc::ircparty_PONG
 	bind ircparty - NICK ::tcldrop::dcc::irc::ircparty_NICK

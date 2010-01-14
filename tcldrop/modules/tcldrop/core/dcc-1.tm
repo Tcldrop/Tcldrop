@@ -823,22 +823,17 @@ proc ::tcldrop::core::dcc::PROFILER {handle idx text} {
 proc ::tcldrop::core::dcc::LOG {levels channel text {tags {}}} {
 	global idxlist
 	foreach i [array names idxlist] {
-		array set idxinfo $idxlist($i)
-		if {[info exists idxinfo(console-channel)] && ([string match -nocase $channel $idxinfo(console-channel)] || [string match -nocase $idxinfo(console-channel) $channel]) && [info exists idxinfo(console-levels)] && [checkflags $levels $idxinfo(console-levels)] && ((![dict exists $tags save] || ![dict get $tags save]) || !$idxinfo(console-quiet-save))} {
-			# Replace the default log-time with the users preference:
-			dict set tags log-time $idxinfo(console-log-time)
-			switch -- [dict get $tags log-time] {
-				{1} { set text "[clock format [clock seconds] -format {[%H:%M]}] $text" }
-				{2} { set text "[clock format [clock seconds] -format {[%T]}] $text" }
+		if {[dict exists $idxlist($i) console-channel] && ([string match -nocase $channel [dict get $idxlist($i) console-channel]] || [string match -nocase [dict get $idxlist($i) console-channel] $channel]) && [checkflags $levels [dict get $idxlist($i) console-levels]] && ((![dict exists $tags save] || ![dict get $tags save]) || ![dict get $idxlist($i) console-quiet-save])} {
+			switch -- [dict get $idxlist($i) console-log-time] {
+				{1} { putdcc $i "[clock format [clock seconds] -format {[%H:%M]}] $text" }
+				{2} { putdcc $i "[clock format [clock seconds] -format {[%T]}] $text" }
 				{0} - {} - { } { }
 				{default} {
 					# Use a custom clock format.. Should this use a separate variable instead?
-					set text "[clock format [clock seconds] -format [dict get $tags log-time]] $text"
+					putdcc $i "[clock format [clock seconds] -format [dict get $idxlist($i) console-log-time]] $text"
 				}
 			}
-			putdcc $i $text
 		}
-		array unset idxinfo
 	}
 }
 
