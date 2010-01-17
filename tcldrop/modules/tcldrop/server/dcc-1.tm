@@ -69,12 +69,12 @@ proc ::tcldrop::server::dcc::DUMP {handle idx text} {
 
 proc ::tcldrop::server::dcc::SERVERS {handle idx text} {
 	putcmdlog "#$handle# servers"
-	putdcc $idx "Server list:"
+	putdcc $idx "[mc_handle $handle {Server list}]:"
 	# FixMe: Add support for showing which server in the list we're at when ::idxlist gets turned into a dict
 	foreach server $::servers {
 		putdcc $idx "  $server"
 	}
-	putdcc $idx "End of server list."
+	putdcc $idx "[mc_handle $handle {End of server list.}]"
 	return 0
 }
 

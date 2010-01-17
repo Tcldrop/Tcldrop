@@ -90,7 +90,7 @@ proc ::tcldrop::encryption::Encpass {password arguments} {
 	if {[info exists Types($options(-type),encpass)]} {
 		$Types($options(-type),encpass) $password
 	} else {
-		return -code error "Invalid encryption type \"$options(-type)\".  Available types: [join $Defaults(encpass) {, }]"
+		return -code error [mc {Invalid encryption type "%1$s".  Available types: %2$s} $options(-type) [join $Defaults(encpass) {, }]]
 	}
 }
 
@@ -103,7 +103,7 @@ proc ::tcldrop::encryption::Encrypt {key string arguments} {
 	if {[info exists Types($options(-type),encrypt)]} {
 		$Types($options(-type),encrypt) $key $string
 	} else {
-		return -code error "Invalid encryption type \"$options(-type)\".  Available types: [join $Defaults(encrypt) {, }]"
+		return -code error [mc {Invalid encryption type "%1$s".  Available types: %2%s} $options(-type) [join $Defaults(encrypt) {, }]]
 	}
 }
 
@@ -116,7 +116,7 @@ proc ::tcldrop::encryption::Decrypt {key string arguments} {
 	if {[info exists Types($options(-type),decrypt)]} {
 		$Types($options(-type),decrypt) $key $string
 	} else {
-		return -code error "Invalid encryption type \"$options(-type)\".  Available types: [join $Defaults(decrypt) {, }]"
+		return -code error [mc {Invalid encryption type "%1$s".  Available types: %2$s} $options(-type) [join $Defaults(decrypt) {, }]]
 	}
 }
 

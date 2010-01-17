@@ -94,7 +94,7 @@ namespace eval ::tcldrop::encryption::md5 {
 		bind unld - encryption::md5 ::tcldrop::encryption::md5::UNLD
 		bind unld - md5 ::tcldrop::encryption::md5::UNLD
 		variable md5ver
-		putlog "Using tcllib md5 version: $md5ver"
+		putlog "[mc {Using tcllib md5 version}]: $md5ver"
 	}
 	proc UNLD {module} {
 		catch { package forget md5 }

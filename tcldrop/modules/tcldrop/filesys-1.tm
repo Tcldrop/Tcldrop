@@ -64,7 +64,7 @@ proc ::tcldrop::filesys::callfil {handle idx arg} {
 			putloglev d * "tcl: fil call: $proc $handle $idx $arg"
 			incr retval
 			if {[catch { $proc $handle $idx $arg } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 			} elseif {[string equal $err {1}]} {
 				# Abort processing further binds if they return 1.
 				break

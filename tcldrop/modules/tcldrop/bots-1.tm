@@ -116,7 +116,7 @@ proc ::tcldrop::bots::callbot {handle cmd arg} {
 		if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $handle $cmd $arg } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 			} elseif {[string equal $err {1}]} {
 				# Abort processing further binds if they return 1.
 				#break
@@ -141,7 +141,7 @@ proc ::tcldrop::bots::calllink {bot {via {}}} {
 		if {[string match -nocase $mask $bot]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $bot $via } err]} {
-				putlog "Error in $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			}
 		}
@@ -163,12 +163,12 @@ proc ::tcldrop::bots::calldisc {bot {reason {}}} {
 		if {[string match -nocase $mask $bot]} {
 			if {[llength [info args $proc]] == 2} {
 				if {[catch { $proc $bot $reason } err]} {
-					putlog "Error in $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 			} else {
 				if {[catch { $proc $bot } err]} {
-					putlog "Error in $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 			}

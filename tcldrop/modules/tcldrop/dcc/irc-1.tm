@@ -90,7 +90,6 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 							return 1
 						} elseif {[ircparty registered $idx]} {
 							idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
-							initconsole $idx
 							Welcome $idx
 						}
 						return 0

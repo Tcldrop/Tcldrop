@@ -257,7 +257,7 @@ proc ::tcldrop::core::database::Database {database command {arguments {}}} {
 				# Create the database if it doesn't (yet) exist:
 				if {![info exists ::database($database)]} { set ::database($database) [list] }
 				# Only send putlog when quiet-save is set to 0:
-				if {${::quiet-save} == {0}} { putloglev o - "Saving $database ($opt(-file)) ..." [dict create save 1] }
+				if {${::quiet-save} == {0}} { putloglev o - "[mc {Saving %1$s (%2$s) ...} $database $opt(-file)]" [dict create save 1] }
 				puts -nonewline $fid $::database($database)
 				close $fid
 				if {![info exists opt(-permissions)] || $opt(-permissions) eq {} || $opt(-permissions) == 0 || [catch { file attributes $opt(-file) -permissions $opt(-permissions) }]} {
@@ -299,7 +299,7 @@ proc ::tcldrop::core::database::calldatabase {database command {arguments {}} {o
 		countbind $bindtype $mask $proc
 		if {[string match -nocase $mask $database]} {
 			if {[catch { $proc $database $command $options $arguments } err]} {
-				putlog "Error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} elseif {[string equal $err {1}]} {
 				break

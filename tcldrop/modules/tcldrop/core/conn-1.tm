@@ -123,7 +123,7 @@ proc ::tcldrop::core::conn::Connect {opts} {
 		}
 	}
 	# Make sure the address and port were specified:
-	if {$options(-address) eq {}} { return -code error "You must specify an address to connect to." } elseif {$options(-port) eq {}} { return -code error "You must specify a port to connect to." }
+	if {$options(-address) eq {}} { return -code error "[mc {You must specify an address to connect to.}]" } elseif {$options(-port) eq {}} { return -code error "[mc {You must specify a port to connect to.}]" }
 	# Following mIRC's lead of using +'s in front of the port to mean it's an SSL connection:
 	if {[string match {+*} $options(-port)]} {
 		set options(-port) [string range $options(-port) 1 end]
@@ -242,7 +242,7 @@ proc ::tcldrop::core::conn::Timeout {command id {arg {}}} {
 				return 0
 			}
 		}
-		{default} { return -code error "Unknown subcommand to timeout: $command" }
+		{default} { return -code error "[mc {Unknown subcommand to timeout}]: $command" }
 	}
 }
 proc ::tcldrop::core::conn::timeout {command id args} { Timeout $command $id $args }
@@ -262,7 +262,7 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 			set idxinfo $idxlist($idx)
 			while {[info exists idxlist($idx)] && [set length [gets [dict get $idxlist($idx) sock] line]] != -1} {
 				if {[catch { [dict get $idxinfo -control] $idx $line } retval]} {
-					putlog [set error "Error in [dict get $idxinfo -control]: $retval"]
+					putlog [set error "[mc {Error in script}]: [dict get $idxinfo -control]: $retval"]
 					puterrlog $errorInfo
 					break
 				} elseif {$retval eq {1}} {
@@ -289,9 +289,9 @@ proc ::tcldrop::core::conn::Read {idx {sock {}}} {
 		if {$error ne {} && [info exists idxlist($idx)]} {
 			putloglev d * $error
 			# Tell the errors proc about the error, if they have one defined.
-			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev e * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
+			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev e * "[mc {Error in script}]: [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc (This is the Eggdrop way)..
-			if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev e * "Error in [dict get $idxlist($idx) -control]: $error" }
+			if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev e * "[mc {Error in script}]: [dict get $idxlist($idx) -control]: $error" }
 			Timeout cancel $idx
 			killidx $idx
 		} else {
@@ -315,11 +315,11 @@ proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 		if {$error ne {}} {
 			putloglev d * "${error}"
 			# Tell the errors proc about the error, if they have one defined.
-			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
+			if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "[mc {Error in script}]: [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 			killidx $idx
 			# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
 			# FixMe: Find out if Eggdrop calls the control proc with "" even though the connection was never established.
-			#if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev d * "Error in [dict get $idxlist($idx) -control]: $error" }
+			#if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev d * "[mc {Error in script}]: [dict get $idxlist($idx) -control]: $error" }
 		} else {
 			# Try to set the remote-* things now (in case they failed to get set from ProxyControl):
 			catch {
@@ -344,10 +344,10 @@ proc ::tcldrop::core::conn::ConnectTimeout {idx} {
 	if {[info exists idxlist($idx)]} {
 		putloglev d * [set error "net: timeout!(connect) idx $idx"]
 		# Tell the errors proc about the error, if they have one defined.
-		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
+		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "[mc {Error in script}]: [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 		killidx $idx
 		# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
-		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "Error in [dict get $idxlist($idx) -control]: $error" }
+		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "[mc {Error in script}]: [dict get $idxlist($idx) -control]: $error" }
 	}
 }
 
@@ -356,10 +356,10 @@ proc ::tcldrop::core::conn::InactiveTimeout {idx} {
 	if {[info exists idxlist($idx)]} {
 		putloglev d * [set error "net: timeout!(inactive) idx $idx"]
 		# Tell the errors proc about the error, if they have one defined.
-		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "Error in [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
+		if {[dict exists $idxlist($idx) -errors]} { if {[set trycontrol [catch { [dict get $idxlist($idx) -errors] $idx $error } error]]} { putloglev de * "[mc {Error in script}]: [dict get $idxlist($idx) -errors]: $error" } } else { set trycontrol 1 }
 		killidx $idx
 		# Since the errors proc wasn't defined (or failed), try just sending {} to the control proc..
-		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "Error in [dict get $idxlist($idx) -control]: $error" }
+		if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev de * "[mc {Error in script}]: [dict get $idxlist($idx) -control]: $error" }
 	}
 }
 
@@ -417,7 +417,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 			if {[string equal -nocase {off} $type]} {
 				catch { close $idxinfo(sock) }
 			} else {
-				putlog "already listening on port $port"
+				putlog "[mc {Already listening on port %d} $port]"
 			}
 			return $port
 		}
@@ -434,7 +434,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 				if {${::my-ip} ne {}} { set myaddr ${::my-ip} } else { set myaddr ${::default-ip} }
 				set options [dict create traffictype unknown type $type ident ${::ident-timeout} dns 0 ssl $ssl connect {} myaddr $myaddr {*}$ListenTypes($type) {*}$args]
 			} else {
-				return -code error "No such listen type: $type"
+				return -code error "[mc {No such listen type: %s} $type]"
 			}
 		}
 	}
@@ -442,7 +442,7 @@ proc ::tcldrop::core::conn::listen {port type args} {
 		if {[info commands {::tls::socket}] ne {} || ![catch { package require tls }]} {
 			set socket {::tls::socket}
 		} else {
-			return -code error {SSL not supported, because the "tls" package is not installed.}
+			return -code error [mc {SSL not supported, because the "tls" package is not installed.}]
 		}
 	} else {
 		set socket {socket}
@@ -456,13 +456,13 @@ proc ::tcldrop::core::conn::listen {port type args} {
 	}
 	if {!$fail} {
 		fconfigure $sock -buffering line -blocking 0
-		if {$myaddr eq {0.0.0.0}} { set info "Listening on *:$port" } else { set info "Listening on ${myaddr}:$port" }
+		if {$myaddr eq {0.0.0.0}} { set info "[mc {Listening on}] *:$port" } else { set info "[mc {Listening on}] ${myaddr}:$port" }
 		lassign [fconfigure $sock -sockname] local-ip local-hostname local-port
 		registeridx [set idx [assignidx]] idx $idx sock $sock module $type handle ($type) remote $myaddr hostname $myaddr local-ip ${local-ip} local-hostname ${local-hostname} local-port ${local-port} port $port myaddr $myaddr type $type other "lstn  $port" timestamp [clock seconds] info $info
-		putlog "Listening at ${myaddr}:$port  ($type)"
+		putlog "[mc {Listening at %1$s  (%2$s)} ${myaddr}:$port $type]"
 		return $port
 	} else {
-		return -code error "error while trying to listen on ${myaddr}:$port: $sock"
+		return -code error "[mc {Error while trying to listen on %1$s: %2$s} ${myaddr}:$port $sock]"
 	}
 }
 

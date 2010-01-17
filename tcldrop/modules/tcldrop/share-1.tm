@@ -48,7 +48,7 @@ proc ::tcldrop::share::callshare {type command data {options {}}} {
 	foreach {bindtype flags mask proc} [bindlist share] {
 		if {[string match -nocase $mask $type $options]} {
 			if {[catch { $proc $type $command $data } err]} {
-				putlog "Error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			}
 			countbind $bindtype $mask $proc

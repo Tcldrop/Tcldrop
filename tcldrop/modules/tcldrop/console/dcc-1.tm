@@ -51,18 +51,15 @@ proc ::tcldrop::console::dcc::STORE {handle idx text} {
 		array set idxinfo [idxinfo $idx]
 	}
 	if {$idxinfo(console-echo) == 0} {
-		set idxinfo(console-echo) [lang 0xb049]
+		set idxinfo(console-echo) [mc_handle $handle {no}]
 	} else {
-		set idxinfo(console-echo) [lang 0xb048]
+		set idxinfo(console-echo) [mc_handle $handle {yes}]
 	}
 	# Saved your Console Settings:
-	putdcc $idx [lang 0xb041]
-	# Channel:
-	putdcc $idx "  [lang 0xb042] $idxinfo(console-channel)"
-	# Console flags:  Strip flags:  Echo:
-	putdcc $idx "  [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
-	# Page setting:  Console channel:
-	putdcc $idx "  [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
+	putdcc $idx [mc_handle $handle {Saved your Console Settings}]:
+	putdcc $idx "  [mc_handle $handle {Channel}]: $idxinfo(console-channel)"
+	putdcc $idx "  [mc_handle $handle {Console flags}]: $idxinfo(console-levels), [mc_handle $handle {Strip flags}]: $idxinfo(console-strip), [mc_handle $handle {Echo}]: $idxinfo(console-echo)"
+	putdcc $idx "  [mc_handle $handle {Page setting}]: $idxinfo(console-page), [mc_handle $handle {Console channel}]: $idxinfo(console-chan)"
 	return 0
 }
 
@@ -114,10 +111,10 @@ proc ::tcldrop::console::dcc::CONSOLE {handle idx text} {
 		}
 	}
 	if {$text eq {}} {
-		putdcc $idx "Your console is $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {, }])"
+		putdcc $idx "[mc_handle $handle {Your console is %1$s: %2$s (%3$s)} $idxinfo(console-channel) $idxinfo(console-levels) [join $ConsoleModes {, }]]"
 		return 0
 	} else {
-		putdcc $idx "Set your console to $idxinfo(console-channel): $idxinfo(console-levels) ([join $ConsoleModes {, }])"
+		putdcc $idx "[mc_handle $handle {Set your console to %1$s: %2$s (%3$s)} $idxinfo(console-channel) $idxinfo(console-levels) [join $ConsoleModes {, }]]"
 		return 0
 	}
 }

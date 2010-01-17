@@ -43,7 +43,7 @@ namespace eval ::tcldrop::channels::dcc {
 
 proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 	if {$text == {}} {
-		putdcc $idx "Usage: +chan \[#&!+\]<channel> \[options\]"
+		putdcc $idx "[mc {Usage}]: +chan \[#&!+\]<channel> \[options\]"
 		return 0
 	}
 	set channel [slindex $text 0]
@@ -52,7 +52,7 @@ proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 	if {$options != {}} {
 		foreach o $options {
 			if {[catch {channel set $channel $o} error]} {
-				putdcc $idx "Invalid channel or channel options."
+				putdcc $idx "[mc {Invalid channel or channel options.}]"
 				break
 			}
 		}
@@ -63,16 +63,16 @@ proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 
 proc ::tcldrop::channels::dcc::-CHAN {handle idx text} {
 	if {$text == {}} {
-		putdcc $idx "Usage: -chan \[#&!+\]<channel>"
+		putdcc $idx "[mc {Usage}]: -chan \[#&!+\]<channel>"
 		return 0
 	}
 	set channel [slindex $text 0]
 	if {[catch {channel remove $channel} error] && $error == "no such channel record: $channel"} {
-		putdcc $idx "That channel doesn't exist!"
+		putdcc $idx "[mc {That channel doesn't exist!}]"
 		return 0
 	}
-	putdcc $idx "Channel $channel removed from the bot."
-	putdcc $idx "This includes any channel specific bans, invites, exemptions and user records that you set."
+	putdcc $idx "[mc {Channel %s removed from the bot.} $channel]"
+	putdcc $idx "[mc {This includes any channel specific bans, invites, exemptions and user records that you set.}]"
 	putcmdlog "#$handle# -chan $channel"
 	return 0
 }
@@ -81,7 +81,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	global idxlist
 	if {$text eq {}} {
 		if {[set channel [dict get $idxlist($idx) console-channel]] eq {-}} {
-			putdcc $idx "Your console channel is invalid."
+			putdcc $idx "[mc {Your console channel is invalid.}]"
 			return 0
 		}
 	} else {
@@ -167,7 +167,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 		putdcc $idx "Used defined channel settings:"
 		foreach udef [lsort $udefs(int)] {
 			putdcc $idx "${udef}: [expr {[set x [channel get $channel ${udef}]] eq {}?0:$x}]"
-		
+
 		}
 	}
 	if {[info exists udefs(str)]} {

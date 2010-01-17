@@ -87,7 +87,7 @@ if {![catch { package require dns }]} {
 		unset Lookups($token)
 		if {![set status [string equal [::dns::status $token] {ok}]]} {
 			# Status wasn't "ok".  =(
-			putloglev d - "DNS resolve failed for $address"
+			putloglev d - "[mc {DNS resolve failed for %s} $address]"
 			if {[testip $address]} {
 				set ip [set hostname $address]
 			} else {
@@ -112,7 +112,7 @@ if {![catch { package require dns }]} {
 		}
 		::dns::cleanup $token
 		after idle [list $proc $ip $hostname $status {*}$args]
-		if {$status} { putloglev d - "DNS resolved $hostname to $ip" }
+		if {$status} { putloglev d - "[mc {DNS resolved %1$s to %2$s} $hostname $ip]" }
 		# FixMe: This whole proc seems screwy and should be rewritten.  Like [::dns::name] returns the nameserver (according to the docs)..why does it care about that?
 		# See: http://tcllib.sourceforge.net/doc/tcllib_dns.html
 	}
@@ -135,7 +135,7 @@ if {![catch { package require dns }]} {
 	}
 } elseif {[set ::tcldrop::dns::hostexe [auto_execok host]] != {}} {
 	# Note: This has only been tested on Debian Linux.
-	putlog "Using $::tcldrop::dns::hostexe for \[dnslookup\].  (asynchronous)"
+	putlog "[mc {Using %s for [dnslookup].  (asynchronous)} $::tcldrop::dns::hostexe]"
 	proc ::tcldrop::dns::dnslookup {address proc args} {
 		variable hostexe
 		set wanthostname [testip $address]

@@ -73,7 +73,7 @@ namespace eval ::tcldrop::woobie {
 
 
 proc ::tcldrop::woobie::woobie {args} {
-	return "This is an example."
+	return "[mc {This is an example.}]"
 }
 
 # This proc should do anything that needs to be done to initialize this module:

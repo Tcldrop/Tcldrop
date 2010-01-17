@@ -149,7 +149,7 @@ proc ::tcldrop::console::getconsole {idx setting} {
 	if {![catch { getidxinfo $idx console-$setting } value]} {
 		return $value
 	} else {
-		return -code error "No such console setting: \"$setting\""
+		return -code error [mc {No such console setting: "%s"} $setting]
 	}
 }
 

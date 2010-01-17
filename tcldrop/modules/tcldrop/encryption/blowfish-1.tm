@@ -71,7 +71,7 @@ namespace eval ::tcldrop::encryption::blowfish {
 			return "+[::eggbase64::encode [::blowfish::blowfish -mode ecb -dir encrypt -key $password $SALT1SALT2]]"
 		}
 	} else {
-		putlog "Error loading blowfish: $err"
+		putlog "[mc {Error loading blowfish}]: $err"
 	}
 	namespace ensemble create -subcommands [list encrypt decrypt encpass]
 	namespace ensemble create -command ::tcldrop::blowfish -subcommands [list encrypt decrypt encpass]

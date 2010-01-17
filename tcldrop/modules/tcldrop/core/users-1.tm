@@ -62,7 +62,7 @@ proc ::tcldrop::core::users::callnkch {oldhandle newhandle} {
 	foreach {type flags mask proc} [bindlist nkch] {
 		if {[string match -nocase $mask $oldhandle]} {
 			if {[catch { $proc $oldhandle $newhandle } err]} {
-				putlog "Error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			}
 			countbind $type $mask $proc
@@ -156,7 +156,7 @@ proc ::tcldrop::core::users::passwdok {handle {pass {-}} args} {
 proc ::tcldrop::core::users::getuser {handle args} {
 	if {[dict exists $::database(users) [set lowerhandle [string tolower $handle]]]} {
 		switch -- [string tolower [lindex $args 0]] {
-			{xtra} - {flags} - {console} - {hosts} - {pass} - {botfl} - {comment} - {handle} - {laston} {
+			{xtra} - {flags} - {console} - {hosts} - {pass} - {botfl} - {comment} - {handle} - {laston} - {lang} {
 				# These fields are special, because Eggdrop doesn't return an error if you try to get a non-existant one.
 				if {[dict exists $::database(users) $lowerhandle {*}[string tolower $args]]} {
 					return [dict get $::database(users) $lowerhandle {*}[string tolower $args]]
@@ -173,7 +173,7 @@ proc ::tcldrop::core::users::getuser {handle args} {
 			}
 			{default} {
 				if {[catch { dict get $::database(users) $lowerhandle {*}[string tolower $args] } return]} {
-					return -code error "No such info type: [lindex $args 0]"
+					return -code error "[mc {No such info type}]: [lindex $args 0]"
 				} else {
 					return $return
 				}
@@ -190,7 +190,6 @@ proc ::tcldrop::core::users::getuser {handle args} {
 # flags <flags> [channel]
 # botfl <flags> [channel]
 # laston <unixtime> [place/channel]
-# info <info line> [channel]
 # handle <newhandle, or blank to delete the user>
 # It returns the new setting.
 proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} args} {
@@ -205,7 +204,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 				# Add the user:
 				return [database users set $lowerhandle handle $handle]
 			}
-			{default} { return -code error "No such user: $handle" }
+			{default} { return -code error "[ {No such user}]: $handle" }
 		}
 	}
 	switch -- [set type [string tolower $type]] {
@@ -282,7 +281,7 @@ proc ::tcldrop::core::users::setuser {handle {type {}} {setting {}} {xtra {}} ar
 						return 0
 					}
 				} else {
-					return -code error "Another user already has the handle $setting"
+					return -code error "[mc {Another user already has the handle %s} $setting]"
 				}
 			} else {
 				# Delete the $lowerhandle account:
@@ -399,7 +398,7 @@ proc ::tcldrop::core::users::adduser {handle {hostmask {}}} {
 			if {[string match -nocase $mask $handle]} {
 				countbind $type $mask $proc
 				if {[catch { $proc $handle } err]} {
-					putlog "Error in script: $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 				# FixMe: Should we care when return value they give?
@@ -462,9 +461,9 @@ proc ::tcldrop::core::users::backup {args} { if {[countusers]} { database users 
 proc ::tcldrop::core::users::reload {} {
 	if {[info exists ::userfile]} { set filename $::userfile } else { set filename {} }
 	if {![catch { database users reload -file $filename }]} {
-		putlog {Userfile loaded.}
+		putlog [mc {Userfile loaded.}]
 	} elseif {![catch { database users create }]} {
-		putlog "starting new userfile."
+		putlog [mc {Starting new userfile.}]
 	}
 }
 

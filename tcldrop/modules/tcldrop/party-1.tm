@@ -128,7 +128,7 @@ proc ::tcldrop::party::CallParty {command usermask arguments} {
 		foreach {type flags mask proc} [bindlist party] {
 			if {[string match -nocase $mask $command]} {
 				if {[catch { $proc $command $u $party_users($u) } err]} {
-					putlog "error in script: $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 				countbind $type $mask $proc
@@ -216,7 +216,7 @@ proc ::tcldrop::party::callchjn {bot handle chan flag idx userhost args} {
 	foreach {type flags mask proc} [bindlist chjn] {
 		if {[string match -nocase $mask $chan]} {
 			if {[catch { $proc $bot $handle $chan $flag $idx $userhost } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
 				countbind $type $mask $proc
@@ -238,14 +238,14 @@ proc ::tcldrop::party::callchpt {bot handle idx {chan {}} {reason {}}} {
 		if {[string match -nocase $mask $chan]} {
 			if {[llength [info args $proc]] >= 5} {
 				if {[catch { $proc $bot $handle $idx $chan $reason } err]} {
-					putlog "error in script: $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				} else {
 					countbind $type $mask $proc
 				}
 			} else {
 				if {[catch { $proc $bot $handle $idx $chan } err]} {
-					putlog "error in script: $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				} else {
 					countbind $type $mask $proc
@@ -269,7 +269,7 @@ proc ::tcldrop::party::callaway {bot idx {text {}}} {
 	foreach {type flags mask proc} [bindlist away] {
 		if {[string match -nocase $mask $bot]} {
 			if {[catch { $proc $bot $idx $text } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
 				countbind $type $mask $proc
@@ -292,7 +292,7 @@ proc ::tcldrop::party::callchat {handle chan text} {
 	foreach {type flags mask proc} [bindlist chat] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
 				countbind $type $mask $proc
@@ -313,7 +313,7 @@ proc ::tcldrop::party::callact {handle chan text} {
 	foreach {type flags mask proc} [bindlist act] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
 				countbind $type $mask $proc
@@ -335,7 +335,7 @@ proc ::tcldrop::party::callbcst {bot text} {
 	foreach {type flags mask proc} [bindlist bcst] {
 		if {[string match -nocase $mask $text]} {
 			if {[catch { $proc $bot $text } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} else {
 				countbind $type $mask $proc

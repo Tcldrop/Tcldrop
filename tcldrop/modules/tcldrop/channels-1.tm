@@ -68,7 +68,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 			return {}
 		}
 		{set} {
-			if {![dict exists $database(channels) $upperchannel]} { return -code error "Invalid Channel: $channel" }
+			if {![dict exists $database(channels) $upperchannel]} { return -code error "[mc {Invalid Channel: %s} $channel]" }
 			# In the case of "set", $args is already in the form we can use.
 			set setnext 0
 			foreach o $args {
@@ -103,12 +103,12 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 									after idle [list callchannel $command $channel $type $name 0]
 								}
 								{default} {
-									return -code error "invalid value for a channel flag: $o"
+									return -code error "[mc {Invalid value for a channel flag: %s} $o]"
 								}
 							}
 						}
 						{unknown} - {default} {
-							return -code error "Invalid channel option: $name"
+							return -code error "[mc {Invalid channel option: %s} $name]"
 						}
 					}
 				} elseif {$o != {}} {
@@ -130,7 +130,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 							}
 						}
 						{int} - {str} - {list} - {integer} - {string} { set setnext 1 }
-						{unknown} - {default} { return -code error "illegal channel option: $name" }
+						{unknown} - {default} { return -code error "[mc {Illegal channel option: %s} $name]" }
 					}
 				}
 			}
@@ -141,7 +141,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 			if {[dict exists $database(channels) $upperchannel]} {
 				dict get $database(channels) $upperchannel
 			} else {
-				return -code error "no such channel record: $channel"
+				return -code error "[mc {No such channel record: %s} $channel]"
 			}
 		}
 		{get} {
@@ -149,10 +149,10 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 				if {[dict exists $database(channels) $upperchannel {*}$args]} {
 					dict get $database(channels) $upperchannel {*}$args
 				} else {
-					return -code error "Unknown channel setting: $args"
+					return -code error "[mc {Unknown channel setting: %s} $args]"
 				}
 			} else {
-				return -code error "no such channel record: $channel"
+				return -code error "[mc {No such channel record: %s} $channel]"
 			}
 		}
 		{list} {
@@ -166,7 +166,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 				database channels unset $upperchannel
 				after idle [list callchannel $command $channel $args]
 			} else {
-				return -code error "no such channel record: $channel"
+				return -code error "[mc {No such channel record: %s} $channel]"
 			}
 		}
 		{exists} - {exist} {
@@ -176,7 +176,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 				return 0
 			}
 		}
-		{default} { return -code error "Unknown channel sub-command \"$command\"." }
+		{default} { return -code error "[mc {Unknown channel sub-command "%s".} $command]" }
 	}
 }
 
@@ -221,12 +221,12 @@ proc ::tcldrop::channels::savechannels {} {
 proc ::tcldrop::channels::loadchannels {} {
 	if {[info exists ::chanfile]} { set filename $::chanfile } else { set filename {} }
 	if {![catch { database channels reload -file $filename }]} {
-		putlog "loading channel database..."
+		putlog "[mc {Loaded channel database. %s} $filename]"
 		# FixMe: This shouldn't just dump the file into the Channels array...
 		#        It needs to check each channel for udefs that
 		#        are no longer in use, and discard them.
 	} elseif {![catch { database channels create }]} {
-		putlog "no channel database exists..yet"
+		putlog "[mc {No channel database exists..yet.}]"
 	}
 	SetUdefDefaults
 }
@@ -255,7 +255,7 @@ proc ::tcldrop::channels::callchannel {command channel args} {
 		if {[string match -nocase $mask "$command $channel [join $args]"]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $command $channel $args } err]} {
-				putlog "Error in $proc: $err"
+				putlog "[mc {Error in %s} $proc]: $err"
 				puterrlog "$::errorInfo"
 			}
 		}
@@ -271,7 +271,7 @@ proc ::tcldrop::channels::setudef {type name {default {}}} {
 		{flag} { set UdefDefaults($name) [string is true -strict $default] }
 		{int} { if {$default != {}} { set UdefDefaults($name) $default } else { set UdefDefaults($name) 0 } }
 		{str} - {list} { set UdefDefaults($name) $default }
-		{default} { return -code error "Invalid udef type: $type" }
+		{default} { return -code error "[mc {Invalid udef type: %s} $type]" }
 	}
 	# Store the udef itself:
 	variable Udefs
@@ -449,7 +449,7 @@ proc ::tcldrop::channels::ispermbei {bei mask {channel {-}}} {
 			return 0
 		}
 	} else {
-		return -code error "No such ${bei} $channel $mask"
+		return -code error "[mc {No such %1$s %2$s %3$s} ${bei} $channel $mask]"
 	}
 }
 
@@ -457,7 +457,7 @@ proc ::tcldrop::channels::isbeisticky {bei mask {channel {-}}} {
 	if {[dict exists $::database(${bei}s) [irctoupper $channel] [string tolower $mask] sticky]} {
 		dict get $::database(${bei}s) [irctoupper $channel] [string tolower $mask] sticky
 	} else {
-		return -code error "No such ${bei} $channel $mask"
+		return -code error "[mc {No such %1$s %2$s %3$s} ${bei} $channel $mask]"
 	}
 }
 
@@ -515,11 +515,11 @@ proc ::tcldrop::channels::savebeis {{bei {}}} {
 proc ::tcldrop::channels::loadbeis {{bei {}}} {
 	if {[info exists ::${bei}file]} { set filename [set ::${bei}file] } else { set filename {} }
 	if {![catch { database ${bei}s reload -file $filename }]} {
-		putlog "loading $bei database..."
+		putlog "[mc {Loaded %s database.} $bei]"
 	} elseif {![catch { database ${bei}s create }]} {
-		putlog "no $bei database file exists..yet."
+		putlog "[mc {No %s database file exists..yet.} $bei]"
 	} else {
-		putlog "error creating $bei database!"
+		putlog "[mc {Error creating %s database!} $bei]"
 	}
 }
 

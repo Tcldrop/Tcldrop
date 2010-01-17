@@ -84,7 +84,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lang language lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -871,7 +871,7 @@ proc ::tcldrop::core::calltimer {timerinfo} {
 	foreach {type flags mask proc} [bindlist timer] {
 		countbind $type $mask $proc
 		if {[catch { $proc $timerinfo } err]} {
-			putlog "Error in $proc: $err"
+			putlog "[mc {Error in script}]: $proc: $err"
 			puterrlog "$::errorInfo"
 		}
 	}
@@ -1012,7 +1012,7 @@ proc ::tcldrop::core::calltime {} {
 	foreach {type flags mask proc} [bindlist time] {
 		if {[string match $mask $current]} {
 			if {[catch { $proc $minute $hour $day $month $year } err]} {
-				putlog "Error in $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			}
 			countbind $type $mask $proc
@@ -1256,7 +1256,7 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 		foreach {type flags mask proc} [bindlist load] {
 			if {[string match -nocase $mask $module]} {
 				if {[catch { $proc $module } err]} {
-					putlog "Error in $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 				countbind $type $mask $proc
@@ -1285,7 +1285,7 @@ proc ::tcldrop::core::CheckModule {module {options {}}} {
 
 proc ::tcldrop::core::unloadmodule {{module {*}} args} { UnloadModule $module $args }
 proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
-	putlog "UnloadModule: $module"
+	putlog "[mc {UnloadModule:}] $module"
 	array set opts [list -force {0}]
 	array set opts $options
 	set out {}
@@ -1304,7 +1304,7 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 		foreach {type flags mask proc} [bindlist unld] {
 			if {[string match -nocase $mask $m]} {
 				if {[catch { $proc $m } force]} {
-					putlog "Error in $proc $m: $force"
+					putlog "[mc {Error in script}]: $proc $m: $force"
 					puterrlog "$::errorInfo"
 					set force 0
 				} elseif {[string is int $force]} {
@@ -1375,7 +1375,7 @@ proc ::tcldrop::core::callevent {event} {
 	foreach {type flags mask proc} [bindlist evnt] {
 		if {[string match -nocase $mask $event]} {
 			if {[catch { $proc $event } err]} {
-				putlog "Error in $proc $event: $err"
+				putlog "[mc {Error in script}]: $proc $event: $err"
 				puterrlog "$::errorInfo"
 			}
 			countbind $type $mask $proc
@@ -1506,6 +1506,19 @@ proc ::tcldrop::core::textsubst {handle text args} {
 		set retval [split $out \n]
 	}
 	if {$options(-returnlist)} { return $retval } else { return [join $retval "\n"] }
+}
+
+proc ::tcldrop::core::mc_handle {handle args} {
+	if {[set lang [getuser $handle LANG]] ne {}} {
+		set origlang [::msgcat::mclocale]
+		::msgcat::mclocale $lang
+		# Don't let errors stop us from changing the locale back:
+		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } return]
+		::msgcat::mclocale $origlang
+		return -code $retval $return
+	} else {
+		uplevel 1 [list ::msgcat::mc {*}$args]
+	}
 }
 
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }

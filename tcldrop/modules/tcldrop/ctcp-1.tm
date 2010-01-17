@@ -61,7 +61,7 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 			#        It needs to distinguish between personal and channel CTCPs anyway.
 			if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
 				if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
-					putlog "Error in $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				} elseif {![string equal {0} $err] || [string equal {1} $err]} {
 					break
@@ -95,7 +95,7 @@ proc ::tcldrop::ctcp::ctcr {text} {
 	if {[info exists CTCRs]} {
 		append CTCRs "\001$text\001"
 	} else {
-		return -code error "Calling the ctcr command outside of a CTCP bind is not allowed."
+		return -code error "[mc {Calling the ctcr command outside of a CTCP bind is not allowed.}]"
 	}
 }
 
@@ -106,7 +106,7 @@ proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
 		#        It needs to distinguish between personal and channel CTCPs anyway.
 		if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
 			if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
-				putlog "Error in $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} elseif {![string equal {0} $err] || [string equal {1} $err]} {
 				break

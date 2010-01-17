@@ -54,7 +54,7 @@ proc ::tcldrop::server::callserver {idx line} {
 	foreach {type flags mask proc} [bindlist server] {
 		if {[string equal -nocase $mask $line]} {
 			if {[catch { $proc $idx $line } err]} {
-				putlog "(server) Error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} elseif {[string equal $err {1}]} {
 				# Abort processing further binds if they return 1.
@@ -121,7 +121,7 @@ proc ::tcldrop::server::CheckStoned {} {
 	if {$LastPONG} {
 		if {[clock seconds] - $LastPONG > 2400} {
 			# It's been too long since we heard anything from the server, assume it's dead:
-			quit "Stoned server..  \xAF\\(o_\xBA)/\xAF  "
+			quit "[mc {Stoned server}]..  \xAF\\(o_\xBA)/\xAF  "
 			# Jump to another server, subtracting the time we last heard from the server from the server-cycle-wait time (Let utimer deal with negative numbers):
 			variable ServerCycleTimerID [utimer [expr { ${::server-cycle-wait} - ([clock seconds] - $LastPONG) }] [list ::tcldrop::server::jump]]
 		} elseif {${::server-online} && [clock seconds] - $LastPONG > 900} {
@@ -272,7 +272,7 @@ proc ::tcldrop::server::callraw {from key arg} {
 	foreach {type flags mask proc} [bindlist raw] {
 		if {[string equal -nocase $mask $key]} {
 			if {[catch { $proc $from $key $arg } err]} {
-				putlog "(callraw) Error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
 			} elseif {$err == 1} {
 				# Abort processing further binds if they return 1.
@@ -441,7 +441,7 @@ proc ::tcldrop::server::callout {queue message status} {
 	foreach {type flags mask proc} [bindlist out] {
 		if {[string equal -nocase $mask $status]} {
 			if {[catch { $proc $queue $message $status } err]} {
-				putlog "(callout) Error in script: $proc $queue $message $status: $err"
+				putlog "[mc {Error in script}]: $proc $queue $message $status: $err"
 				puterrlog "$::errorInfo"
 			} elseif {$err == 1} {
 				# Abort processing further binds if they return 1.
@@ -476,7 +476,7 @@ proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
 			# Only queue the line if the callout binds say we can:
 			if {$line != {}} {
 				if {[info exists Queue($priority)] && [info exists "::double-$queue"] && ![set "::double-$queue"] && [lsearch -exact $Queue($priority) $line] != -1} {
-					putloglev d * "msg already queued. skipping: $line"
+					putloglev d * "[mc {msg already queued. skipping}]: $line"
 				} elseif {![callout $queue $line queued]} {
 					Queue $priority $line $option
 					putloglev v * "\[!$queue\] $line"

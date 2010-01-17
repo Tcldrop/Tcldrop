@@ -71,31 +71,21 @@ namespace eval ::tcldrop::core::dcc {
 #         putidx is the preferred command for all local connections.
 
 proc ::tcldrop::core::dcc::putdcc {idx text args} {
-	if {[info exists ::idxlist($idx)]} {
-		# FixMe: This should support all the %-variables listed in doc/text-substitutions.txt
-		# Unhandled: flags ie %{-} or %{n}, %{cols=N}, %{cols=N/W}, %{end}, %{center}
-		array set idxinfo {handle *}
-		array set idxinfo $::idxlist($idx)
-		array set options [list -subst 0 -substmap [list]]
+	if {[valididx $idx]} {
+		array set options [list -subst 0]
 		array set options $args
 		if {$options(-subst)} {
 			# output "-" if the line is empty, this is like eggdrop
 			if {$text eq {}} {
 				set text {-}
 			} else {
-				# FixMe: it might be helpful to have the copyright notice in a global var somewhere
-				array set map [list {%B} ${::botnet-nick} {%N} $idxinfo(handle) {%V} "$::tcldrop(name) v${::tcldrop(version)}" {%E} "$::tcldrop(name) v${::tcldrop(version)} (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop Development Team <${::tcldrop(author)}>" {%U} "${::tcl_platform(os)} ${::tcl_platform(osVersion)}"]
-				array set map [list {%C} [join [channels] {, }] {%A} ${::admin} {%n} ${::network} {%T} [clock format [clock seconds] -format %H:%M] {%%} {%}]
-				# FixMe: These should be handled differently for telnet
-				array set map [list {%b} \002 {%v} \026 {%_} \037 {%f} "\002\037"]
-				array set map $options(-substmap)
-				set text [string map [array get map] $text]
+				set text [textsubst [idx2hand $idx] $text {*}$args]
 			}
 		}
 		if {[set retval [catch { callfiltdcc $idx $text $args } text]]} { return $retval }
 		putidx $idx $text $args
 	} else {
-		return 0
+		return -code error {invalid idx}
 	}
 }
 
@@ -143,7 +133,7 @@ proc ::tcldrop::core::dcc::callfilt {idx line} {
 			if {[string match -nocase $mask $line] && [matchattr $handle $flags]} {
 				countbind $type $mask $proc
 				if {[catch { set line [$proc $idx $line] } err]} {
-					putlog "Error in script: $proc: $err"
+					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
 				}
 			}
@@ -289,7 +279,7 @@ proc ::tcldrop::core::dcc::calldcc {handle idx arg} {
 			putloglev d * "tcl: dcc call: $proc $handle $idx $arg"
 			incr retval
 			if {[catch { $proc $handle $idx $arg } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 			} elseif {[string equal $err {1}]} {
 				# Abort processing further binds if they return 1.
 				break
@@ -318,7 +308,7 @@ proc ::tcldrop::core::dcc::callchon {handle idx} {
 	foreach {type flags mask proc} [bindlist chon] {
 		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
 			if {[catch { $proc $handle $idx } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog $::errorInfo
 			}
 			countbind $type $mask $proc
@@ -341,7 +331,7 @@ proc ::tcldrop::core::dcc::callchof {handle idx {reason {}}} {
 	foreach {type flags mask proc} [bindlist chof] {
 		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
 			if {[catch { $proc $handle $idx } err]} {
-				putlog "error in script: $proc: $err"
+				putlog "[mc {Error in script}]: $proc: $err"
 			}
 			countbind $type $mask $proc
 		}
@@ -386,9 +376,9 @@ proc ::tcldrop::core::dcc::TCL {handle idx text} {
 proc ::tcldrop::core::dcc::SET {handle idx text} {
 	putcmdlog "#$handle# set $text"
 	if {[catch { uplevel \#0 [list eval set $text] } out]} {
-		set out "Error: $out"
+		set out "[mc {Error}]: $out"
 	} else {
-		set out "Currently: $out"
+		set out "[mc {Currently}]: $out"
 	}
 	putdcc $idx $out
 	return 0
@@ -409,7 +399,7 @@ proc ::tcldrop::core::dcc::QUIT {handle idx text} {
 	putcmdlog "#$handle# quit $text"
 	putdcc $idx {Bu-Bye!}
 	# FixMe: This should be $nick $uhost instead:
-	putlog "[format [lang 0xe16] $handle $idx]"
+	putlog "[mc {DCC connection closed (%s!%s)} $handle $idx]"
 	if {[set chan [getchan $idx]] != "-1"} { callchpt ${::botnet-nick} $handle $idx $chan $text }
 	killdcc $idx $text
 	callchof $handle $idx
@@ -419,7 +409,7 @@ proc ::tcldrop::core::dcc::QUIT {handle idx text} {
 # Usage: whoami
 proc ::tcldrop::core::dcc::WHOAMI {handle idx text} {
 	putcmdlog "#$handle# whoami $text"
-	putdcc $idx "You are $handle@${::botnet-nick} on idx $idx"
+	putdcc $idx "[mc_handle $handle {You are %1$s on idx %2$d.} $handle@${::botnet-nick} $idx]"
 	return 0
 }
 
@@ -429,7 +419,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	set host [::tcldrop::core::slindex $text 1]
 	if {$text eq {}} {
 		# Usage:
-		putdcc $idx "[lang 0x001]: -host \[handle\] <hostmask>"
+		putdcc $idx "[mc {Usage}]: -host \[handle\] <hostmask>"
 		return 0
 	} elseif {[::tcldrop::core::sllength $text] == 1} {
 		set who $handle
@@ -438,7 +428,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	# FixMe: This should let anyone with higher flags that the person they want to -host remove their host, I think..
 	if {(([string equal -nocase $handle $who]) || ([matchattr $handle n])) && ([delhost $who $host])} {
 		putcmdlog "#$handle# -host $who $host"
-		putdcc $idx "Removed '$host' from $who"
+		putdcc $idx "[mc_handle $handle {Removed '%1$s' from %2$s} $host $who]"
 	} else {
 		# Failed.
 		putdcc $idx [lang 0x002]
@@ -450,7 +440,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 proc ::tcldrop::core::dcc::NEWPASS {handle idx text} {
 	chpass $handle $text
 	putcmdlog "#$handle# newpass..."
-	putdcc $idx "Changed password to '$text'"
+	putdcc $idx "[mc_handle $handle {Changed password to '%s'} $text]"
 	return 0
 }
 
@@ -460,7 +450,7 @@ proc ::tcldrop::core::dcc::+USER {handle idx text} {
 	set hostmask [::tcldrop::core::slindex $text 1]
 	adduser $user $hostmask
 	putcmdlog "#$handle# +user $text"
-	putdcc $idx "Added $user ($hostmask) with [chattr $user] flags"
+	putdcc $idx "[mc_handle $handle {Added %1$s (%2$s) with %3$s flags} $user $hostmask [chattr $user]]"
 	return 0
 }
 
@@ -468,7 +458,7 @@ proc ::tcldrop::core::dcc::+USER {handle idx text} {
 proc ::tcldrop::core::dcc::-USER {handle idx text} {
 	if {[deluser $text]} {
 		putcmdlog "#$handle# -bot $text"
-		putdcc $idx "Deleted $text."
+		putdcc $idx "[mc_handle $handle {Deleted %s.} $text]"
 	}
 	return 0
 }
@@ -517,17 +507,17 @@ proc ::tcldrop::core::dcc::WHOIS {handle idx text} {
 		unset -nocomplain hosts block pos current hostsList
 		if {[set console [getuser $text CONSOLE]] != {}} {
 			array set idxinfo $console
-			putdcc $idx "  Saved Console Settings:"
+			putdcc $idx "  [mc_handle $handle {Saved Console Settings}]:"
 			# Channel:
-			putdcc $idx "    [lang 0xb042] $idxinfo(console-channel)"
+			putdcc $idx "    [mc_handle $handle {Channel:}] $idxinfo(console-channel)"
 			# Console flags:  Strip flags:  Echo:
-			putdcc $idx "    [lang 0xb043] $idxinfo(console-levels), [lang 0xb044] $idxinfo(console-strip), [lang 0xb045] $idxinfo(console-echo)"
+			putdcc $idx "    [mc_handle $handle {Console flags:}] $idxinfo(console-levels), [mc_handle $handle {Strip flags:}] $idxinfo(console-strip), [mc_handle $handle {Echo:}] $idxinfo(console-echo)"
 			# Page setting:  Console channel:
-			putdcc $idx "    [lang 0xb046] $idxinfo(console-page), [lang 0xb047] $idxinfo(console-chan)"
+			putdcc $idx "    [mc_handle $handle {Page setting:} $idxinfo(console-page), [mc_handle $handle {Console channel:} $idxinfo(console-chan)]"
 		}
 		if {[set comment [getuser $text COMMENT]] != {}} { putdcc $idx "  COMMENT: $comment" }
 	} else {
-		putdcc $idx {Can't find anyone matching that.}
+		putdcc $idx [mc_handle $handle {Can't find anyone matching that.}]
 	}
 	return 0
 }
@@ -555,7 +545,7 @@ proc ::tcldrop::core::dcc::CHPASS {handle idx text} {
 	set pass [slindex $text 1]
 	chpass $who $pass
 	putcmdlog "#$handle# chpass $who \[something\]"
-	putdcc $idx {Changed password.}
+	putdcc $idx [mc_handle $handle {Changed password.}]
 	return 0
 }
 
@@ -565,7 +555,7 @@ proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	set host [::tcldrop::core::slindex $text 1]
 	if {$text eq {}} {
 		# Usage:
-		putdcc $idx "[lang 0x001]: +host \[handle\] <newhostmask>"
+		putdcc $idx "[mc_handle $handle {Usage}]: +host \[handle\] <newhostmask>"
 		return 0
 	} elseif {[::tcldrop::core::sllength $text] == 1} {
 		set who $handle
@@ -575,7 +565,7 @@ proc ::tcldrop::core::dcc::+HOST {handle idx text} {
 	if {[string equal -nocase $who $handle] || [matchattr $handle n]} {
 		addhost $who $host
 		putcmdlog "#$handle# +host $text"
-		putdcc $idx "Added '$host' to $who."
+		putdcc $idx "[mc_handle $handle {Added '%1$s' to %2$s.} $host $who]"
 	}
 	return 0
 }
@@ -586,12 +576,12 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 	set changes [::tcldrop::core::slindex $text 1]
 	set channel [::tcldrop::core::slindex $text 2]
 	if {[set chattr [chattr $who $changes $channel]] eq {*}} {
-		putdcc {No such user.}
+		putdcc [mc_handle $handle {No such user.}]
 	} else {
 		putcmdlog "#$handle# chattr $text"
-		putdcc $idx "Global flags for $who are now +[lindex [split $chattr |] 0]"
+		putdcc $idx "[mc_handle $handle {Global flags for %1$s are now +%2$s} $who [lindex [split $chattr |] 0]]"
 		if {$channel != {}} {
-			putdcc $idx "Channel flags for $who on $channel are now +[lindex [split $chattr |] end]."
+			putdcc $idx "[mc_handle $handle {Channel flags for %1$s on %2$s are now +%2$s.} $who $channel [lindex [split $chattr |] end]]"
 		}
 	}
 	return 0
@@ -600,7 +590,7 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 # Usage: save
 proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 	putcmdlog "#$handle# save $text"
-	putdcc $idx {Saving...}
+	putdcc $idx [mc_handle $handle {Saving...}]
 	after idle [list after 0 [list callevent save]]
 	return 0
 }
@@ -609,14 +599,14 @@ proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 # FixMe: add botnet support for this?
 proc ::tcldrop::core::dcc::UPTIME {handle idx text} {
 	putcmdlog "#$handle# uptime $text"
-	putdcc $idx "Online for [duration [uptime]]."
+	putdcc $idx "[mc_handle $handle {Online for %s.} [duration [uptime]]]"
 	return 0
 }
 
 # Usage: backup
 proc ::tcldrop::core::dcc::BACKUP {handle idx text} {
 	putcmdlog "#$handle# backup $text"
-	putdcc $idx {Backing up data files...}
+	putdcc $idx [mc_handle $handle {Backing up data files...}]
 	# FixMe: Add a [backup] command that calls the "backup" bindings. The bindings should in turn do the backing up of the user/channel files.
 	after idle [list backup]
 	return 0
@@ -628,14 +618,14 @@ proc ::tcldrop::core::dcc::COMMENT {handle idx text} {
 	set comment [::tcldrop::core::slindex $text 1]
 	setuser $who COMMENT $comment
 	putcmdlog "#$handle# comment $text"
-	putdcc $idx {Changed comment.}
+	putdcc $idx [mc_handle $handle {Changed comment.}]
 	return 0
 }
 
 # Usage: reload
 proc ::tcldrop::core::dcc::RELOAD {handle idx text} {
 	putcmdlog "#$handle# reload $text"
-	putdcc $idx {Reloading user file...}
+	putdcc $idx [mc_handle $handle {Reloading user file...}]
 	reload
 	return 0
 }
@@ -643,7 +633,7 @@ proc ::tcldrop::core::dcc::RELOAD {handle idx text} {
 # Usage: rehash
 proc ::tcldrop::core::dcc::REHASH {handle idx text} {
 	putcmdlog "#$handle# rehash $text"
-	putdcc $idx {Rehashing..}
+	putdcc $idx [mc_handle $handle {Rehashing..}]
 	rehash
 	return 0
 }
@@ -651,7 +641,7 @@ proc ::tcldrop::core::dcc::REHASH {handle idx text} {
 # Usage: restart
 proc ::tcldrop::core::dcc::RESTART {handle idx text} {
 	putcmdlog "#$handle# restart $text"
-	putdcc $idx {Restarting..}
+	putdcc $idx [mc_handle $handle {Restarting..}]
 	restart
 	return 0
 }
@@ -659,8 +649,8 @@ proc ::tcldrop::core::dcc::RESTART {handle idx text} {
 # Usage: shutdown [reason]
 proc ::tcldrop::core::dcc::SHUTDOWN {handle idx text} {
 	putcmdlog "#$handle# shutdown $text"
-	putdcc $idx {Shutting Down...}
-	if {$text eq {}} { set text {nyoooooooo...} }
+	putdcc $idx [mc_handle $handle {Shutting Down...}]
+	if {$text eq {}} { set text [mc {nyoooooooo...}] }
 	after idle [list after 0 [list shutdown $text]]
 }
 
@@ -668,7 +658,7 @@ proc ::tcldrop::core::dcc::SHUTDOWN {handle idx text} {
 proc ::tcldrop::core::dcc::LOADMOD {handle idx text} {
 	loadmodule $text
 	putcmdlog "#$handle# loadmod $text"
-	putdcc $idx "Module loaded: $text"
+	putdcc $idx "[mc_handle $handle {Module loaded: %s} $text]"
 	return 0
 }
 
@@ -676,7 +666,7 @@ proc ::tcldrop::core::dcc::LOADMOD {handle idx text} {
 proc ::tcldrop::core::dcc::UNLOADMOD {handle idx text} {
 	unloadmodule $text
 	putcmdlog "#$handle# unloadmod $text"
-	putdcc $idx "Module unloaded: $text"
+	putdcc $idx "[mc_handle $handle {Module unloaded: %s} $text]"
 	return 0
 }
 
@@ -699,7 +689,7 @@ proc ::tcldrop::core::dcc::DCCSTAT {handle idx text} {
 # FixMe: add botnet support for this? Eggdrop doesn't have that but seems good to me
 proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 	putcmdlog "#$handle# traffic $text"
-	putdcc $idx {Traffic since last restart}
+	putdcc $idx [mc_handle $handle {Traffic since last restart}]
 	putdcc $idx {==========================}
 	foreach info [lsort [traffic]] {
 		switch -nocase -- [lindex $info 0] {
@@ -707,14 +697,14 @@ proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 				putdcc $idx {IRC:}
 			}
 			partyline {
-				putdcc $idx {Partyline:}
+				putdcc $idx [mc_handle $handle {Partyline:}]
 			}
 			misc {
-				putdcc $idx {Misc:}
+				putdcc $idx [mc_handle $handle {Misc:}]
 			}
 			total {
 				putdcc $idx {---}
-				putdcc $idx {Total:}
+				putdcc $idx [mc_handle $handle {Total:}]
 			}
 			default {
 				putdcc $idx "[lindex $info 0]:"
@@ -722,8 +712,8 @@ proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 		}
 		# FixMe: Convert bytes to kbytes or mbytes (to make it look like Eggdrop does).
 		# use this? http://wiki.tcl.tk/1676
-		putdcc $idx "  out: [lindex $info 4] bytes ([lindex $info 3] bytes since last daily reset)"
-		putdcc $idx "   in: [lindex $info 2] bytes ([lindex $info 1] bytes since last daily reset)"
+		putdcc $idx "  [mc_handle $handle {out: %1$d bytes (%2$d bytes since last daily reset)} [lindex $info 4] [lindex $info 3]]"
+		putdcc $idx "   [mc_handle $handle {in: %1$d bytes (%2$d bytes since last daily reset)} [lindex $info 2] [lindex $info 1]]"
 	}
 	return 0
 }
@@ -732,9 +722,9 @@ proc ::tcldrop::core::dcc::TRAFFIC {handle idx text} {
 # FixMe: fix botnet part
 proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 	putcmdlog "#$handle# modules $text"
-	putdcc $idx {Modules loaded:}
-	foreach m [modules] { putdcc $idx "  Module: [lindex $m 0] (v[lindex $m 1])" }
-	putdcc $idx {End of modules list.}
+	putdcc $idx [mc_handle $handle {Modules loaded:}]
+	foreach m [modules] { putdcc $idx "  [mc_handle $handle {Module: %1$s (v%2$s)} [lindex $m 0] [lindex $m 1]]" }
+	putdcc $idx [mc_handle $handle {End of modules list.}]
 	return 0
 }
 
@@ -742,37 +732,37 @@ proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 # FixMe: Add more stuff for the 'all' arg
 proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	putcmdlog "#$handle# status $text"
-	putdcc $idx "I am ${::botnet-nick}, running Tcldrop v$::tcldrop(version): [countusers] users."
-	putdcc $idx "Online for [duration [expr { [clock seconds] - $::uptime }]]"
-	putdcc $idx "Admin: $::owner"
-	putdcc $idx "Config file: $::config"
-	putdcc $idx "OS: $::tcl_platform(os) $::tcl_platform(osVersion)"
-	putdcc $idx "Tcl library: $::tcl_library"
-	putdcc $idx "Tcl version: $::tcl_patchLevel"
-	if {[info exists ::tcl_platform(threaded)] && $::tcl_platform(threaded)} { putdcc $idx "Tcl is threaded." }
+	putdcc $idx "[mc_handle $handle {I am %1$s, running Tcldrop v%1$s: %3$d users.} ${::botnet-nick} $::tcldrop(version) [countusers]]"
+	putdcc $idx "[mc_handle $handle {Online for}] [duration [expr { [clock seconds] - $::uptime }]]"
+	putdcc $idx "[mc_handle $handle {Admin}]: $::owner"
+	putdcc $idx "[mc_handle $handle {Config file}]: $::config"
+	putdcc $idx "[mc_handle $handle {OS}]: $::tcl_platform(os) $::tcl_platform(osVersion)"
+	putdcc $idx "[mc_handle $handle {Tcl library}]: $::tcl_library"
+	putdcc $idx "[mc_handle $handle {Tcl version}]: $::tcl_patchLevel"
+	if {[info exists ::tcl_platform(threaded)] && $::tcl_platform(threaded)} { putdcc $idx "[mc_handle $handle {Tcl is threaded.}]" }
 	# FixMe: Perhaps move some of these to relevant modules
 	# FixMe: If some of these vars are _always_ set, remove the expr.
 	if {[string equal -nocase [slindex $text 0] {all}]} {
 		putdcc $idx "-"
-		putdcc $idx "Botnet nickname: ${::botnet-nick}"
-		putdcc $idx "Databases:"
-		putdcc $idx "  Users   : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.users"}]"
-		putdcc $idx "  Channels: [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.channels"}]"
-		putdcc $idx "  Ignores : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.ignores"}]"
-		putdcc $idx "  Bans    : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.bans"}]"
-		putdcc $idx "  Exempts : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.exempts"}]"
-		putdcc $idx "  Invites : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.invites"}]"
-		putdcc $idx "Directories:"
-		putdcc $idx "  Help   : [expr {[info exists ::help-path]?${::help-path}:{}}]"
-		putdcc $idx "  Temp   : [expr {[info exists ::temp-path]?${::temp-path}:{}}]"
-		putdcc $idx "  Modules: [expr {[info exists ::mod-path]?${::mod-path}:{}}]"
-		putdcc $idx "Motd: [file nativename [file join ${::text-path} $::motd]]"
-		putdcc $idx "Telnet Banner: [file nativename [file join ${::text-path} ${::telnet-banner}]]"
-		putdcc $idx "New users get flags \[[expr {[info exists ::default-flags]?${::default-flags}:{}}]\], notify: [expr {[info exists ::notify-newusers]?${::notify-newusers}:0}]"
-		putdcc $idx "Permanent owner(s): [expr {[info exists ::owner]?${::owner}:{}}]"
-		putdcc $idx "Ignores last [expr {[info exists ::ignore-time]?${::ignore-time}:0}] minutes."
+		putdcc $idx "[mc_handle $handle {Botnet nickname}]: ${::botnet-nick}"
+		putdcc $idx "[mc_handle $handle {Databases}]:"
+		putdcc $idx "  [mc_handle $handle {Users}]   : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.users"}]"
+		putdcc $idx "  [mc_handle $handle {Channels}]: [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.channels"}]"
+		putdcc $idx "  [mc_handle $handle {Ignores}] : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.ignores"}]"
+		putdcc $idx "  [mc_handle $handle {Bans}]    : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.bans"}]"
+		putdcc $idx "  [mc_handle $handle {Exempts}] : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.exempts"}]"
+		putdcc $idx "  [mc_handle $handle {Invites}] : [expr {[info exists ::userfile]?$::userfile:"${::database-basename}.invites"}]"
+		putdcc $idx "[mc_handle $handle {Directories}]:"
+		putdcc $idx "  [mc_handle $handle {Help}]   : [expr {[info exists ::help-path]?${::help-path}:{}}]"
+		putdcc $idx "  [mc_handle $handle {Temp}]   : [expr {[info exists ::temp-path]?${::temp-path}:{}}]"
+		putdcc $idx "  [mc_handle $handle {Modules}]: [expr {[info exists ::mod-path]?${::mod-path}:{}}]"
+		putdcc $idx "[mc_handle $handle {Motd}]: [file nativename [file join ${::text-path} $::motd]]"
+		putdcc $idx "[mc_handle $handle {Telnet Banner}]: [file nativename [file join ${::text-path} ${::telnet-banner}]]"
+		putdcc $idx "[mc_handle $handle {New users get flags [%1$s], notify: %2$s} [expr {[info exists ::default-flags]?${::default-flags}:{}}] [expr {[info exists ::notify-newusers]?${::notify-newusers}:0}]]"
+		putdcc $idx "[mc_handle $handle {Permanent owner(s)}]: [expr {[info exists ::owner]?${::owner}:{}}]"
+		putdcc $idx "[mc_handle $handle {Ignores last %d minutes.} [expr {[info exists ::ignore-time]?${::ignore-time}:0}]]"
 	}
-	putdcc $idx "Loaded module information: "
+	putdcc $idx "[mc_handle $handle {Loaded module information}]: "
 	return 0
 }
 
@@ -788,7 +778,7 @@ proc ::tcldrop::core::dcc::MOTD {handle idx text} {
 # FixMe: needs more formatting love, add support for matching
 proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 	putcmdlog "#$handle# binds $text"
-	putdcc $idx [lang 0x50b]; # Command bindings:
+	putdcc $idx [mc_handle $handle {Command bindings:}]
 	putdcc $idx [format {%6s %4s %11s %17s %s}  {TYPE} {FLGS} {COMMAND} {HITS} {BINDING (TCL)}]
 	set matches [binds]
 	set format {%7s %-8s %-19s %5s %s}
@@ -797,7 +787,7 @@ proc ::tcldrop::core::dcc::BINDS {handle idx text} {
 		putdcc $idx [format $format $type $flags $command $hits $binding]
 	}
 	if {[llength $matches] == 0} {
-		putdcc $idx "No command bindings found that match $text"
+		putdcc $idx "[mc_handle $handle {No command bindings found that match %s} $text]"
 	}
 	return 0
 }
