@@ -100,7 +100,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	set internalflags [lsort [concat $chanflags [list chanmode idle-kick stopnethack-mode aop-delay revenge-mode ban-time exempt-time invite-time need-op need-halfop need-voice need-invite need-key need-unban need-limit flood-chan flood-ctcp flood-join flood-kick flood-deop flood-nick]]]
 	putdcc $idx "[mc_handle $handle {Settings for %1$s channel %1$s: } [expr {[isdynamic $channel]?{dynamic}:{static}}] $channel]"
 	putdcc $idx "[mc_handle $handle {Protect modes (chanmode)}]: [expr {[set x [channel get $channel chanmode]] eq {}?{None}:$x}]"
-	putdcc $idx "[mc_handle $handle Idle Kick after (idle-kick)}]: [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
+	putdcc $idx "[mc_handle $handle {Idle Kick after (idle-kick)}]: [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "stopnethack: [expr {[set x [channel get $channel stopnethack-mode]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "aop-delay: [expr {[set x [channel get $channel aop-delay]] in {{} 0}?{0:0}:[join $x {:}]}]"
 	putdcc $idx "revenge-mode: [expr {[set x [channel get $channel revenge-mode]] eq {}?0:$x}]"
