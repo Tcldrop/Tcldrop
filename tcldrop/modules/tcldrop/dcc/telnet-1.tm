@@ -63,8 +63,8 @@ proc ::tcldrop::dcc::telnet::Write {idx} {
 	if {[getidxinfo $idx state] eq {TELNET_CONN}} {
 		idxinfo $idx state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline
 		if {[info exists use-telnet-banner] && ${::use-telnet-banner}} { dccdumpfile $idx ${::telnet-banner} }
-		if {${::open-telnets} || [countusers] == 0} { putdcc $idx {(If you are new, enter 'NEW' here.)} }
-		putdcc $idx {Handle: } -nonewline 1 -flush 1
+		if {${::open-telnets} || [countusers] == 0} { putdcc $idx "[mc {(If you are new, enter 'NEW' here.)}]" }
+		putdcc $idx "[mc {Handle: }]" -nonewline 1 -flush 1
 	}
 }
 
@@ -79,19 +79,19 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 				# They want to sign-in as a NEW user.
 				if {${::open-telnets} || [countusers] == 0} {
 					# Let them.
-					putdcc $idx {Enter the handle you would like to use: } -nonewline 1 -flush 1
+					putdcc $idx "[mc {Enter the handle you would like to use: }]" -nonewline 1 -flush 1
 					idxinfo $idx state TELNET_NEW other {new} timestamp [clock seconds]
 				} else {
 					# Denied!
-					putdcc $idx {You don't have access.  (not accepting 'new' users)}
+					putdcc $idx "[mc {You don't have access.  (not accepting 'new' users)}]"
 					return 1
 				}
 			} else {
 				if {([validuser $line]) && (![passwdok $line -]) && (!${::require-p} || [matchattr $line p])} {
-					putdcc $idx {Password: } -nonewline 1 -flush 1
+					putdcc $idx "[mc {Password: }]" -nonewline 1 -flush 1
 					idxinfo $idx handle $line state CHAT_PASS other {pass} timestamp [clock seconds]
 				} else {
-					putdcc $idx {You don't have access.}
+					putdcc $idx "[mc {You don't have access.}]"
 				}
 			}
 		}
@@ -99,33 +99,33 @@ proc ::tcldrop::dcc::telnet::Read {idx line} {
 			if {[passwdok $chatinfo(handle) $line]} {
 				initconsole $idx
 				idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
-				if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx {Welcome!} }
+				if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx "[mc {Welcome!}]" }
 				callchon $chatinfo(handle) $idx
 			} else {
-				putdcc $idx {Bad password!}
+				putdcc $idx "[mc {Bad password!}]"
 				return 1
 			}
 		}
 		{TELNET_NEW} {
 			# Make sure the handle they want isn't already taken..
 			if {[validuser $line]} {
-				putdcc $idx {Sorry, that handle is taken already.}
-				putdcc $idx {Try another one please: } -nonewline 1 -flush 1
+				putdcc $idx "[mc {Sorry, that handle is taken already.}]"
+				putdcc $idx "[mc {Try another one please: }]" -nonewline 1 -flush 1
 			} else {
-				putdcc $idx {Okay, now choose and enter a password: } -nonewline 1 -flush 1
+				putdcc $idx "[mc {Okay, now choose and enter a password: }]" -nonewline 1 -flush 1
 				adduser $line *!$chatinfo(remote)
 				idxinfo $idx handle $line state TELNET_PW other {newp} timestamp [clock seconds]
 			}
 		}
 		{TELNET_PW} {
 			if {[string length $line] < 4} {
-				putdcc $idx {Try to use at least 4 characters in your password.}
-				putdcc $idx {Choose and enter a password: } -nonewline 1 -flush 1
+				putdcc $idx "[mc {Try to use at least 4 characters in your password.}]"
+				putdcc $idx "[mc {Choose and enter a password: }]" -nonewline 1 -flush 1
 				idxinfo $idx timestamp [clock seconds]
 			} else {
 				setuser $chatinfo(handle) pass $line
-				putdcc $idx {Remember that!  You'll need it next time you log in.}
-				putdcc $idx "You now have an account"
+				putdcc $idx "[mc {Remember that!  You'll need it next time you log in.}]"
+				putdcc $idx "[mc {You now have an account}]"
 				if {[countusers] == 1} {
 					chattr $chatinfo(handle) +pnmofvtxj
 				} else {

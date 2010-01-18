@@ -54,8 +54,7 @@ proc ::tcldrop::server::dcc::JUMP {handle idx text} {
 		}
 	}
 	putcmdlog "#$handle# jump${CmdLog}"
-	# Jumping servers...
-	putdcc $idx [lang 0x62b]
+	putdcc $idx [mc_handle $handle {Jumping servers...}]
 	# there's no danger in calling jump with empty args
 	jump $server $port $password
 	return 0

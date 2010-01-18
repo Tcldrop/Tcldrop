@@ -397,7 +397,7 @@ proc ::tcldrop::core::dcc::HELP {handle idx text} {
 # Usage: quit [comment]
 proc ::tcldrop::core::dcc::QUIT {handle idx text} {
 	putcmdlog "#$handle# quit $text"
-	putdcc $idx {Bu-Bye!}
+	putdcc $idx [mc_handle $handle {Bu-Bye!}]
 	# FixMe: This should be $nick $uhost instead:
 	putlog "[mc {DCC connection closed (%s!%s)} $handle $idx]"
 	if {[set chan [getchan $idx]] != "-1"} { callchpt ${::botnet-nick} $handle $idx $chan $text }
@@ -419,11 +419,11 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 	set host [::tcldrop::core::slindex $text 1]
 	if {$text eq {}} {
 		# Usage:
-		putdcc $idx "[mc {Usage}]: -host \[handle\] <hostmask>"
+		putdcc $idx "[mc_handle $handle {Usage}]: -host \[handle\] <hostmask>"
 		return 0
-	} elseif {[::tcldrop::core::sllength $text] == 1} {
+	} elseif {[sllength $text] == 1} {
 		set who $handle
-		set host [::tcldrop::core::slindex $text 0]
+		set host [slindex $text 0]
 	}
 	# FixMe: This should let anyone with higher flags that the person they want to -host remove their host, I think..
 	if {(([string equal -nocase $handle $who]) || ([matchattr $handle n])) && ([delhost $who $host])} {
@@ -431,7 +431,7 @@ proc ::tcldrop::core::dcc::-HOST {handle idx text} {
 		putdcc $idx "[mc_handle $handle {Removed '%1$s' from %2$s} $host $who]"
 	} else {
 		# Failed.
-		putdcc $idx [lang 0x002]
+		putdcc $idx "[mc_handle $handle {Failed.}]"
 	}
 	return 0
 }
@@ -533,7 +533,7 @@ proc ::tcldrop::core::dcc::CHADDR {handle idx text} {
 		set address [lindex $address 0]
 		setuser $bot BOTADDR [list $address $botport $userport]
 		putcmdlog "#$handle# chaddr $text"
-		putdcc $idx {Changed bots address.}
+		putdcc $idx "[mc_handle $handle {Changed bots address.}]"
 	}
 	return 0
 }
@@ -576,7 +576,7 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 	set changes [::tcldrop::core::slindex $text 1]
 	set channel [::tcldrop::core::slindex $text 2]
 	if {[set chattr [chattr $who $changes $channel]] eq {*}} {
-		putdcc [mc_handle $handle {No such user.}]
+		putdcc "[mc_handle $handle {No such user.}]"
 	} else {
 		putcmdlog "#$handle# chattr $text"
 		putdcc $idx "[mc_handle $handle {Global flags for %1$s are now +%2$s} $who [lindex [split $chattr |] 0]]"
@@ -590,8 +590,8 @@ proc ::tcldrop::core::dcc::CHATTR {handle idx text} {
 # Usage: save
 proc ::tcldrop::core::dcc::SAVE {handle idx text} {
 	putcmdlog "#$handle# save $text"
-	putdcc $idx [mc_handle $handle {Saving...}]
-	after idle [list after 0 [list callevent save]]
+	putdcc $idx "[mc_handle $handle {Saving...}]"
+	afteridle callevent save
 	return 0
 }
 
@@ -606,7 +606,7 @@ proc ::tcldrop::core::dcc::UPTIME {handle idx text} {
 # Usage: backup
 proc ::tcldrop::core::dcc::BACKUP {handle idx text} {
 	putcmdlog "#$handle# backup $text"
-	putdcc $idx [mc_handle $handle {Backing up data files...}]
+	putdcc $idx "[mc_handle $handle {Backing up data files...}]"
 	# FixMe: Add a [backup] command that calls the "backup" bindings. The bindings should in turn do the backing up of the user/channel files.
 	after idle [list backup]
 	return 0
@@ -651,7 +651,7 @@ proc ::tcldrop::core::dcc::SHUTDOWN {handle idx text} {
 	putcmdlog "#$handle# shutdown $text"
 	putdcc $idx [mc_handle $handle {Shutting Down...}]
 	if {$text eq {}} { set text [mc {nyoooooooo...}] }
-	after idle [list after 0 [list shutdown $text]]
+	afteridle shutdown $text
 }
 
 # Usage: loadmod <module>
@@ -770,7 +770,7 @@ proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 # FixMe: fix botnet part
 proc ::tcldrop::core::dcc::MOTD {handle idx text} {
 	putcmdlog "#$handle# motd $text"
-	if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx {Welcome!} }
+	if {![info exists ::motd] || ![dccdumpfile $idx ${::motd}]} { putdcc $idx "[mc_handle $handle {Welcome!}]" }
 	return 0
 }
 

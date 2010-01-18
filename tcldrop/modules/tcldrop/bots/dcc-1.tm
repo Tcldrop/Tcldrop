@@ -45,8 +45,8 @@ namespace eval ::tcldrop::bots::dcc {
 
 proc ::tcldrop::bots::dcc::BOTS {handle idx text} {
 	putcmdlog "#$handle# bots"
-	putdcc $idx "Bots: [join [set bots [bots]] {, }]."
-	putdcc $idx "(Total: [llength $bots])"
+	putdcc $idx "[mc_handle $handle {Bots}]: [join [set bots [bots]] {, }]."
+	putdcc $idx "([mc_handle $handle {Total}]: [llength $bots])"
 	return 0
 }
 
@@ -57,7 +57,7 @@ proc ::tcldrop::bots::dcc::+BOT {handle idx text} {
 	addbot $bot $address
 	addhost $bot $host
 	putcmdlog "#$handle# +bot $text"
-	putdcc $idx "Added bot '$bot' with address '$address' and hostmask '$host'"
+	putdcc $idx "[mc_handle $handle {Added bot '%1$s' with address '%2$s' and hostmask '%3$s'} $bot $address $host]"
 	return 0
 }
 
@@ -74,27 +74,27 @@ proc ::tcldrop::bots::dcc::-BOT {handle idx text} {
 # botattr target channel
 proc ::tcldrop::bots::dcc::BOTATTR {handle idx text} {
 	lassign [set args [split $text]] target arg2 arg3
-	if {[set argLen [llength $args]] < 1} { putdcc $idx {Usage: botattr <handle> [changes] [channel]}; return 0 }
-	if {![matchattr $target b]} { putdcc $idx {No such bot!}; return 0}
+	if {[set argLen [llength $args]] < 1} { putdcc $idx "[mc_handle $handle {Usage}]: botattr <handle> \[changes\] \[channel\]"; return 0 }
+	if {![matchattr $target b]} { putdcc $idx "[mc_handle $handle {No such bot!}]"; return 0}
 	switch -exact -- $argLen {
 		{1} {; # botattr target
 			if {[set flags [botattr $target]] ne {}} {
-				putdcc $idx "Bot flags for $target are: ${flags}."
+				putdcc $idx "[mc_handle $handle {Bot flags for %s are} $target]: ${flags}."
 			} else {
-				putdcc $idx "There are no bot flags for ${target}."
+				putdcc $idx "[mc_handle $handle {There are no bot flags for %s.} $target]"
 			}
 		}
 		{2} {; # botattr target channel / # botattr target changes
-			if {[islinked $target]} { putdcc $idx {You may not change the attributes of a directly linked bot.}; return 0 }
+			if {[islinked $target]} { putdcc $idx "[mc_handle $handle {You may not change the attributes of a directly linked bot.}]"; return 0 }
 			# FixMe: not optimal, should return "No channel record for #chan" if the channel doesn't exist.
 			if {[validchan $arg2]} {; # botattr target channel
 				putdcc $idx [botattr $target {} $arg2]; # FixMe: this doesn't work
 			} else {; #botattr target changes
 				botattr $target $arg2
 				if {[set flags [botattr $target]] ne {}} {
-					putdcc $idx "Bot flags for $target are now: ${flags}."
+					putdcc $idx "[mc_handle $handle {Bot flags for %s are now} $target]: ${flags}."
 				} else {
-					putdcc $idx "There are no bot flags for ${target}."
+					putdcc $idx "[mc_handle $handle {There are no bot flags for %s.} $target]"
 				}
 			}
 		}
@@ -109,7 +109,7 @@ proc ::tcldrop::bots::dcc::BOTATTR {handle idx text} {
 proc ::tcldrop::bots::dcc::LINK {handle idx text} {
 	if {[matchattr $text b]} {
 		putcmdlog "#$handle# link $text"
-		putdcc $idx "Attempting to link to $text..."
+		putdcc $idx "[mc_handle $handle {Attempting to link to %s...} $text]"
 		link $text
 	}
 	return 0
@@ -180,10 +180,10 @@ proc ::tcldrop::bots::dcc::BOTTREE {handle idx text} {
 	if {[llength [bots]] > 0} {
 		printtree $idx
 	} else {
-		putdcc $idx "No bots linked."
+		putdcc $idx "[mc_handle $handle {No bots linked.}]"
 		return 0
 	}
-	putdcc $idx "Average hops: [avghops], total bots: [expr {[llength [bots]]+1}]"
+	putdcc $idx "[mc_handle $handle {Average hops: %1$s, total bots: %2$d} [avghops] [expr {[llength [bots]]+1}]]"
 }
 
 proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
@@ -191,10 +191,10 @@ proc ::tcldrop::bots::dcc::VBOTTREE {handle idx text} {
 	if {[llength [bots]] > 0} {
 		printtree $idx 1
 	} else {
-		putdcc $idx "No bots linked."
+		putdcc $idx "[mc_handle {No bots linked.}]"
 		return 0
 	}
-	putdcc $idx "Average hops: [avghops], total bots: [expr {[llength [bots]]+1}]"
+	putdcc $idx "[mc_handle {Average hops: %1$s, total bots: %2$d} [avghops] [expr {[llength [bots]]+1}]]"
 }
 
 

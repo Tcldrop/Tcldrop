@@ -43,7 +43,7 @@ namespace eval ::tcldrop::channels::dcc {
 
 proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 	if {$text == {}} {
-		putdcc $idx "[mc {Usage}]: +chan \[#&!+\]<channel> \[options\]"
+		putdcc $idx "[mc_handle $handle {Usage}]: +chan \[#&!+\]<channel> \[options\]"
 		return 0
 	}
 	set channel [slindex $text 0]
@@ -52,7 +52,7 @@ proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 	if {$options != {}} {
 		foreach o $options {
 			if {[catch {channel set $channel $o} error]} {
-				putdcc $idx "[mc {Invalid channel or channel options.}]"
+				putdcc $idx "[mc_handle $handle {Invalid channel or channel options.}]"
 				break
 			}
 		}
@@ -63,16 +63,16 @@ proc ::tcldrop::channels::dcc::+CHAN {handle idx text} {
 
 proc ::tcldrop::channels::dcc::-CHAN {handle idx text} {
 	if {$text == {}} {
-		putdcc $idx "[mc {Usage}]: -chan \[#&!+\]<channel>"
+		putdcc $idx "[mc_handle $handle {Usage}]: -chan \[#&!+\]<channel>"
 		return 0
 	}
 	set channel [slindex $text 0]
 	if {[catch {channel remove $channel} error] && $error == "no such channel record: $channel"} {
-		putdcc $idx "[mc {That channel doesn't exist!}]"
+		putdcc $idx "[mc_handle $handle {That channel doesn't exist!}]"
 		return 0
 	}
-	putdcc $idx "[mc {Channel %s removed from the bot.} $channel]"
-	putdcc $idx "[mc {This includes any channel specific bans, invites, exemptions and user records that you set.}]"
+	putdcc $idx "[mc_handle $handle {Channel %s removed from the bot.} $channel]"
+	putdcc $idx "[mc_handle $handle {This includes any channel specific bans, invites, exemptions and user records that you set.}]"
 	putcmdlog "#$handle# -chan $channel"
 	return 0
 }
@@ -81,7 +81,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	global idxlist
 	if {$text eq {}} {
 		if {[set channel [dict get $idxlist($idx) console-channel]] eq {-}} {
-			putdcc $idx "[mc {Your console channel is invalid.}]"
+			putdcc $idx "[mc_handle $handle {Your console channel is invalid.}]"
 			return 0
 		}
 	} else {
@@ -89,53 +89,53 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	}
 	# Check for access before validchan so users without access can't see if the channel exists or not
 	if {![matchattr $handle m|m $channel]} {
-		putdcc $idx "You don't have access to $channel."
+		putdcc $idx "[mc_handle $handle {You don't have access to %s} $channel]"
 		return 0
 	}
 	if {![validchan $channel]} {
-		putdcc $idx "No such channel defined."
+		putdcc $idx "[mc_handle $handle {No such channel defined: %s} $channel]"
 		return 0
 	}
 	set chanflags [list autohalfop autoop autovoice bitch cycle dontkickops dynamicbans dynamicexempts dynamicinvites enforcebans greet inactive nodesynch protectfriends protecthalfops protectops revenge revengebot secret seen shared statuslog userbans userexempts userinvites]
 	set internalflags [lsort [concat $chanflags [list chanmode idle-kick stopnethack-mode aop-delay revenge-mode ban-time exempt-time invite-time need-op need-halfop need-voice need-invite need-key need-unban need-limit flood-chan flood-ctcp flood-join flood-kick flood-deop flood-nick]]]
-	putdcc $idx "Settings for [expr {[isdynamic $channel]?{dynamic}:{static}}] channel $channel:"
-	putdcc $idx "Protect modes (chanmode): [expr {[set x [channel get $channel chanmode]] eq {}?{None}:$x}]"
-	putdcc $idx "Idle Kick after (idle-kick): [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
+	putdcc $idx "[mc_handle $handle {Settings for %1$s channel %1$s: } [expr {[isdynamic $channel]?{dynamic}:{static}}] $channel]"
+	putdcc $idx "[mc_handle $handle {Protect modes (chanmode)}]: [expr {[set x [channel get $channel chanmode]] eq {}?{None}:$x}]"
+	putdcc $idx "[mc_handle $handle Idle Kick after (idle-kick)}]: [expr {[set x [channel get $channel idle-kick]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "stopnethack: [expr {[set x [channel get $channel stopnethack-mode]] in {{} 0}?{DON'T!}:$x}]"
 	putdcc $idx "aop-delay: [expr {[set x [channel get $channel aop-delay]] in {{} 0}?{0:0}:[join $x {:}]}]"
 	putdcc $idx "revenge-mode: [expr {[set x [channel get $channel revenge-mode]] eq {}?0:$x}]"
 	putdcc $idx "ban-time: [expr {[set x [channel get $channel ban-time]] eq {}?0:$x}]"
 	putdcc $idx "exempt-time: [expr {[set x [channel get $channel exempt-time]] eq {}?0:$x}]"
 	putdcc $idx "invite-time: [expr {[set x [channel get $channel invite-time]] eq {}?0:$x}]"
-	putdcc $idx "Other modes:"
+	putdcc $idx "[mc_handle $handle {Other modes}]:"
 	# only bot owners can see/change these
 	if {[matchattr $handle n|n $channel]} {
 		if {[set x [channel get $channel need-op]] ne {}} {
-			putdcc $idx "To regain op's (need-op):"
+			putdcc $idx "[mc_handle $handle {To regain op's (need-op)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-halfop]] ne {}} {
-			putdcc $idx "To regain halfop's (need-halfop):"
+			putdcc $idx "[mc_handle $handle {To regain halfop's (need-halfop)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-voice]] ne {}} {
-			putdcc $idx "To regain voice (need-voice):"
+			putdcc $idx "[mc_handle $handle {To regain voice (need-voice)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-invite]] ne {}} {
-			putdcc $idx "To get invite (need-invite):"
+			putdcc $idx "[mc_handle $handle {To get invite (need-invite)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-key]] ne {}} {
-			putdcc $idx "To get key (need-key):"
+			putdcc $idx "[mc_handle $handle {To get key (need-key)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-unban]] ne {}} {
-			putdcc $idx "If I'm banned (need-unban):"
+			putdcc $idx "[mc_handle $handle {If I'm banned (need-unban)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 		if {[set x [channel get $channel need-limit]] ne {}} {
-			putdcc $idx "When channel full (need-limit):"
+			putdcc $idx "[mc_handle $handle {When channel full (need-limit)}]:"
 			putdcc $idx "\{ $x \}"
 		}
 	}
@@ -154,7 +154,7 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 		}
 	}
 	if {[info exists udefs(flag)]} {
-		putdcc $idx "User defined channel flags:"
+		putdcc $idx "[mc_handle $handle {User defined channel flags}]:"
 		foreach {a b c d} [lsort $udefs(flag)] {
 			if {$b ne {}} { set b "[expr {[channel get $channel $b] in {{} 0}?{-}:{+}}]$b" }
 			if {$c ne {}} { set c "[expr {[channel get $channel $c] in {{} 0}?{-}:{+}}]$c" }
@@ -164,20 +164,20 @@ proc ::tcldrop::channels::dcc::CHANINFO {handle idx text} {
 	}
 	# FixMe: display 4 of these on one line?
 	if {[info exists udefs(int)]} {
-		putdcc $idx "Used defined channel settings:"
+		putdcc $idx "[mc_handle $handle {Used defined channel settings}]:"
 		foreach udef [lsort $udefs(int)] {
 			putdcc $idx "${udef}: [expr {[set x [channel get $channel ${udef}]] eq {}?0:$x}]"
 
 		}
 	}
 	if {[info exists udefs(str)]} {
-		putdcc $idx "Used defined channel strings:"
+		putdcc $idx "[mc_handle $handle {Used defined channel strings}]:"
 		foreach udef [lsort $udefs(str)] {
 			putdcc $idx "${udef}: [expr {[set x [channel get $channel ${udef}]] eq {}?{{}}:$x}]"
 		}
 	}
 	# Flood settings
-	putdcc $idx "flood settings: chan ctcp join kick deop nick"
+	putdcc $idx "[mc_handle $handle {Flood Settings}]: chan ctcp join kick deop nick"
 	foreach type [list chan ctcp join kick deop nick] {
 		if {[set x [channel get $channel flood-$type]] in {{} 0}} { set $x [list 0 0] }
 		set flood-${type}(number) [lindex $x 0]
