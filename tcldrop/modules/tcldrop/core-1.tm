@@ -67,7 +67,78 @@ namespace eval ::tcldrop {
 	namespace unknown unknown
 	package require msgcat
 	namespace import ::msgcat::mc
+	variable locales
+	# This maps the language names used in Eggdrop to their ISO-639/ISO-3166 codes:
+	# See http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+	array set locales {
+		bulgarian bg
+		croatian hr
+		danish da
+		dutch nl
+		english en
+		finnish fi
+		french fr
+		german de
+		italian it
+		norwegian no
+		polish pl
+		portuguese pt
+		romanian ro
+		russian ru
+		spanish es
+		turkish tr
+	}
 }
+
+# Adds support for multiple fallback locales to msgcat:
+proc ::msgcat::mclocales {args} {
+	switch -- [llength $args] {
+		{0} {
+			# No arguments, just return what we have set:
+			variable Loclist
+			return $Loclist
+		}
+		{1} {
+			# One argument, set locales to it, make it lowercase while we're here:
+			set locales [lrange [string tolower [lindex $args 0]] 0 end]
+		}
+		{default} {
+			# Multiple arguments, assume it's a list of locales, make it lowercase and a list again:
+			set locales [lrange [string tolower $args] 0 end]
+		}
+	}
+	variable Loclist {}
+	foreach l $locales {
+		switch -- $l {
+			{} - {c} - {{}} - {""} - { } {
+				# Ignore "{}" and "c", and other junk people might put in.
+			}
+			{default} {
+				# Safety check + duplicate check:
+				if {$l eq [file tail $l] && $l ni $Loclist} {
+					lappend Loclist $l
+				}
+			}
+		}
+	}
+	# The first one in the list is the main locale:
+	variable Locale [lindex $Loclist 0]
+	# Now expand the locales so that, for example, "en_us" will also include "en":
+	foreach l $Loclist {
+		set word ""
+		foreach part [split $l {_}] {
+			# Make sure "$word" is not already in the list, and then find the last match for "$word_*" and insert it after that:
+			if {[set word [string trim "${word}_${part}" {_}]] ni $Loclist} {
+				set Loclist [linsert $Loclist [lindex [lsearch -all -glob $Loclist "${word}_*"] end]+1 $word]
+			}
+		}
+	}
+	# Add {} to the list:
+	return [lappend Loclist {} {c}]
+}
+
+# This will take any unknown locales and put them into msgs/ROOT.msg (or something..undecided).
+#proc ::msgcat::mcunknown {locale src args} {}
 
 # This is helpful to update the screen when running in wish for some reason:
 update idletasks
@@ -1509,13 +1580,13 @@ proc ::tcldrop::core::textsubst {handle text args} {
 }
 
 proc ::tcldrop::core::mc_handle {handle args} {
-	if {[set lang [getuser $handle LANG]] ne {}} {
-		set origlang [::msgcat::mclocale]
-		::msgcat::mclocale $lang
+	# Only change the locale if the user has a LANG set, and only if it's different from the bots locale:
+	if {[set userlang [getuser $handle LANG]] ne {} && $userlang ne [set origlang [::msgcat::mclocales]]} {
+		::msgcat::mclocales $userlang
 		# Don't let errors stop us from changing the locale back:
-		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } return]
-		::msgcat::mclocale $origlang
-		return -code $retval $return
+		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } result options]
+		::msgcat::mclocales $origlang
+		return -code $retval -options $options $result
 	} else {
 		uplevel 1 [list ::msgcat::mc {*}$args]
 	}
@@ -1810,7 +1881,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	# Load the language specified in the EGG_LANG env variable (Eggdrop uses this too):
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
-	putlog "--- [mc {Loading}] Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y}])"
+	putlog "--- [mc {Loading}] Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y} -locale [::msgcat::mclocale]])"
 	setdefault die-on-sighup 0
 	setdefault rehash-on-sighup 1
 	setdefault die-on-sigterm 15

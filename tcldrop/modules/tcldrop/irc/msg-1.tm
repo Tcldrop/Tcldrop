@@ -319,7 +319,7 @@ proc ::tcldrop::irc::msg::WHOIS {nick host hand text} {
 			lassign [getuser $text laston] seenTime seenLoc
 			if {$seenTime != 0} {
 				# FixMe: better time format for this
-				puthelp "NOTICE $nick :\[${target}\] [mc_handle $hand {Last seen at}]: [clock format $seenTime]"
+				puthelp "NOTICE $nick :\[${target}\] [mc_handle $hand {Last seen at}]: [clock format $seenTime -locale [getuser $hand LANG]]"
 			} else {
 				puthelp "NOTICE $nick :\[${target}\] [mc_handle $hand {Never seen on channel.}]"
 			}
