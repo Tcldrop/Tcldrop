@@ -67,26 +67,26 @@ namespace eval ::tcldrop {
 	namespace unknown unknown
 	package require msgcat
 	namespace import ::msgcat::mc
-	variable locales
+	variable EggdropToISO639
 	# This maps the language names used in Eggdrop to their ISO-639/ISO-3166 codes:
 	# See http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-	array set locales {
-		bulgarian bg
-		croatian hr
-		danish da
-		dutch nl
-		english en
-		finnish fi
+	array set EggdropToISO639 {
+		bulgarian bg_BG
+		croatian hr_HR
+		danish da_DK
+		dutch nl_NL
+		english en_US:en_GB:en_AU
+		finnish fi_FI
 		french fr
-		german de
-		italian it
-		norwegian no
-		polish pl
-		portuguese pt
-		romanian ro
-		russian ru
+		german de_DE
+		italian it_IT
+		norwegian nn_NO:nn_NN:nb_NO:nb_NB:no_NO:sw_SW:da_DK:en_GB
+		polish pl_PL
+		portuguese pt_PT
+		romanian ro_RO
+		russian ru_RU
 		spanish es
-		turkish tr
+		turkish tr_TR
 	}
 }
 
@@ -114,8 +114,8 @@ proc ::msgcat::mclocales {args} {
 				# Ignore "{}" and "c", and other junk people might put in.
 			}
 			{default} {
-				# Safety check + duplicate check:
-				if {$l eq [file tail $l] && $l ni $Loclist} {
+				# Safety check + convert locale to a msgcat format + duplicate check:
+				if {$l eq [file tail $l] && [set l [::msgcat::ConvertLocale $l]] ni $Loclist} {
 					lappend Loclist $l
 				}
 			}
@@ -137,8 +137,41 @@ proc ::msgcat::mclocales {args} {
 	return [lappend Loclist {} {c}]
 }
 
+proc ::tcldrop::mcinit {{locales {}}} {
+	global env
+	foreach v {LC_ALL LC_MESSAGES LANG LANGUAGE LANGUAGES LANGS LINGUAS} {
+		if {[info exists env($v)] && $env($v) ne {}} {
+			foreach l [split [string tolower $env($v)] {:}] {
+				if {$l ni $locales} { lappend locales $l }
+			}
+		}
+	}
+	# EGG_LANG is a last resort..
+	variable EggdropToISO639
+	if {[info exists ::env(EGG_LANG)] && $env(EGG_LANG) ne {} && [info exists EggdropToISO639([string tolower $env(EGG_LANG)])]} {
+		foreach l [split $EggdropToISO639([string tolower $env(EGG_LANG)]) {:}] {
+			if {$l ni $locales} { lappend locales $l }
+		}
+	}
+	# We use all the languages we found:
+	if {![catch { ::msgcat::mclocales $locales }]} { return }
+}
+
 # This will take any unknown locales and put them into msgs/ROOT.msg (or something..undecided).
 #proc ::msgcat::mcunknown {locale src args} {}
+
+proc ::tcldrop::mc_handle {handle args} {
+	# Only change the locale if the user has a LANG set, and only if it's different from the bots locale:
+	if {[set userlang [getuser $handle LANG]] ne {} && $userlang ne [set origlang [::msgcat::mclocales]]} {
+		::msgcat::mclocales $userlang
+		# Don't let errors stop us from changing the locale back:
+		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } result options]
+		::msgcat::mclocales $origlang
+		return -code $retval -options $options $result
+	} else {
+		uplevel 1 [list ::msgcat::mc {*}$args]
+	}
+}
 
 # This is helpful to update the screen when running in wish for some reason:
 update idletasks
@@ -1579,19 +1612,6 @@ proc ::tcldrop::core::textsubst {handle text args} {
 	if {$options(-returnlist)} { return $retval } else { return [join $retval "\n"] }
 }
 
-proc ::tcldrop::core::mc_handle {handle args} {
-	# Only change the locale if the user has a LANG set, and only if it's different from the bots locale:
-	if {[set userlang [getuser $handle LANG]] ne {} && $userlang ne [set origlang [::msgcat::mclocales]]} {
-		::msgcat::mclocales $userlang
-		# Don't let errors stop us from changing the locale back:
-		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } result options]
-		::msgcat::mclocales $origlang
-		return -code $retval -options $options $result
-	} else {
-		uplevel 1 [list ::msgcat::mc {*}$args]
-	}
-}
-
 proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
 # Detects if critcl is present and creates Sysup procs for different systems
@@ -2192,10 +2212,12 @@ proc ::tcldrop::core::EVNT_signal {signal} {
 proc ::tcldrop::core::start {} {
 	variable start [clock seconds]
 	global restart tcldrop env tcl_interactive
-	# This basically calculates how often this process gets CPU cycles (in milliseconds):
-	set tcldrop(clockres) [clockres 250]
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
 	if {![info exists restart]} {
+		# Initialize msgcat (tell it what language(s) to use based on some env variables):
+		::tcldrop::mcinit
+		# This basically calculates how often this process gets CPU cycles (in milliseconds):
+		set tcldrop(clockres) [clockres 250]
 		## This works around a bug in Tcl v8.5+ that gives the wrong results.  We decrease ::tcl_precision until we get the right results...
 		## Set the test expr to a variable rather than hard-coding it, this avoids it being byte-compiled (so that changes to ::tcl_precision won't be ignored in our test code):
 		# Commented out, because the default ::tcl_precision default of 0 is probably best.. http://www.tcl.tk/cgi-bin/tct/tip/132.html  http://wiki.tcl.tk/879
