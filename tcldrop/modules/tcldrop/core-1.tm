@@ -75,7 +75,7 @@ namespace eval ::tcldrop {
 		croatian hr_HR
 		danish da_DK
 		dutch nl_NL
-		english en_US:en_GB:en_AU
+		english en_US:en_GB
 		finnish fi_FI
 		french fr
 		german de_DE
@@ -90,6 +90,9 @@ namespace eval ::tcldrop {
 	}
 }
 
+# This will take any unknown locales and put them into msgs/ROOT.msg (or something..undecided).
+#proc ::msgcat::mcunknown {locale src args} {}
+
 # Adds support for multiple fallback locales to msgcat:
 proc ::msgcat::mclocales {args} {
 	switch -- [llength $args] {
@@ -99,12 +102,12 @@ proc ::msgcat::mclocales {args} {
 			return $Loclist
 		}
 		{1} {
-			# One argument, set locales to it, make it lowercase while we're here:
-			set locales [lrange [string tolower [lindex $args 0]] 0 end]
+			# One argument, set locales to it:
+			set locales [string tolower [lindex $args 0]]
 		}
 		{default} {
-			# Multiple arguments, assume it's a list of locales, make it lowercase and a list again:
-			set locales [lrange [string tolower $args] 0 end]
+			# Multiple arguments, assume it's a list of locales:
+			set locales [string tolower $args]
 		}
 	}
 	variable Loclist {}
@@ -137,11 +140,12 @@ proc ::msgcat::mclocales {args} {
 	return [lappend Loclist {} {c}]
 }
 
+# Tells msgcat about the locales found in some env variables:
 proc ::tcldrop::mcinit {{locales {}}} {
 	global env
 	foreach v {LC_ALL LC_MESSAGES LANG LANGUAGE LANGUAGES LANGS LINGUAS} {
 		if {[info exists env($v)] && $env($v) ne {}} {
-			foreach l [split [string tolower $env($v)] {:}] {
+			foreach l [split [string tolower $env($v)] {: ;,}] {
 				if {$l ni $locales} { lappend locales $l }
 			}
 		}
@@ -149,16 +153,13 @@ proc ::tcldrop::mcinit {{locales {}}} {
 	# EGG_LANG is a last resort..
 	variable EggdropToISO639
 	if {[info exists ::env(EGG_LANG)] && $env(EGG_LANG) ne {} && [info exists EggdropToISO639([string tolower $env(EGG_LANG)])]} {
-		foreach l [split $EggdropToISO639([string tolower $env(EGG_LANG)]) {:}] {
+		foreach l [split [string tolower $EggdropToISO639([string tolower $env(EGG_LANG)])] {: ;,}] {
 			if {$l ni $locales} { lappend locales $l }
 		}
 	}
 	# We use all the languages we found:
-	if {![catch { ::msgcat::mclocales $locales }]} { return }
+	::msgcat::mclocales $locales
 }
-
-# This will take any unknown locales and put them into msgs/ROOT.msg (or something..undecided).
-#proc ::msgcat::mcunknown {locale src args} {}
 
 proc ::tcldrop::mc_handle {handle args} {
 	# Only change the locale if the user has a LANG set, and only if it's different from the bots locale:
