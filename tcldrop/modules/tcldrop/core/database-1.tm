@@ -44,6 +44,7 @@ namespace eval ::tcldrop::core::database {
 	namespace path [list ::tcldrop::core ::tcldrop]
 	namespace export Database database calldatabase
 	variable commands [namespace export]
+	namespace path [list ::tcldrop]
 	variable namespace [namespace current]
 	set ::modules($name) [dict create name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace $namespace]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version

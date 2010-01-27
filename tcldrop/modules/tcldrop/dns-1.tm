@@ -36,6 +36,8 @@ namespace eval ::tcldrop::dns {
 	variable author {Tcldrop-Dev}
 	variable description {Provides the dnslookup commands.}
 	variable commands [list dnslookup testip]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	variable rcsid {$Id$}
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands

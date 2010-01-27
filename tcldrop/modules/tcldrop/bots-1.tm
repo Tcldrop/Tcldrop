@@ -31,21 +31,21 @@
 namespace eval ::tcldrop::bots {
 	variable name {bots}
 	variable version {0.1}
-	variable depends {core::conn core::users core}
-	variable author {Tcldrop-Dev}
-	variable description {Core bot related components.}
-	variable commands [list bots putbot putallbots islinked botids link unlink addbot addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
-	variable rcsid {$Id$}
-	namespace export {*}$commands
-	namespace ensemble create -command Bots -subcommands $commands
-	namespace unknown unknown
-	namespace path [list ::tcldrop]
 	variable script [info script]
-	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::$name $version
 	package provide tcldrop::${name}::main $version
 	if {![info exists ::tcldrop]} { return }
+	variable depends {core::conn core::users core}
+	variable author {Tcldrop-Dev}
+	variable description {Core bot related components.}
+	variable commands [list bots putbot putallbots islinked botids link unlink addbot addbottype registerbot unregisterbot setbotinfo getbotinfo delbotinfo callbot calldisc calllink botinfo]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
+	variable rcsid {$Id$}
+	namespace export {*}$commands
+	namespace ensemble create -command Bots -subcommands $commands
+	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script namespace [namespace current]]
 }
 
 proc ::tcldrop::bots::addbottype {type args} {

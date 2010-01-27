@@ -39,6 +39,8 @@ namespace eval ::tcldrop::core::users {
 	variable description {Provides all userfile-related Tcl commands.}
 	variable rcsid {$Id$}
 	variable commands [list adduser countusers validuser finduser matchattr matchchanattr userlist passwdok getuser setuser getinfo getchaninfo setchaninfo getting-users chhandle chattr botattr chflags deluser delhost addchanrec delchanrec haschanrec save backup reload chpass setlaston addhost]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	#variable aliases [list add adduser count countusers valid validuser isvalid validuser find finduser list userlist get getuser set setuser getting getting-users del deluser + adduser - deluser +user adduser -user deluser -host delhost +host addhost]
 	#namespace ensemble create -command ::users -map $aliases -subcommands $commands
 	#namespace ensemble create -command ::user -map $aliases -subcommands $commands

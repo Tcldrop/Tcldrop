@@ -30,19 +30,21 @@
 namespace eval ::tcldrop::channels {
 	variable name {channels}
 	variable version {0.8}
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
+	package provide tcldrop::${name}::main $version
+	if {![info exists ::tcldrop]} { return }
 	variable author {Tcldrop-Dev}
 	variable description {All channel related commands.}
 	variable predepends {core}
 	variable depends {core::database core}
 	variable rcsid {$Id$}
-	variable script [info script]
 	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores isdynamic udeftype udefs validchanname
 	variable commands [namespace export]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	set ::modules($name) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands [namespace export] script $script namespace [namespace current]]
-	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
-	package provide tcldrop::$name $version
-	package provide tcldrop::${name}::main $version
-	if {![info exists ::tcldrop]} { return }
 	namespace ensemble create -command Channels -subcommands $commands
 }
 

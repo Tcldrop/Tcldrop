@@ -38,6 +38,8 @@ namespace eval ::tcldrop::dcc::chat {
 	variable author {Tcldrop-Dev}
 	variable description {Provides the dcc interface for users.}
 	variable commands [list]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	variable rcsid {$Id$}
 	# Note: This module depends on the dcc::telnet module, because they're so similar and might as well share code.
 	# Export all the commands that should be available to 3rd-party scripters:

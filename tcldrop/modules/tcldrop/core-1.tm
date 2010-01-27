@@ -65,112 +65,104 @@ namespace eval ::tcldrop {
 	}
 	catch { set ::version [list $::tcldrop(version) $::tcldrop(numversion)] }
 	namespace unknown unknown
-	package require msgcat
-	namespace import ::msgcat::mc
-	variable EggdropToISO639
+
+	package prefer latest
+
+	# Set a default mod-path if it's not already set:
+	if {![info exists ::mod-path]} { set ::mod-path {./modules} }
+	if {![info exists ::mod-paths]} { set ::mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ${::mod-path} [file dirname [file dirname [info script]]]] }
+	# Add to the paths to search for Tcl Modules:
+	foreach m ${::mod-paths} {
+		if {[file isdirectory $m]} {
+			::tcl::tm::path add $m
+			# Set the "official" Tcldrop mod-path:
+			catch { set ::mod-path $m }
+		}
+	}
+	# Add to the paths to search for Tcl packages:
+	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts] [file join / usr share tcltk tcl[info tclversion]] [file join / usr local share tcltk tcl[info tclversion]] [file join / usr local lib tcltk] [file join / usr local share tcltk] [file join / usr lib tcltk] [file join / usr share tcltk] [file join [file dirname [info script]] .. .. lib]] {
+		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
+	}
+	unset m
+
+	variable NamesToISO639
 	# This maps the language names used in Eggdrop to their ISO-639/ISO-3166 codes:
 	# See http://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
-	array set EggdropToISO639 {
-		bulgarian bg_BG
-		croatian hr_HR
-		danish da_DK
-		dutch nl_NL
-		english en_US:en_GB
-		finnish fi_FI
-		french fr
-		german de_DE
-		italian it_IT
-		norwegian nn_NO:nn_NN:nb_NO:nb_NB:no_NO:sw_SW:da_DK:en_GB
-		polish pl_PL
-		portuguese pt_PT
-		romanian ro_RO
-		russian ru_RU
-		spanish es
-		turkish tr_TR
+	array set NamesToISO639 {
+		bulgarian	bg_BG
+		croatian		hr_HR
+		danish		da_DK
+		dutch			nl_NL
+		english		en_US:en_GB
+		finnish		fi_FI
+		french		fr_FR
+		german		de_DE
+		italian		it_IT
+		norwegian	nb_NO:no_NO:nn_NO:nn_NN:nb_NB:sw_SW:da_DK:en_GB
+		polish		pl_PL
+		portuguese	pt_PT
+		romanian		ro_RO
+		russian		ru_RU
+		spanish		es_ES
+		turkish		tr_TR
+		bokmal          nb_NO.ISO-8859-1
+		bokmål          nb_NO.ISO-8859-1
+		catalan         ca_ES.ISO-8859-1
+		croatian        hr_HR.ISO-8859-2
+		czech           cs_CZ.ISO-8859-2
+		danish          da_DK.ISO-8859-1
+		dansk           da_DK.ISO-8859-1
+		deutsch         de_DE.ISO-8859-1
+		dutch           nl_NL.ISO-8859-1
+		eesti           et_EE.ISO-8859-15
+		estonian        et_EE.ISO-8859-15
+		finnish         fi_FI.ISO-8859-1
+		français        fr_FR.ISO-8859-1
+		french          fr_FR.ISO-8859-1
+		galego          gl_ES.ISO-8859-1
+		galician        gl_ES.ISO-8859-1
+		german          de_DE.ISO-8859-1
+		greek           el_GR.ISO-8859-7
+		hebrew          he_IL.ISO-8859-8
+		hrvatski        hr_HR.ISO-8859-2
+		hungarian       hu_HU.ISO-8859-2
+		icelandic       is_IS.ISO-8859-1
+		italian         it_IT.ISO-8859-1
+		japanese        ja_JP.eucJP
+		japanese.euc    ja_JP.eucJP
+		ja_JP           ja_JP.eucJP
+		ja_JP.ujis      ja_JP.eucJP
+		japanese.sjis   ja_JP.SJIS
+		korean          ko_KR.eucKR
+		korean.euc      ko_KR.eucKR
+		ko_KR           ko_KR.eucKR
+		lithuanian      lt_LT.ISO-8859-13
+		no_NO           nb_NO.ISO-8859-1
+		no_NO.ISO-8859-1 nb_NO.ISO-8859-1
+		norwegian       nb_NO.ISO-8859-1
+		nynorsk         nn_NO.ISO-8859-1
+		polish          pl_PL.ISO-8859-2
+		portuguese      pt_PT.ISO-8859-1
+		romanian        ro_RO.ISO-8859-2
+		russian         ru_RU.KOI8-R
+		slovak          sk_SK.ISO-8859-2
+		slovene         sl_SI.ISO-8859-2
+		slovenian       sl_SI.ISO-8859-2
+		spanish         es_ES.ISO-8859-1
+		swedish         sv_SE.ISO-8859-1
+		thai            th_TH.TIS-620
+		turkish         tr_TR.ISO-8859-9
 	}
-}
-
-# This will take any unknown locales and put them into msgs/ROOT.msg (or something..undecided).
-#proc ::msgcat::mcunknown {locale src args} {}
-
-# Adds support for multiple fallback locales to msgcat:
-proc ::msgcat::mclocales {args} {
-	switch -- [llength $args] {
-		{0} {
-			# No arguments, just return what we have set:
-			variable Loclist
-			return $Loclist
+	# msgtext is my (FireEgl) msgcat fork, it adds support for multiple fallback locales and other features:
+	package require msgtext 1.5
+	namespace import ::msgtext::mc ::msgtext::mcclock
+	# FixMe: Consider moving this proc into the users module..
+	proc mc_handle {handle args} {
+		if {[set userlang [getuser $handle LANG]] ne {}} {
+			uplevel 1 [list ::msgtext::mcwithlocales [uplevel 1 [list ::namespace current]] $userlang {*}$args]
+		} else {
+			uplevel 1 [list ::msgtext::mc {*}$args]
 		}
-		{1} {
-			# One argument, set locales to it:
-			set locales [string tolower [lindex $args 0]]
-		}
-		{default} {
-			# Multiple arguments, assume it's a list of locales:
-			set locales [string tolower $args]
-		}
-	}
-	variable Loclist {}
-	foreach l $locales {
-		switch -- $l {
-			{} - {c} - {{}} - {""} - { } {
-				# Ignore "{}" and "c", and other junk people might put in.
-			}
-			{default} {
-				# Safety check + convert locale to a msgcat format + duplicate check:
-				if {$l eq [file tail $l] && [set l [::msgcat::ConvertLocale $l]] ni $Loclist} {
-					lappend Loclist $l
-				}
-			}
-		}
-	}
-	# The first one in the list is the main locale:
-	variable Locale [lindex $Loclist 0]
-	# Now expand the locales so that, for example, "en_us" will also include "en":
-	foreach l $Loclist {
-		set word ""
-		foreach part [split $l {_}] {
-			# Make sure "$word" is not already in the list, and then find the last match for "$word_*" and insert it after that:
-			if {[set word [string trim "${word}_${part}" {_}]] ni $Loclist} {
-				set Loclist [linsert $Loclist [lindex [lsearch -all -glob $Loclist "${word}_*"] end]+1 $word]
-			}
-		}
-	}
-	# Add {} to the list:
-	return [lappend Loclist {} {c}]
-}
-
-# Tells msgcat about the locales found in some env variables:
-proc ::tcldrop::mcinit {{locales {}}} {
-	global env
-	foreach v {LC_ALL LC_MESSAGES LANG LANGUAGE LANGUAGES LANGS LINGUAS} {
-		if {[info exists env($v)] && $env($v) ne {}} {
-			foreach l [split [string tolower $env($v)] {: ;,}] {
-				if {$l ni $locales} { lappend locales $l }
-			}
-		}
-	}
-	# EGG_LANG is a last resort..
-	variable EggdropToISO639
-	if {[info exists ::env(EGG_LANG)] && $env(EGG_LANG) ne {} && [info exists EggdropToISO639([string tolower $env(EGG_LANG)])]} {
-		foreach l [split [string tolower $EggdropToISO639([string tolower $env(EGG_LANG)])] {: ;,}] {
-			if {$l ni $locales} { lappend locales $l }
-		}
-	}
-	# We use all the languages we found:
-	::msgcat::mclocales $locales
-}
-
-proc ::tcldrop::mc_handle {handle args} {
-	# Only change the locale if the user has a LANG set, and only if it's different from the bots locale:
-	if {[set userlang [getuser $handle LANG]] ne {} && $userlang ne [set origlang [::msgcat::mclocales]]} {
-		::msgcat::mclocales $userlang
-		# Don't let errors stop us from changing the locale back:
-		set retval [catch { uplevel 1 [list ::msgcat::mc {*}$args] } result options]
-		::msgcat::mclocales $origlang
-		return -code $retval -options $options $result
-	} else {
-		uplevel 1 [list ::msgcat::mc {*}$args]
 	}
 }
 
@@ -205,23 +197,6 @@ namespace eval ::tcldrop::core {
 	variable Flood
 	array set Flood {}
 	set ::modules(core) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script]
-	#package prefer latest
-	# Set a default mod-path if it's not already set:
-	if {![info exists ::mod-path]} { set ::mod-path {./modules} }
-	if {![info exists ::mod-paths]} { set ::mod-paths [list [file join / usr lib tcldrop modules] [file join / usr share tcldrop modules] [file join / usr local lib tcldrop modules] [file join / usr local share tcldrop modules] [file join $::env(HOME) lib tcldrop modules] [file join $::env(HOME) share tcldrop modules] [file join . modules] [file join $::tcldrop(dirname) modules] ${::mod-path} [file dirname [file dirname [info script]]]] }
-	# Add to the paths to search for Tcl Modules:
-	foreach m ${::mod-paths} {
-		if {[file isdirectory $m]} {
-			::tcl::tm::path add $m
-			# Set the "official" Tcldrop mod-path:
-			catch { set ::mod-path $m }
-		}
-	}
-	# Add to the paths to search for Tcl packages:
-	foreach m [list lib scripts [file join $::tcldrop(dirname) lib] [file join $::tcldrop(dirname) scripts] [file join $::env(HOME) lib tcldrop lib] [file join $::env(HOME) lib tcldrop scripts] [file join $::env(HOME) share tcldrop lib] [file join $::env(HOME) share tcldrop scripts] [file join / usr local lib tcldrop lib] [file join / usr local lib tcldrop scripts] [file join / usr local share tcldrop lib] [file join / usr local share tcldrop scripts] [file join / usr lib tcldrop lib] [file join / usr lib tcldrop scripts] [file join / usr share tcldrop lib] [file join / usr share tcldrop scripts] [file join / usr share tcltk tcl[info tclversion]] [file join / usr local share tcltk tcl[info tclversion]] [file join / usr local lib tcltk] [file join / usr local share tcltk] [file join / usr lib tcltk] [file join / usr share tcltk] [file join [file dirname [info script]] .. .. lib]] {
-		if {[file isdirectory $m]} { if {$m ni $::auto_path} { lappend ::auto_path $m } }
-	}
-	unset m
 }
 
 if {[info commands ::_oldProc] eq {} && (([info exists ::tcldrop(profiler)] && $tcldrop(profiler)) || [info exists ::env(profiler)] && $::env(profiler)) && ![catch { package require profiler }]} {
@@ -652,6 +627,7 @@ proc ::tcldrop::core::logfile {{levels {*}} {channel {*}} {filename {}}} {
 
 # FixMe: Finish writing this.
 proc ::tcldrop::core::LOG {levels channel text {tags {}}} {
+	# FixMe: Use log-time and timestamp-format settings.
 	variable Logfiles
 	foreach a [array names Logfiles $levels,[string tolower $channel],*] {
 		switch -glob -- $filename {
@@ -1769,6 +1745,8 @@ if {![llength [info commands ::tcldrop::core::Exit]]} {
 	proc ::tcldrop::core::exit {{code {0}} {reason {Exit}}} {
 		if {![info exists ::exit]} { set ::exit $code }
 		catch { callevent exit }
+		# Save the untranslated strings to ROOT.msg:
+		#mcsaveunknowns
 		catch { file delete -force -- $::pidfile }
 		# This is the real exit command:
 		catch { ::tcldrop::core::Exit $::exit }
@@ -1885,6 +1863,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	set ::restart $type
 	# log-time must exist before any putlog's can happen:
 	setdefault log-time {2}
+	setdefault timestamp-format {[%H:%M:%S]}
 	if {$type eq {restart}} { putlog {Restarting ...} }
 	setdefault uptime [clock seconds]
 	# There's many Eggdrop Tcl scripts that check $::numversion so they can do different things based on the version..
@@ -1902,7 +1881,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	# Load the language specified in the EGG_LANG env variable (Eggdrop uses this too):
 	if {[info exists ::env(EGG_LANG)]} { addlang $::env(EGG_LANG) } else { addlang $::language }
 	addlangsection core
-	putlog "--- [mc {Loading}] Tcldrop v$::tcldrop(version)  ([clock format [clock seconds] -format {%a %b %e %Y} -locale [::msgcat::mclocale]])"
+	putlog "--- [mc {Loading}] Tcldrop v$::tcldrop(version)  ([mcclock [clock seconds] -format {%a %b %e %Y}])"
 	setdefault die-on-sighup 0
 	setdefault rehash-on-sighup 1
 	setdefault die-on-sigterm 15
@@ -2215,8 +2194,6 @@ proc ::tcldrop::core::start {} {
 	global restart tcldrop env tcl_interactive
 	# Note: If ::restart exists, it means we're already in the middle of a restart (probably just re-source'ing this file.)
 	if {![info exists restart]} {
-		# Initialize msgcat (tell it what language(s) to use based on some env variables):
-		::tcldrop::mcinit
 		# This basically calculates how often this process gets CPU cycles (in milliseconds):
 		set tcldrop(clockres) [clockres 250]
 		## This works around a bug in Tcl v8.5+ that gives the wrong results.  We decrease ::tcl_precision until we get the right results...

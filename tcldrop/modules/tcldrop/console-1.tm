@@ -39,6 +39,8 @@ namespace eval ::tcldrop::console {
 	variable description {Provides commands for getting/setting console infos.}
 	variable {$Id$}
 	variable commands [list getconsole setconsole echo strip console store initconsole]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	variable script [info script]
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export {*}$commands
@@ -98,7 +100,7 @@ proc ::tcldrop::console::console {idx args} {
 proc ::tcldrop::console::initconsole {idx args} {
 	# Note: console-chan = partyline channel
 	#    console-channel = irc channel
-	set console [dict create console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0 console-quiet-save ${::quiet-save} console-log-time ${::log-time} {*}$args]
+	set console [dict create console-echo 0 console-channel - console-levels $::console console-strip - console-chan 0 console-page 0 console-quiet-save ${::quiet-save} console-log-time ${::log-time} console-timestamp-format ${::timestamp-format} {*}$args]
 	catch { set console [dict merge $console [getuser [set handle [idx2hand $idx]] console]] }
 	set levels {}
 	foreach c [split [dict get $console console-levels] {}] {

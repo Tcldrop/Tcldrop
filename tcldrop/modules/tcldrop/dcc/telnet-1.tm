@@ -47,7 +47,8 @@ namespace eval ::tcldrop::dcc::telnet {
 	if {![info exists ::tcldrop]} { return }
 	# Pre-depends on the party module:
 	#checkmodule party
-	namespace path [list ::tcldrop ::tcldrop::core]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 }
 
 proc ::tcldrop::dcc::telnet::Connect {idx} {

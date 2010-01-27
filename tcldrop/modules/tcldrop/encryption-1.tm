@@ -40,6 +40,8 @@ namespace eval ::tcldrop::encryption {
 	# Export all the commands that should be available to 3rd-party scripters:
 	namespace export encpass Encpass encrypt Encrypt decrypt Decrypt
 	variable commands [namespace export]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 }
 
 # ToDo/FixMe: Make this a namespace ensemble..

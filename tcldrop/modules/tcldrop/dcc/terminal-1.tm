@@ -44,6 +44,7 @@ namespace eval ::tcldrop::dcc::terminal {
 	variable rcsid {$Id$}
 	variable commands [list]
 	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	# Pre-depends on the partyline module:
 	#checkmodule party
 }

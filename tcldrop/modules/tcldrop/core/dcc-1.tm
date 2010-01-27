@@ -42,6 +42,8 @@ namespace eval ::tcldrop::core::dcc {
 	variable description {All core DCC binds and commands.}
 	variable rcsid {$Id$}
 	variable commands [list dcclist putdcc putdccraw idx2hand hand2idx killdcc getdccidle getdccaway setdccaway getchan setchan calldcc callfilt callchon callchof dccdumpfile dccsimul]
+	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	# putdccall getdccaway dccbroadcast putdccbut
 	namespace export {*}$commands
 }
@@ -817,10 +819,10 @@ proc ::tcldrop::core::dcc::LOG {levels channel text {tags {}}} {
 			switch -- [dict get $idxlist($i) console-log-time] {
 				{1} { putdcc $i "[clock format [clock seconds] -format {[%H:%M]}] $text" }
 				{2} { putdcc $i "[clock format [clock seconds] -format {[%T]}] $text" }
-				{0} - {} - { } { }
+				{0} - {} - { } { putdcc $i "$text" }
 				{default} {
-					# Use a custom clock format.. Should this use a separate variable instead?
-					putdcc $i "[clock format [clock seconds] -format [dict get $idxlist($i) console-log-time]] $text"
+					# If it's not 0, 1, or 2, then use the custom timestamp-format:
+					putdcc $i "[clock format [clock seconds] -format [dict get $idxlist($i) console-timestamp-format]] $text"
 				}
 			}
 		}

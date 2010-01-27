@@ -40,6 +40,7 @@ namespace eval ::tcldrop::irc {
 	variable rcsid {$Id$}
 	variable commands [list resetchan onchan dumpfile botonchan nick2hand hand2nick handonchan getchanhost getchanjoin resetchanjoin onchansplit chanlist getchanidle resetchanidle getchanmode pushmode flushmode topic ischanjuped botisop botishalfop botisvoice isop ishalfop wasop washalfop isvoice ischanban ischanexempt ischaninvite chanbans chanexempts chaninvites resetbans resetexempts resetinvites callmsgm callpubm callmsg callpub callmode callneed callflud callsign calljoin callpart callsplt callrejn calltopc callnick callkick callnotc +enforcebans callne callneop callnein callneky callnelm callbeub]
 	namespace path [list ::tcldrop]
+	namespace unknown unknown
 	# Pre-depends on these modules:
 	checkmodule server
 	checkmodule channels
