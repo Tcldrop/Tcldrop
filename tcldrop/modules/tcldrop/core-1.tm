@@ -1923,6 +1923,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule core::database
 	checkmodule core::users
 	checkmodule core::conn
+	checkmodule dcc
 	checkmodule core::dcc
 	checkmodule encryption
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:
