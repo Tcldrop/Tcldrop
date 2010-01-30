@@ -359,3 +359,27 @@ proc ::tcldrop::dcc::callchof {handle idx {reason {}}} {
 #	}
 #}
 
+# FixMe: Consider removing this proc and instead have separate log procs for each dcc::* module.
+proc ::tcldrop::dcc::LOG {levels channel text {tags {}}} {
+	global idxlist
+	foreach i [array names idxlist] {
+		if {[dict exists $idxlist($i) console-channel] && ([string match -nocase $channel [dict get $idxlist($i) console-channel]] || [string match -nocase [dict get $idxlist($i) console-channel] $channel]) && [checkflags $levels [dict get $idxlist($i) console-levels]] && ((![dict exists $tags save] || ![dict get $tags save]) || ![dict get $idxlist($i) console-quiet-save])} {
+			switch -- [dict get $idxlist($i) console-log-time] {
+				{1} { putdcc $i "[clock format [clock seconds] -format {[%H:%M]}] $text" }
+				{2} { putdcc $i "[clock format [clock seconds] -format {[%T]}] $text" }
+				{0} - {} - { } { putdcc $i "$text" }
+				{default} {
+					# If it's not 0, 1, or 2, then use the custom timestamp-format:
+					putdcc $i "[clock format [clock seconds] -format [dict get $idxlist($i) console-timestamp-format]] $text"
+				}
+			}
+		}
+	}
+}
+
+::tcldrop::bind load - dcc ::tcldrop::dcc::LOAD -priority 0
+proc ::tcldrop::dcc::LOAD {module} {
+	checkmodule console
+	# FixMe: Consider removing this bind and instead have separate log binds for each dcc::* module..
+	bind log - * ::tcldrop::dcc::LOG
+}

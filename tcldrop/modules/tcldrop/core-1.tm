@@ -171,7 +171,7 @@ update idletasks
 
 # Here begins the "core" module:
 namespace eval ::tcldrop::core {
-	variable version {0.6.2}
+	variable version {0.6.3}
 	variable name {core}
 	variable script [info script]
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
@@ -181,7 +181,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1294,44 +1294,72 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0} -required {1}]
 	array set opts $options
-	if {(($opts(-version) > 0) && ([catch { package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { package require "tcldrop::$module" } err])} {
-		putlog "[mc {Error loading module:}] $module $opts(-version): $err"
-		puterrlog "ERROR:\n$::errorInfo"
+	if {(($opts(-version) != 0) && ([catch { package require "tcldrop::${module}" $opts(-version) } err])) || ([catch { package require "tcldrop::$module" } err])} {
+		set errorinfo "$::errorInfo"
+		catch { putlog "[mc {Error loading module:}] $module $opts(-version): $err" }
 		if {$opts(-required)} {
 			# If -required is true it means this module is required for basic Tcldrop functions, so failure to load it means the bot will be useless and should [exit] after showing the related $::errorInfo.
 			# Try to report the error to the proper place, exit after the FIRST successful one:
-			if {![catch { putloglev d * [set errorinfo "ERROR: $::errorInfo"] }] || ![catch { PutLogLev d - $errorinfo }] || ![catch { puts stderr $errorinfo }] || ![catch { puts stdout $errorinfo }] || ![catch { die $errorinfo }]} {
+			if {![catch { putloglev d * [set errorinfo "ERROR:\n$errorinfo"] }] || ![catch { PutLogLev d - $errorinfo }] || ![catch { puts stderr $errorinfo }] || ![catch { puts stdout $errorinfo }] || ![catch { die $errorinfo }]} {
 				exit 1
 			}
+		} else {
+			puterrlog "ERROR:\n$errorinfo"
 		}
 		return 0
 	} else {
-		# Defaults for modinfo:
-		array set modinfo [list name $module version $err depends [list] predepends [list] commands [list] rcsid {} script {} author {} description {} namespace "::tcldrop::${module}"]
+		global modules
+		# Make sure the namespace is known now, since we need it for the next part:
+		if {![info exists modules($module)] || ![dict exists $modules($module) namespace]} {
+			if {[namespace exists "::tcldrop::${module}"]} {
+				dict set modules($module) namespace "::tcldrop::${module}"
+			} else {
+				# Error out, so I can know what modules (if any) are using an unknown namespace:
+				catch { putlog [set error "[mc {Error Loading module:}] $module $opts(-version): Module is using an unknown namespace."] }
+				return -code error $error
+				exit 1
+			}
+		}
 		# Modules can set ::modules($module) themselves, but for the ones that don't, there's this code:
-		foreach i [array names modinfo] { if {[info exists "$modinfo(namespace)::$i"]} { set modinfo($i) [set "$modinfo(namespace)::$i"] } }
-		# In case the module set ::modules($module) itself, we use that info:
-		if {[info exists ::modules($module)]} { array set modinfo $::modules($module) }
-		set ::modules($module) [array get modinfo]
+		foreach {i d} [list name $module version $err depends [list] predepends [list] commands [list] rcsid {} script {} author {} description {}] {
+			# Only set modules($module) $i if it doesn't already exist..
+			if {![dict exists $modules($module) $i]} {
+				if {[info exists "[dict get $modules($module) namespace]::$i"]} {
+					# Pull the setting from the modules namespace:
+					dict set modules($module) $i [set "[dict get $modules($module) namespace]::$i"]
+				} else {
+					# Use the default setting:
+					dict set modules($module) $i $d
+				}
+			}
+		}
 		# predepends modules get loaded before we do any LOAD binds for this module:
-		foreach m $modinfo(predepends) { ::tcldrop::core::CheckModule $m $options }
+		foreach m [dict get $modules($module) predepends] {
+			::tcldrop::core::CheckModule $m $options
+		}
 		# depends modules get loaded when we hit the Tcl event-loop next:
-		foreach m $modinfo(depends) { if {$m ni $modinfo(predepends)} { after 0 [list ::tcldrop::core::CheckModule $m $options] } }
-		if {[namespace exists $modinfo(namespace)]} {
-			if {$modinfo(namespace) ni $::protected(namespaces)} { lappend ::protected(namespaces) $modinfo(namespace) }
-			namespace eval $modinfo(namespace) {
-				# Make sure the module has ::tcldrop in its command search path:
-				if {{::tcldrop} ni [set NamespacePath [namespace path]]} {
-					namespace path [lappend NamespacePath {::tcldrop}]
-					unset NamespacePath
+		foreach m [dict get $modules($module) depends] {
+			if {$m ni [dict get $modules($module) predepends]} {
+				after 0 [list ::tcldrop::core::CheckModule $m $options]
+			}
+		}
+		if {[namespace exists [dict get $modules($module) namespace]]} {
+			# Protect the modules namespace from being deleted during restarts:
+			if {[dict get $modules($module) namespace] ni $::protected(namespaces)} {
+				lappend ::protected(namespaces) [dict get $modules($module) namespace]
+			}
+			# Make sure the module has ::tcldrop in its command search path:
+			namespace eval [dict get $modules($module) namespace] {
+				if {{::tcldrop} ni [namespace path]} {
+					namespace path [concat [namespace path] [list {::tcldrop}]]
 				}
 				# Set the unknown command as unqualified (default is ::unknown):
 				if {[namespace unknown] eq {}} { namespace unknown unknown }
 			}
 			# Import the modules' commands into the global namespace.  Modules may run namespace import themselves (either at the end of their script, or from the LOAD bind) (especially if they want to use the -force option), but for the ones that don't, we do it here:
-			if {[catch { ::uplevel \#0 [list ::namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* to global namespace: $err" }
+			if {[catch { ::uplevel \#0 [list ::namespace import "[dict get $modules($module) namespace]::*"] } err]} { puterrlog "Error importing namespace commands [dict get $modules($module) namespace]::* to global namespace: $err" }
 			# Import them into the ::tcldrop namespace also, using -force:
-			if {[catch { namespace eval ::tcldrop [list namespace import "$modinfo(namespace)::*"] } err]} { puterrlog "Error importing namespace commands $modinfo(namespace)::* $err" }
+			if {[catch { namespace eval ::tcldrop [list namespace import "[dict get $modules($module) namespace]::*"] } err]} { puterrlog "Error importing namespace commands [dict get $modules($module) namespace]::* $err" }
 		}
 		# Call the LOAD binds for $module:
 		foreach {type flags mask proc} [bindlist load] {
@@ -1346,9 +1374,9 @@ proc ::tcldrop::core::LoadModule {module {options {}}} {
 		# Load the corresponding .lang file:
 		# FixMe: Modules should do addlangsections themselves from their own LOAD binds..shouldn't they?
 		if {[addlangsection [lindex [split $module :] 0]]} {
-			putlog "[mc {Module loaded: %-16s (with lang support)} $module]    (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
+			putlog "[mc {Module loaded: %1$-20s v%2$-4s %3$4.4sms  (with lang support)} $module [dict get $modules($module) version] [expr { [clock clicks -milliseconds] - $starttime }]]"
 		} else {
-			putlog "[mc {Module loaded: %-16s} $module]                        (v$modinfo(version), [expr { [clock clicks -milliseconds] - $starttime }]ms)"
+			putlog "[mc {Module loaded: %1$-20s v%2$-4s %3$4.4sms} $module [dict get $modules($module) version] [expr { [clock clicks -milliseconds] - $starttime }]]"
 		}
 		return 1
 	}
@@ -1372,7 +1400,6 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 	set out {}
 	global modules
 	foreach m [array names modules $module] {
-		if {![info exists modules($m)]} { continue }
 		foreach d [moduledeps $m] {
 			if {![info exists modules($d)]} { continue }
 			# FixMe: Prevent loops when 2 modules depend on each other (modules shouldn't depend on each other though).
@@ -1430,9 +1457,7 @@ proc ::tcldrop::core::modules {{mask {*}}} {
 	set modulelist {}
 	global modules
 	foreach m [array names modules $mask] {
-		array set modinfo [list version 0 depends [list]]
-		array set modinfo $modules($m)
-		lappend modulelist [list $m $modinfo(version) $modinfo(depends)]
+		lappend modulelist [list $m [dict get $modules($m) version] [dict get $modules($m) depends]]
 	}
 	set modulelist
 }
@@ -1450,6 +1475,31 @@ proc ::tcldrop::core::moduledeps {module} {
 # Tells you if a module is loaded or not:
 proc ::tcldrop::core::moduleloaded {module args} { ModuleLoaded $module $args }
 proc ::tcldrop::core::ModuleLoaded {module {options {}}} { info exists ::modules($module) }
+
+# Wrappers for dict to modify $::modules($module),
+# for people who want to use them instead of using dict directly:
+proc ::tcldrop::core::getmodinfo {module args} {
+	dict get $::modules($module) {*}$args
+}
+
+# Sets one piece of info:
+proc ::tcldrop::core::setmodinfo {module args} {
+	dict set ::modules($module) {*}$args
+}
+
+# Sets a paired list of things:
+# (Either merges, or creates a new ::modules($module) dict.)
+proc ::tcldrop::core::modinfo {module args} {
+	if {[llength $args] % 2} {
+		if {[info exists ::modules($module)]} {
+			set ::modules($module) [dict merge $::modules($module) $args]
+		} else {
+			set ::modules($module) [dict create {*}$args]
+		}
+	} else {
+		return -code error "args must be a paired list."
+	}
+}
 
 
 proc ::tcldrop::core::callevent {event} {
@@ -1923,7 +1973,6 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	checkmodule core::database
 	checkmodule core::users
 	checkmodule core::conn
-	checkmodule dcc
 	checkmodule core::dcc
 	checkmodule encryption
 	# partyline related modules, aren't required to run, but they're needed if you want a dcc/telnet with the bot, and they're needed to make the bot more like Eggdrop:

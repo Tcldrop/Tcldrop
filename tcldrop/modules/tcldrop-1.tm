@@ -855,7 +855,7 @@ namespace eval ::tcldrop {
 				#PutLogLev console d - "Expect failed to trap signal $Signal: \"$error\""
 			}
 		}
-		PutLogLev console o - "Using Expect for trapping signals: [join $trappedSignals {, }]."
+		PutLogLev console d - "Using Expect for trapping signals: [join $trappedSignals {, }]."
 	}
 	# If Expect failed to trap any signals we try to trap them using TclX:
 	# FixMe: Really try to trap signals using TclX if Expect failed to trap _ANY_ signals.
@@ -877,10 +877,10 @@ namespace eval ::tcldrop {
 				}
 			}
 		}
-		PutLogLev console o - "Using TclX for trapping signals: [join $trappedSignals {, }]."
+		PutLogLev console d - "Using TclX for trapping signals: [join $trappedSignals {, }]."
 	}
 
 	foreach Signal $trapSignals { if {[lsearch -exact $trappedSignals $Signal] == -1} { lappend untrappedSignals $Signal } }
-	if {[info exists untrappedSignals]} { PutLogLev console o - "Unable to trap these signals: [join $untrappedSignals {, }]." }
+	if {[info exists untrappedSignals]} { PutLogLev console d - "Unable to trap these signals: [join $untrappedSignals {, }]." }
 	unset -nocomplain trapSignals trappedSignals Signal error untrappedSignals
 }

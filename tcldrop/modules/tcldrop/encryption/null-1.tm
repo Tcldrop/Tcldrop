@@ -28,19 +28,18 @@
 namespace eval ::tcldrop::encryption::null {
 	variable version {0.1}
 	variable name {encryption::null}
-	package provide tcldrop::$name 1
+	variable script [info script]
+	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
+	package provide tcldrop::$name $version
 	variable predepends {encryption}
 	variable depends {encryption core}
 	variable author {Tcldrop-Dev}
 	variable description {Provides "null" encryption.}
 	variable commands [list]
-	variable script [info script]
 	variable rcsid {$Id$}
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	namespace path [list ::tcldrop]
-	# Pre-depends on the encryption module:
-	checkmodule encryption
 	proc encrypt {key string} { set string }
 	proc decrypt {key string} { set string }
 	proc encpass {password} { set password }
