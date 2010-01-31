@@ -7,6 +7,10 @@
 #
 # Then just [package require] any package(s) you want to load, they will be downloaded and sourced on-the-fly.
 
+# Notes: Here are some similar projects to this one:
+# teaget - http://wiki.tcl.tk/24765 http://gasty-projects.googlecode.com/files/teaget.tcl
+# Package.tcl - http://code.google.com/p/wub/source/list?path=/trunk/Utilities/Package.tcl
+
 package require Tcl 8.5
 package require http
 namespace eval ::teacup {
@@ -30,7 +34,7 @@ namespace eval ::teacup {
 		geturl-timeout {99999}
 		status-url {http://teapot.activestate.com/db/status}
 		list-url {http://teapot.activestate.com/package/list}
-		package-url {http://teapot.activestate.com/package/name/@NAME@/ver/@VER@/arch/@ARCH@/file}
+		package-url {http://teapot.activestate.com/package/name/%s/ver/%s/arch/%s/file}
 		index-url {http://teapot.activestate.com/db/index}
 		autoupdate-interval {0}
 	}
@@ -99,7 +103,7 @@ namespace eval ::teacup {
 		# $filepath is the $path/$filename (minus the extension for now).
 		set filepath [file join [set path [file normalize [file join $teacup(local-repository) $arch [file dirname [string map {{::} {/}} $name]]]]] "[file tail [string map {{::} {/}} $name]]-${ver}"]
 		# Add a .tmp extension because we don't know what kind of file it is yet:
-		if {![catch { Download [set url [string map [list {@NAME@} $name {@VER@} $ver {@ARCH@} $arch] $teacup(package-url)]] "${filepath}.tmp" } code options] && $code} {
+		if {![catch { Download [set url [format $teacup(package-url) $name $ver $arch]] "${filepath}.tmp" } code options] && $code} {
 			dict set teacup(packages) $name $ver $arch downloaded 1
 			switch -- [dict get $options Content-Type] {
 				{text/plain; charset=UTF-8} {
@@ -117,7 +121,7 @@ namespace eval ::teacup {
 						set dir $filepath
 						# Add this directory to the ::auto_path (it won't work for THIS package require, but it will if we package require it again later):
 						# Note: We only need the next higher up directory in the ::auto_path, Tcl itself checks the immediate subdirectories for pkgIndex.tcl files..
-						if {[lsearch -exact $::auto_path $path] == -1} {
+						if {$path ni $::auto_path} {
 							tclLog "Adding $path to ::auto_path"
 							lappend ::auto_path $path
 						}
@@ -154,9 +158,9 @@ namespace eval ::teacup {
 			return 0
 		}
 		variable teacup
-		if {[lsearch -exact $teacup(platforms) $arch] != -1} {
+		if {$arch in $teacup(platforms)} {
 			return 1
-		} elseif {[string match -nocase $teacup(platforms) $arch]} {
+		} elseif {$teacup(platforms) eq {*}} {
 			return 1
 		}
 		return 0
