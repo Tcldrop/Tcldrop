@@ -4,6 +4,7 @@
 #override=$HOME/local/bin/tclsh8.5 \
 # \
 # Nice little hack to find latest version of tclsh in PATH \
+# Most of this detection script is written by Tothwolf \
 # \
 # NOTE: backslash and semicolon placements are important! \
 # \
@@ -14,22 +15,22 @@ then \
   exec $override "$0" ${1+"$@"}; \
 fi; \
 # Search for tclsh[0-9].[0-9] in each valid dir in PATH and some other common paths \
-for dir in $(echo $PATH:$HOME/local/bin:$HOME/bin | sed 's/:/ /g'); \
+for dir in `echo $PATH:$HOME/local/bin:$HOME/bin | sed 's/:/ /g'`; \
 do \
   if test -d $dir; \
   then \
-    files=$(find $dir 2> /dev/null |egrep '.*/tclsh[0-9]\.[0-9]$'); \
+    files=`find $dir 2> /dev/null |egrep '.*/tclsh[0-9]\.[0-9]$'`; \
     if test "$files" != ""; \
     then \
-      versions="${versions:+$versions }$(echo $files)"; \
+      versions="${versions:+$versions }`echo $files`"; \
     fi; \
   fi; \
 done; \
 # Loop over each version to find the latest version of tclsh \
 for fullpath in $versions; \
 do \
-  ver=$(echo $fullpath | grep -o '[0-9]\.[0-9]$'); \
-  tmpver=$(echo $ver | sed 's/\.//g'); \
+  ver=`echo $fullpath | grep -o '[0-9]\.[0-9]$'`; \
+  tmpver=`echo $ver | sed 's/\.//g'`; \
   if test "$lasttmpver" != ""; \
   then \
     if test "$tmpver" -gt "$lasttmpver"; \
@@ -41,7 +42,7 @@ do \
     # Prefer installs in a users home dir if we find multiple copies of tclsh with the same version \
     if test "$tmpver" = "$lasttmpver"; \
     then \
-      if test "$(echo $fullpath |grep -o ^$HOME)" = "$HOME"; \
+      if test "`echo $fullpath |grep -o ^$HOME`" = "$HOME"; \
       then \
         lastver=$ver; \
         lasttmpver=$tmpver; \
