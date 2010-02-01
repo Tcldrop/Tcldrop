@@ -4,9 +4,11 @@
 #override=$HOME/local/bin/tclsh8.5 \
 # \
 # Nice little hack to find latest version of tclsh in PATH \
-# Most of this detection script is written by Tothwolf \
+# Parts of this detection script is written by Tothwolf \
 # \
 # NOTE: backslash and semicolon placements are important! \
+# \
+# ToDo: Get rid of 'grep -o', 'find' \
 # \
 # Check if override is specified: \
 if [ -n "$override" ]; \
@@ -14,12 +16,19 @@ then \
   echo "Auto-detect overridden. Using tclsh in $override"; \
   exec $override "$0" ${1+"$@"}; \
 fi; \
+# Check for working 'grep -E' before using 'egrep' \
+if echo a | (grep -E '(a|b)') >/dev/null 2>&1; \
+then \
+  egrep="grep -E"; \
+else \
+  egrep=egrep; \
+fi; \
 # Search for tclsh[0-9].[0-9] in each valid dir in PATH and some other common paths \
 for dir in `echo $PATH:$HOME/local/bin:$HOME/bin | sed 's/:/ /g'`; \
 do \
   if test -d $dir; \
   then \
-    files=`find $dir 2> /dev/null |egrep '.*/tclsh[0-9]\.[0-9]$'`; \
+    files=`find $dir 2> /dev/null | $egrep '.*/tclsh[0-9]\.[0-9]$'`; \
     if test "$files" != ""; \
     then \
       versions="${versions:+$versions }`echo $files`"; \
