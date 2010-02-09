@@ -113,7 +113,7 @@ proc ::tcldrop::bots::delbotinfo {botid info} {
 
 proc ::tcldrop::bots::callbot {handle cmd arg} {
 	foreach {type flags mask proc} [bindlist bot] {
-		if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
+		if {[bindmatch $cmd $mask] && [matchattr $handle $flags]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $handle $cmd $arg } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -138,7 +138,7 @@ proc ::tcldrop::bots::callbot {handle cmd arg} {
 # FixMe: Find out if we're supposed to use "" or ${::botnet-nick} for $via if it's a direct connection.
 proc ::tcldrop::bots::calllink {bot {via {}}} {
 	foreach {type flags mask proc} [bindlist link] {
-		if {[string match -nocase $mask $bot]} {
+		if {[bindmatch $mask $bot]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $bot $via } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -160,7 +160,7 @@ proc ::tcldrop::bots::calllink {bot {via {}}} {
 # Support for reason is Tcldrop-only.
 proc ::tcldrop::bots::calldisc {bot {reason {}}} {
 	foreach {type flags mask proc} [bindlist disc] {
-		if {[string match -nocase $mask $bot]} {
+		if {[bindmatch $mask $bot]} {
 			if {[llength [info args $proc]] == 2} {
 				if {[catch { $proc $bot $reason } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"

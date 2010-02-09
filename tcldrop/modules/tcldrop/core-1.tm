@@ -181,7 +181,7 @@ namespace eval ::tcldrop::core {
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
 	variable rcsid {$Id$}
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -909,6 +909,123 @@ proc ::tcldrop::core::bindflags {{level {1}}} {
 	return $flags
 }
 
+# pure Tcl impl of match.c, by John13
+proc ::tcldrop::core::bindmatch {mask str} {
+	set m 0
+	set n 0
+	
+	set ma 0
+	set lsm -1
+	set lsn -1
+	set lpm -1
+	set lpn -1
+	
+	set match 1
+	set saved 0
+	
+	set sofar 0
+	
+	# null strings should never match
+	if {[string length $mask] == 0 && [string length $str]} {return 0}
+	
+	while {[string index $str $n] ne {}} {
+		if {[string index $mask $m] eq {~}} { # Match >=1 space
+			set space 1
+			incr m
+			while {[string index $mask $m] eq {~} || [string index $mask $m] eq " "} { # For each space or ~ ...
+				incr m
+				incr space
+			}; # tally 1 more space
+			incr sofar $space; # Each counts as exact
+			while {[string index $str $n] eq { }} {
+				incr n
+				incr space -1
+			}; # Do we have enough?
+			if {$space <= 0} {
+				continue; # Had enough spaces!
+			}
+		} else {
+			# Do the fallback
+			switch -- [string index $mask $m] {
+				{} {
+					incr m -1
+					while {($m > $ma) && ([string index $mask $m] eq {?})} {
+						incr m -1
+					}
+					if {($m > $ma) ? (([string index $mask $m] eq "*") && ([string index $mask $m-1] ne "\\")) : ([string index $mask $m] eq "*")} {
+						return [expr {$match+$saved+$sofar}]
+					}
+					break
+				}
+				{%} {
+					while {[string index $mask [incr m]] eq {%}} {}
+					if {[string index $mask $m] ne "*"} {
+						if {[string index $str $n] ne { }} {
+							set lpm $m
+							set lpn $n
+							incr saved $sofar
+							set sofar 0
+						}
+						continue
+					}
+				}
+				{*} {
+					incr m
+					while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
+						incr m
+					}
+					set lsm $m
+					set lsn $n
+					incr match $saved
+					incr match $sofar
+					set saved 0
+					set sofar 0
+					continue
+				}
+				{?} {
+					incr m
+					incr n
+					continue
+				}
+				\\ {
+					incr m
+					continue
+				}
+			}
+			if {[string toupper [string index $mask $m]] eq [string toupper [string index $str $n]]} {
+				incr m
+				incr n
+				incr sofar
+				continue
+			}
+		}
+		if {$lpm >= 0} {
+			incr lpn
+			set n $lpn
+			set m $lpm
+			set sofar 0
+			if {[string index $str $n] eq { }} {
+				set lpm -1
+			}
+			continue
+		}
+		if {$lsm >= 0} {
+			incr lsn
+			set n $lsn
+			set m $lsm
+			set sofar 0
+			set saved 0
+			continue
+		}
+		return 0
+	}
+	while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
+		incr m
+	}
+	return [expr {[string index $mask $m] ne {} ? 0 : $match+$saved+$sofar}]
+}
+
+
 # Provides a unique timerID:
 proc ::tcldrop::core::TimerID {args} { variable TimerIDCount
 	return "timer[incr TimerIDCount]_[join $args -]"
@@ -1091,7 +1208,7 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 proc ::tcldrop::core::calltime {} {
 	lassign [set current [clock format [clock seconds] -format {%M %H %e %m %Y}]] minute hour day month year
 	foreach {type flags mask proc} [bindlist time] {
-		if {[string match $mask $current]} {
+		if {[bindmatch $mask $current]} {
 			if {[catch { $proc $minute $hour $day $month $year } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -1504,7 +1621,7 @@ proc ::tcldrop::core::modinfo {module args} {
 
 proc ::tcldrop::core::callevent {event} {
 	foreach {type flags mask proc} [bindlist evnt] {
-		if {[string match -nocase $mask $event]} {
+		if {[bindmatch $mask $event]} {
 			if {[catch { $proc $event } err]} {
 				putlog "[mc {Error in script}]: $proc $event: $err"
 				puterrlog "$::errorInfo"

@@ -126,7 +126,7 @@ proc ::tcldrop::party::CallParty {command usermask arguments} {
 		set userinfo(idletime) [clock seconds]
 		set party_users($u) [array get userinfo]
 		foreach {type flags mask proc} [bindlist party] {
-			if {[string match -nocase $mask $command]} {
+			if {[bindmatch$mask $command]} {
 				if {[catch { $proc $command $u $party_users($u) } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
@@ -214,7 +214,7 @@ proc ::tcldrop::party::getparty {type what args} {
 # CHJN: Stupito FireEgl 0 * 9 Proteus-D@adsl-220-213-190.bhm.bellsouth.net
 proc ::tcldrop::party::callchjn {bot handle chan flag idx userhost args} {
 	foreach {type flags mask proc} [bindlist chjn] {
-		if {[string match -nocase $mask $chan]} {
+		if {[bindmatch $mask $chan]} {
 			if {[catch { $proc $bot $handle $chan $flag $idx $userhost } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -235,7 +235,7 @@ proc ::tcldrop::party::callchjn {bot handle chan flag idx userhost args} {
 #         Module: core
 proc ::tcldrop::party::callchpt {bot handle idx {chan {}} {reason {}}} {
 	foreach {type flags mask proc} [bindlist chpt] {
-		if {[string match -nocase $mask $chan]} {
+		if {[bindmatch $mask $chan]} {
 			if {[llength [info args $proc]] >= 5} {
 				if {[catch { $proc $bot $handle $idx $chan $reason } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
@@ -267,7 +267,7 @@ proc ::tcldrop::party::callchpt {bot handle idx {chan {}} {reason {}}} {
 #         Module: core
 proc ::tcldrop::party::callaway {bot idx {text {}}} {
 	foreach {type flags mask proc} [bindlist away] {
-		if {[string match -nocase $mask $bot]} {
+		if {[bindmatch $mask $bot]} {
 			if {[catch { $proc $bot $idx $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -290,7 +290,7 @@ proc ::tcldrop::party::callaway {bot idx {text {}}} {
 #         Module: core
 proc ::tcldrop::party::callchat {handle chan text} {
 	foreach {type flags mask proc} [bindlist chat] {
-		if {[string match -nocase $mask $text]} {
+		if {[bindmatch $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -311,7 +311,7 @@ proc ::tcldrop::party::callchat {handle chan text} {
 #         Module: core
 proc ::tcldrop::party::callact {handle chan text} {
 	foreach {type flags mask proc} [bindlist act] {
-		if {[string match -nocase $mask $text]} {
+		if {[bindmatch $mask $text]} {
 			if {[catch { $proc $handle $chan $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -333,7 +333,7 @@ proc ::tcldrop::party::callact {handle chan text} {
 #         Module: core
 proc ::tcldrop::party::callbcst {bot text} {
 	foreach {type flags mask proc} [bindlist bcst] {
-		if {[string match -nocase $mask $text]} {
+		if {[bindmatch $mask $text]} {
 			if {[catch { $proc $bot $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"

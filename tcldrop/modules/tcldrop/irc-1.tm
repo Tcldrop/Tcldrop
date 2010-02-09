@@ -119,7 +119,7 @@ proc ::tcldrop::irc::callmsgm {nick uhost handle text} {
 	set retval 0
 	set nolog 0
 	foreach {type flags mask proc} [bindlist msgm] {
-		if {[string match -nocase $mask $text] && [matchattr $handle $flags]} {
+		if {[bindmatch $mask $text] && [matchattr $handle $flags]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -141,7 +141,7 @@ proc ::tcldrop::irc::callpubm {nick uhost handle channel text} {
 	set retval 0
 	set nolog 0
 	foreach {type flags mask proc} [bindlist pubm] {
-		if {[string match -nocase $mask "$channel $text"] && [matchattr $handle $flags $channel]} {
+		if {[bindmatch $mask "$channel $text"] && [matchattr $handle $flags $channel]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -165,7 +165,7 @@ proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 	set failed 0
 	set matchattr -1
 	foreach {type flags mask proc} [bindlist msg] {
-		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags]]} {
+		if {[bindmatch $mask $command] && [set matchattr [matchattr $handle $flags]]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -196,7 +196,7 @@ proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 	set failed 0
 	set matchattr -1
 	foreach {type flags mask proc} [bindlist pub] {
-		if {[string equal -nocase $mask $command] && [set matchattr [matchattr $handle $flags $channel]]} {
+		if {[bindmatch $mask $command] && [set matchattr [matchattr $handle $flags $channel]]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $channel $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
@@ -221,7 +221,7 @@ proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 
 proc ::tcldrop::irc::callpart {nick uhost handle channel {msg {}}} {
 	foreach {type flags mask proc} [bindlist part] {
-		if {[string match -nocase $mask "$channel $uhost"] && [matchattr $handle $flags $channel]} {
+		if {[bindmatch $mask "$channel $uhost"] && [matchattr $handle $flags $channel]} {
 			if {[catch { $proc $nick $uhost $handle $channel $msg } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -237,7 +237,7 @@ proc ::tcldrop::irc::callpart {nick uhost handle channel {msg {}}} {
 
 proc ::tcldrop::irc::callkick {nick uhost handle channel target {reason {}}} {
 	foreach {type flags mask proc} [bindlist kick] {
-		if {[string match -nocase $mask "$channel $target"]} {
+		if {[bindmatch $mask "$channel $target"]} {
 			if {[catch { $proc $nick $uhost $handle $channel $target $reason } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -255,7 +255,7 @@ proc ::tcldrop::irc::callsign {nick uhost {handle {*}} {chanmask {*}} {msg {Quit
 	# Call all the sign binds:
 	foreach {type flags mask proc} [bindlist sign] {
 		foreach channel [channels $chanmask] {
-			if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
+			if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 				if {[catch { $proc $nick $uhost $handle $channel $msg } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
@@ -279,7 +279,7 @@ proc ::tcldrop::irc::callsplt {nick uhost {handle {*}} {chanmask {*}} {msg {net-
 				array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
 				array set channickinfo [list split [clock seconds] split-timer [after [expr { ${::wait-split} * 1001 }] [list ::tcldrop::irc::callsign $nick $uhost $handle $channel $msg]]]
 				set channelnicks($element) [array get channickinfo]
-				if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
+				if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 					if {[catch { $proc $nick $uhost $handle $channel } err]} {
 						putlog "[mc {Error in script}]: $proc: $err"
 						puterrlog "$::errorInfo"
@@ -296,7 +296,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 	global channelnicks
 	# Call all of the rejn binds:
 	foreach {type flags mask proc} [bindlist rejn] {
-		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
+		if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 			array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
 			array set channickinfo [list split 0 nick $nick op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0]
 			if {[info exists channickinfo(split-timer)]} {
@@ -318,7 +318,7 @@ proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
 	#set ::channelnicks([irctoupper $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join] {
-		if {[string match -nocase $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
+		if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 			if {[catch { $proc $nick $uhost $handle $channel } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -330,7 +330,7 @@ proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
 
 proc ::tcldrop::irc::callmode {nick uhost handle channel mode {victim {}}} {
 	foreach {type flags mask proc} [bindlist mode] {
-		if {[string match -nocase $mask "$channel $mode"]} {
+		if {[bindmatch $mask "$channel $mode"]} {
 			if {[catch { $proc $nick $uhost $handle $channel $mode $victim } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -348,7 +348,7 @@ proc ::tcldrop::irc::calltopc {nick uhost handle channel topic} {
 		set ::channels($element) $chaninfo
 	}
 	foreach {type flags mask proc} [bindlist topc] {
-		if {[string match -nocase $mask "$channel $topic"]} {
+		if {[bindmatch $mask "$channel $topic"]} {
 			if {[catch { $proc $nick $uhost $handle $channel $topic } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -361,7 +361,7 @@ proc ::tcldrop::irc::calltopc {nick uhost handle channel topic} {
 proc ::tcldrop::irc::callnick {oldnick uhost handle channel nick} {
 	foreach {type flags mask proc} [bindlist nick] {
 		foreach channel [channels] {
-			if {[string match -nocase $mask "$channel $nick"] && [botonchan $channel] && ([onchan $oldnick $channel] || [onchan $nick $channel]) && [matchattr $handle $flags $channel]} {
+			if {[bindmatch $mask "$channel $nick"] && [botonchan $channel] && ([onchan $oldnick $channel] || [onchan $nick $channel]) && [matchattr $handle $flags $channel]} {
 				countbind $type $mask $proc
 				if {[catch { $proc $oldnick $uhost $handle $channel $nick} err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
@@ -376,7 +376,7 @@ proc ::tcldrop::irc::callnick {oldnick uhost handle channel nick} {
 proc ::tcldrop::irc::callneed {channel {need {join}}} {
 	# Do the Eggdrop NEED binds:
 	foreach {type flags mask proc} [bindlist need] {
-		if {[string match -nocase $mask "$channel $need"]} {
+		if {[bindmatch $mask "$channel $need"]} {
 			if {[catch { $proc $channel $need } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -401,7 +401,7 @@ proc ::tcldrop::irc::callneed {channel {need {join}}} {
 proc ::tcldrop::irc::callne {type channel {botnick {}}} {
 	if {$botnick == {}} { set botnick $::botnick }
 	foreach {type flags mask proc} [bindlist "ne$type"] {
-		if {[string match -nocase $mask $channel]} {
+		if {[bindmatch $mask $channel]} {
 			if {[catch { $proc $channel $botnick } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -490,7 +490,7 @@ proc ::tcldrop::irc::callneub {channel {botnick {}}} { callne ub $channel $botni
 
 proc ::tcldrop::irc::callnotc {nick uhost handle text dest} {
 	foreach {type flags mask proc} [bindlist notc] {
-		if {[string match -nocase $mask $text] && [matchattr $handle $flags]} {
+		if {[bindmatch $mask $text] && [matchattr $handle $flags]} {
 			if {[catch { $proc $nick $uhost $handle $text $dest } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
@@ -513,7 +513,7 @@ proc ::tcldrop::irc::callnotc {nick uhost handle text dest} {
 #         Module: server
 proc ::tcldrop::irc::callflud {nick uhost handle type {channel {}}} {
 	foreach {type flags mask proc} [bindlist flud] {
-		if {[string match -nocase $mask $type]} {
+		if {[bindmatch $mask $type]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $nick $uhost $handle $type $channel } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"

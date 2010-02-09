@@ -60,7 +60,7 @@ proc ::tcldrop::filesys::callfil {handle idx arg} {
 	set cmd [string range [lindex $arg 0] 1 end]
 	set arg [join [lrange $arg 1 end]]
 	foreach {type flags mask proc} [bindlist fil] {
-		if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
+		if {[bindmatch $cmd $mask] && [matchattr $handle $flags]} {
 			putloglev d * "tcl: fil call: $proc $handle $idx $arg"
 			incr retval
 			if {[catch { $proc $handle $idx $arg } err]} {

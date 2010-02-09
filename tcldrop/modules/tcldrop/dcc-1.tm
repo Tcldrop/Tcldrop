@@ -132,7 +132,7 @@ proc ::tcldrop::dcc::callfilt {idx line} {
 	if {[string trim $line] ne {}} {
 		set handle [getidxinfo $idx handle]
 		foreach {type flags mask proc} [bindlist filt] {
-			if {[string match -nocase $mask $line] && [matchattr $handle $flags]} {
+			if {[bindmatch $mask $line] && [matchattr $handle $flags]} {
 				countbind $type $mask $proc
 				if {[catch { set line [$proc $idx $line] } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
@@ -262,7 +262,7 @@ proc ::tcldrop::dcc::setchan {idx {channel {-1}}} {
 # Note: FILT is a filter for things we receive FROM the remote.  (Taken from Eggdrop)
 proc ::tcldrop::dcc::callfiltdcc {idx text args} {
 	foreach {type flags mask proc} [bindlist filtdcc] {
-		if {[string equal -nocase $mask "$idx $text"]} {
+		if {[bindmatch $mask "$idx $text"]} {
 			# If they return non-zero (error) it means to abort sending the text, otherwise send the new $text they return:
 			if {[set retval [catch { $proc $idx $text $args } text]]} { return -code $retval $text }
 		}
@@ -277,7 +277,7 @@ proc ::tcldrop::dcc::calldcc {handle idx arg} {
 	set cmd [string range [lindex $arg 0] 1 end]
 	set arg [join [lrange $arg 1 end]]
 	foreach {type flags mask proc} [bindlist dcc] {
-		if {[string equal -nocase $cmd $mask] && [matchattr $handle $flags]} {
+		if {[bindmatch $cmd $mask] && [matchattr $handle $flags]} {
 			putloglev d * "tcl: dcc call: $proc $handle $idx $arg"
 			incr retval
 			if {[catch { $proc $handle $idx $arg } err]} {
@@ -308,7 +308,7 @@ proc ::tcldrop::dcc::calldcc {handle idx arg} {
 # This is not really a partyline related bind.  As you could trigger this bind without involving the partyline at all.
 proc ::tcldrop::dcc::callchon {handle idx} {
 	foreach {type flags mask proc} [bindlist chon] {
-		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
+		if {[bindmatch $mask $handle] && [matchattr $handle $flags]} {
 			if {[catch { $proc $handle $idx } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog $::errorInfo
@@ -331,7 +331,7 @@ proc ::tcldrop::dcc::callchon {handle idx} {
 # This is not really a partyline related bind.  As you could trigger this bind without involving the partyline at all.
 proc ::tcldrop::dcc::callchof {handle idx {reason {}}} {
 	foreach {type flags mask proc} [bindlist chof] {
-		if {[string match -nocase $mask $handle] && [matchattr $handle $flags]} {
+		if {[bindmatch $mask $handle] && [matchattr $handle $flags]} {
 			if {[catch { $proc $handle $idx } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 			}

@@ -254,7 +254,7 @@ proc ::tcldrop::channels::validchanname {channel} {
 
 proc ::tcldrop::channels::callchannel {command channel args} {
 	foreach {type flags mask proc} [bindlist channel] {
-		if {[string match -nocase $mask "$command $channel [join $args]"]} {
+		if {[bindmatch $mask "$command $channel [join $args]"]} {
 			countbind $type $mask $proc
 			if {[catch { $proc $command $channel $args } err]} {
 				putlog "[mc {Error in %s} $proc]: $err"

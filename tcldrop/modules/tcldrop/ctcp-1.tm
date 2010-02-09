@@ -59,7 +59,7 @@ proc ::tcldrop::ctcp::callctcp {nick uhost handle dest keyword {text {}}} {
 		foreach {type flags mask proc} [bindlist ctcp] {
 			# FixMe: If $dest is a channel, make it do a matchattr for that channel.
 			#        It needs to distinguish between personal and channel CTCPs anyway.
-			if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
+			if {[bindmatch $mask $keyword] && [matchattr $handle $flags]} {
 				if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
@@ -104,7 +104,7 @@ proc ::tcldrop::ctcp::callctcr {nick uhost handle dest keyword {text {}}} {
 	foreach {type flags mask proc} [bindlist ctcr] {
 		# FixMe: If $dest is a channel, make it do a matchattr for that channel.
 		#        It needs to distinguish between personal and channel CTCPs anyway.
-		if {[string match -nocase $mask $keyword] && [matchattr $handle $flags]} {
+		if {[bindmatch $mask $keyword] && [matchattr $handle $flags]} {
 			if {[catch { $proc $nick $uhost $handle $dest $keyword $text } err]} {
 				putlog "[mc {Error in script}]: $proc: $err"
 				puterrlog "$::errorInfo"
