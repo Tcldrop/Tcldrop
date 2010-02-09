@@ -361,7 +361,7 @@ namespace eval pubsafetcl {
 				format "\\u%04.4X" $t
 			}
 			# This is escapes "special" characters, especially ones special to mysql:
-			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text }; #"" <- fix broken syntax highlighting.  Now you broke my syntax highlighting. hehe
+			proc addslashes {text} { string map {\\ \\\\ \| \\| \[ \\[ \] \\] \{ \\{ \} \\} $ \\$ \` \\` \' \\' \" \\"} $text };
 			proc unhtml {text} { regsub -all -- {(<.+?>)} $text {} }
 			proc unhtml2 {text} { regsub -all -- {<([^<])*>} $text {} }
 			proc unixtime {} { clock seconds }
@@ -993,8 +993,22 @@ namespace eval pubsafetcl {
 		}
 		interp alias $interp regsub {} [namespace current]::Regsub $interp
 
+		interp hide $interp scan
+		proc Scan {args} {
+			lassign $args interp string format
+			if {$string eq {} || $format eq {}} {
+				return -code error {wrong # args: should be "scan string format ?varName varName ...?"}
+			}
+			if {[set size [string length $string]] > 2048} {
+				return -code error "You can't scan a string that long!  (Needed: $size Allowed: 2048)"
+			} else {
+				interp invokehidden $interp scan {*}$args
+			}
+		}
+		interp alias $interp scan {} [namespace current]::Scan $interp
+
 		# FixMe: Add wrappers for dict, lassign, incr <- possible to increase the size of something with these
-		# regexp, scan <- possible to set variables, not possible to increase the size of something
+		# regexp <- possible to set variables, not possible to increase the size of something
 		# subst, eval <- possible to eval/subst $a$a$a inside $b$b$b inside $c$c$c etc to create a huge string
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
