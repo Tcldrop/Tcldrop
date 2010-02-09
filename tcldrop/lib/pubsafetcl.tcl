@@ -992,6 +992,39 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp regsub {} [namespace current]::Regsub $interp
+		
+		interp hide $interp regexp
+		proc Regexp {args} {
+			set pos 1
+			foreach arg [lrange $args 1 end] {
+				if {[string index $arg 0] != {-}} {
+					break
+				} elseif {$arg == {--}} {
+					incr pos
+					break
+				} else {
+					incr pos
+					lappend switches $arg
+				}
+			}
+			if {![info exists switches]} { set switches {--} }
+			switch -exact -- [llength [set list [lrange $args $pos end]]] {
+				{0} - {1} { return -code error {wrong # args: should be "regexp ?switches? exp string ?matchVar? ?subMatchVar subMatchVar ...?"} }
+				{default} {
+					lassign $list exp string
+					set interp [lindex $args 0]
+					set arg [lrange $list 3 end]
+				}
+			}
+			if {[set size [string length $exp]] > 400} {
+				return -code error "Can't evauate a regexp that long.  (Needed: $size Allowed: 400)"
+			} elseif {[set size [string length $string]] > 400} {
+				return -code error "Can't evaluate a string that long.  (Needed: $size Allowed: 400)"
+			} else {
+				interp invokehidden $interp regsub {*}$switches $exp $string {*}$arg
+			}
+		}
+		interp alias $interp regexp {} [namespace current]::Regexp $interp
 
 		interp hide $interp scan
 		proc Scan {args} {
@@ -1002,13 +1035,28 @@ namespace eval pubsafetcl {
 			if {[set size [string length $string]] > 2048} {
 				return -code error "You can't scan a string that long!  (Needed: $size Allowed: 2048)"
 			} else {
-				interp invokehidden $interp scan {*}$args
+				interp invokehidden $interp scan {*}[lrange $args 1 end]
 			}
 		}
 		interp alias $interp scan {} [namespace current]::Scan $interp
 
+		if {[llength [info commands coroutine]]} {
+			interp hide $interp coroutine
+			proc Coroutine {interp name cmd args} {
+				if {[lsearch -exact [set ${interp}::InitialCommands] [string trimleft $name {:}]] != -1 } {
+					return -code error {Attempt to rename command DENIED!  =P}
+				} elseif {[set size [string length $name]] > 400} {
+					return -code error "You can't have a coroutine name that long!  (Needed: $size Allowed: 400)"
+				} elseif {[set size [string length $cmd]] > 2048} {
+					return -code error "You can't have a coroutine body that long!  (Needed: $size Allowed: 2048)"
+				} else {
+					interp invokehidden $interp coroutine $name $cmd {*}$args
+				}
+			}
+			interp alias $interp coroutine {} [namespace current]::Coroutine $interp
+		}
+
 		# FixMe: Add wrappers for dict, lassign, incr <- possible to increase the size of something with these
-		# regexp <- possible to set variables, not possible to increase the size of something
 		# subst, eval <- possible to eval/subst $a$a$a inside $b$b$b inside $c$c$c etc to create a huge string
 
 		# We create a namespace under the current one for storing variables relating to the interp we just created:
