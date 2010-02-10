@@ -1021,7 +1021,7 @@ namespace eval pubsafetcl {
 			} elseif {[set size [string length $string]] > 400} {
 				return -code error "Can't evaluate a string that long.  (Needed: $size Allowed: 400)"
 			} else {
-				interp invokehidden $interp regsub {*}$switches $exp $string {*}$arg
+				interp invokehidden $interp regexp {*}$switches $exp $string {*}$arg
 			}
 		}
 		interp alias $interp regexp {} [namespace current]::Regexp $interp
