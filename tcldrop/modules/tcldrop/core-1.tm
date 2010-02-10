@@ -912,122 +912,159 @@ proc ::tcldrop::core::bindflags {{level {1}}} {
 	return $flags
 }
 
-# pure Tcl impl of match.c, by John13
-proc ::tcldrop::core::bindmatch {mask str} {
-	set m 0
-	set n 0
-	
-	set ma 0
-	set lsm -1
-	set lsn -1
-	set lpm -1
-	set lpn -1
-	
-	set match 1
-	set saved 0
-	
-	set sofar 0
-	
-	# null strings should never match
-	if {[string length $mask] == 0 && [string length $str]} {return 0}
-	
-	while {[string index $str $n] ne {}} {
-		if {[string index $mask $m] eq {~}} { # Match >=1 space
-			set space 1
-			incr m
-			while {[string index $mask $m] eq {~} || [string index $mask $m] eq " "} { # For each space or ~ ...
-				incr m
-				incr space
-			}; # tally 1 more space
-			incr sofar $space; # Each counts as exact
-			while {[string index $str $n] eq { }} {
-				incr n
-				incr space -1
-			}; # Do we have enough?
-			if {$space <= 0} {
-				continue; # Had enough spaces!
+# proc by thommey
+proc ::tcldrop::core::bindmatch {mask string} {
+	set escaped 0
+	set re {^}
+	foreach ch [split $mask {}] {
+		if {!$escaped} {
+			switch -exact -- $ch {
+				"\\" { set escaped 1 }
+				{*} { append re {.*} }
+				{?} { append re {.{1}} }
+				{%} { append re {\S*} }
+				{~} { append re {\s+} }
+				default { # make sure regexp characters are escaped (\ never arrives here)
+					if {[string first $ch {{}().+^|$[]}] != -1} {
+						append re \\$ch
+					} else {
+						append re $ch
+					}
+				}
 			}
 		} else {
-			# Do the fallback
-			switch -- [string index $mask $m] {
-				{} {
-					incr m -1
-					while {($m > $ma) && ([string index $mask $m] eq {?})} {
-						incr m -1
-					}
-					if {($m > $ma) ? (([string index $mask $m] eq "*") && ([string index $mask $m-1] ne "\\")) : ([string index $mask $m] eq "*")} {
-						return [expr {$match+$saved+$sofar}]
-					}
-					break
-				}
-				{%} {
-					while {[string index $mask [incr m]] eq {%}} {}
-					if {[string index $mask $m] ne "*"} {
-						if {[string index $str $n] ne { }} {
-							set lpm $m
-							set lpn $n
-							incr saved $sofar
-							set sofar 0
-						}
-						continue
-					}
-				}
-				{*} {
-					incr m
-					while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
-						incr m
-					}
-					set lsm $m
-					set lsn $n
-					incr match $saved
-					incr match $sofar
-					set saved 0
-					set sofar 0
-					continue
-				}
-				{?} {
-					incr m
-					incr n
-					continue
-				}
-				\\ {
-					incr m
-					continue
-				}
+			if {[string first $ch {\*?~%}] != -1} {
+				append re "\\$ch"
+			} else {; #pointless escape
+				append re $ch
 			}
-			if {[string toupper [string index $mask $m]] eq [string toupper [string index $str $n]]} {
-				incr m
-				incr n
-				incr sofar
-				continue
-			}
+			set escaped 0
 		}
-		if {$lpm >= 0} {
-			incr lpn
-			set n $lpn
-			set m $lpm
-			set sofar 0
-			if {[string index $str $n] eq { }} {
-				set lpm -1
-			}
-			continue
-		}
-		if {$lsm >= 0} {
-			incr lsn
-			set n $lsn
-			set m $lsm
-			set sofar 0
-			set saved 0
-			continue
-		}
-		return 0
 	}
-	while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
-		incr m
-	}
-	return [expr {[string index $mask $m] ne {} ? 0 : $match+$saved+$sofar}]
+	append re {$}
+	regexp -- $re $string
 }
 
+# % time {bindmatch {*foo~bar % gril?} {xxx foo   bar baz grill}} 10000
+# 37.6199 microseconds per iteration <-- current proc used
+# % time {bindmatch2 {*foo~bar % gril?} {xxx foo   bar baz grill}} 10000
+# 58.2462 microseconds per iteration
+
+# pure Tcl impl of match.c, by John13
+#proc ::tcldrop::core::bindmatch2 {mask str} {
+#	set m 0
+#	set n 0
+#	
+#	set ma 0
+#	set lsm -1
+#	set lsn -1
+#	set lpm -1
+#	set lpn -1
+#	
+#	set match 1
+#	set saved 0
+#	
+#	set sofar 0
+#	
+#	# null strings should never match
+#	if {[string length $mask] == 0 && [string length $str]} {return 0}
+#	
+#	while {[string index $str $n] ne {}} {
+#		if {[string index $mask $m] eq {~}} { # Match >=1 space
+#			set space 1
+#			incr m
+#			while {[string index $mask $m] eq {~} || [string index $mask $m] eq " "} { # For each space or ~ ...
+#				incr m
+#				incr space
+#			}; # tally 1 more space
+#			incr sofar $space; # Each counts as exact
+#			while {[string index $str $n] eq { }} {
+#				incr n
+#				incr space -1
+#			}; # Do we have enough?
+#			if {$space <= 0} {
+#				continue; # Had enough spaces!
+#			}
+#		} else {
+#			# Do the fallback
+#			switch -- [string index $mask $m] {
+#				{} {
+#					incr m -1
+#					while {($m > $ma) && ([string index $mask $m] eq {?})} {
+#						incr m -1
+#					}
+#					if {($m > $ma) ? (([string index $mask $m] eq "*") && ([string index $mask $m-1] ne "\\")) : ([string index $mask $m] eq "*")} {
+#						return [expr {$match+$saved+$sofar}]
+#					}
+#					break
+#				}
+#				{%} {
+#					while {[string index $mask [incr m]] eq {%}} {}
+#					if {[string index $mask $m] ne "*"} {
+#						if {[string index $str $n] ne { }} {
+#							set lpm $m
+#							set lpn $n
+#							incr saved $sofar
+#							set sofar 0
+#						}
+#						continue
+#					}
+#				}
+#				{*} {
+#					incr m
+#					while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
+#						incr m
+#					}
+#					set lsm $m
+#					set lsn $n
+#					incr match $saved
+#					incr match $sofar
+#					set saved 0
+#					set sofar 0
+#					continue
+#				}
+#				{?} {
+#					incr m
+#					incr n
+#					continue
+#				}
+#				\\ {
+#					incr m
+#					continue
+#				}
+#			}
+#			if {[string toupper [string index $mask $m]] eq [string toupper [string index $str $n]]} {
+#				incr m
+#				incr n
+#				incr sofar
+#				continue
+#			}
+#		}
+#		if {$lpm >= 0} {
+#			incr lpn
+#			set n $lpn
+#			set m $lpm
+#			set sofar 0
+#			if {[string index $str $n] eq { }} {
+#				set lpm -1
+#			}
+#			continue
+#		}
+#		if {$lsm >= 0} {
+#			incr lsn
+#			set n $lsn
+#			set m $lsm
+#			set sofar 0
+#			set saved 0
+#			continue
+#		}
+#		return 0
+#	}
+#	while {[string index $mask $m] eq "*" || [string index $mask $m] eq {%}} {
+#		incr m
+#	}
+#	return [expr {[string index $mask $m] ne {} ? 0 : $match+$saved+$sofar}]
+#}
 
 # Provides a unique timerID:
 proc ::tcldrop::core::TimerID {args} { variable TimerIDCount
