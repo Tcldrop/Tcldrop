@@ -537,33 +537,31 @@ namespace eval pubsafetcl {
 		namespace eval [namespace current]::$interp [list lappend InitialCommands hi fu i it a the it you hello re wb thx see hey well but or please plz pls how what you are of that can do kthx boring yes no may where is typo muaha rtfm google www search com exe ask okay come op voice q it o k ok in thanks thank thx lol jk nah or in bye nn night stfu wtf omg get go howdy example could give me I Hi How Hello What like nah but well If hmm lmao and he eh heh hehe heheh hehehe heheheh ah ha hah haha hahah hahaha hahahah hes You ffs o_O O_o O_O o_o just Oo oO on off oh but yea yeah like u ah aha ask err wow that it lmfao as er uh um umm uhm gee duh http www db blah its bleh save timer utimer :) =) =P :P :p =p tcl .tcl safetcl .safetcl .eval im {I'm} {} { } {	} "\n" {?} {:} {;} {/} {.} {..} {...} bgerror]
 		namespace eval [namespace current]::$interp [list namespace export $interp]
 
-		proc [namespace current]::${interp}::extraCommands {command {extraCommands {}}} {
-			switch -- $command {
-				{add} {
-					variable InitialCommands
-					set InitialCommands [lsort -unique [concat $InitialCommands $extraCommands]]
-					foreach c $extraCommands {
-						if {[catch { pubsafetcl expose $c }]} {
-							if {[catch { pubsafetcl invokehidden rename ::$c ::tcl::${c}_orig }]} { catch { pubsafetcl eval rename ::$c ::tcl::${c}_orig } }
-							if {[catch { pubsafetcl expose $c }]} { catch { pubsafetcl alias $c $c } }
-						}
-					}
-					variable extraCommands_current $extraCommands
-					AddTraces
+		namespace eval [namespace current]::${interp} {namespace ensemble create -command [namespace current]::extraCommands -map {add ExtraCommmandsAdd remove ExtraCommandsRemove} }
+		proc [namespace current]::${interp}::ExtraCommandsAdd {{extraCommands {}}} {
+			variable InitialCommands
+			set InitialCommands [lsort -unique [concat $InitialCommands $extraCommands]]
+			foreach c $extraCommands {
+				if {[catch { pubsafetcl expose $c }]} {
+					if {[catch { pubsafetcl invokehidden rename ::$c ::tcl::${c}_orig }]} { catch { pubsafetcl eval rename ::$c ::tcl::${c}_orig } }
+					if {[catch { pubsafetcl expose $c }]} { catch { pubsafetcl alias $c $c } }
 				}
-				{remove} {
-					if {$extraCommands == {}} {
-						variable extraCommands_current
-						set extraCommands $extraCommands_current
-					}
-					foreach c $extraCommands {
-						# First we remove the trace
-						catch { pubsafetcl invokehidden -global trace remove command $c {rename delete} permissionDenied }
-						catch { pubsafetcl hide $c }
-						#if {[catch { pubsafetcl alias $c {} }]} {  }
-						if {[catch { pubsafetcl invokehidden rename ::tcl::${c}_orig ::$c }]} { catch { pubsafetcl eval rename ::tcl::${c}_orig ::$c } }
-					}
-				}
+			}
+			variable extraCommands_current $extraCommands
+			AddTraces
+		}
+		
+		proc [namespace current]::${interp}::ExtraCommandsRemove {{extraCommands {}}} {
+			if {$extraCommands == {}} {
+				variable extraCommands_current
+				set extraCommands $extraCommands_current
+			}
+			foreach c $extraCommands {
+				# First we remove the trace
+				catch { pubsafetcl invokehidden -global trace remove command $c {rename delete} permissionDenied }
+				catch { pubsafetcl hide $c }
+				#if {[catch { pubsafetcl alias $c {} }]} {  }
+				if {[catch { pubsafetcl invokehidden rename ::tcl::${c}_orig ::$c }]} { catch { pubsafetcl eval rename ::tcl::${c}_orig ::$c } }
 			}
 		}
 
@@ -571,53 +569,54 @@ namespace eval pubsafetcl {
 
 		catch { rename ::$interp [namespace current]::${interp}::pubsafetcl }
 
-		proc [namespace current]::${interp}::$interp {cmd args} { set namespace [namespace current]
-			switch -- $cmd {
-				{setting} - {set} - {variable} - {var} - {option} - {opt} - {config} - {configure} { variable [lindex $args 0] [lindex $args 1] }
-				{fancyeval} {
-					variable timeLimit
-					set timerid [after $timeLimit [list set ${namespace}::Cancel $timeLimit]]
-					# set arg [encoding convertto iso8859-1 $arg]
-					variable preEval
-					namespace eval $namespace $preEval
-					extraCommands remove
-					variable extraCommands
-					variable puts [list]
-					variable putloglev [list]
-					variable minclicks
-					#extraCommands add $extraCommands
-					# FixMe: Increase the recursionlimit as necessary:
-					catch { pubsafetcl recursionlimit 7 }
-					# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
-					catch { pubsafetcl limit time -granularity 1 -milliseconds 1000 -seconds [clock seconds] }
-					pubsafetcl limit commands -value {}
-					# 250 here is the number of commands we'll allow at a time:
-					variable CmdCount [expr { [pubsafetcl eval {info cmdcount}] + 250 }]
-					catch { pubsafetcl limit commands -value $CmdCount }
-					set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval {*}$args } out]
-					set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
-					variable Cancel
-					if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
-					variable postEval
-					namespace eval $namespace $postEval
-					if {$errlev == 1} { set results [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { set results $out }
-					#extraCommands remove $extraCommands
-					variable Count
-					return [list puts $puts putloglev $putloglev results $results errorlevel $errlev clicks $clicks count [incr Count]]
-				}
-				{eval} {
-					variable timeLimit
-					set timerid [after $timeLimit [list set ${namespace}::Cancel $timeLimit]]
-					# What the hell is ResourceReset? I don't see such a proc
-					ResourceReset
-					# set arg [encoding convertto iso8859-1 $arg]
-					set errlev [catch { pubsafetcl eval {*}$args] } out]
-					variable Cancel
-					if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
-					if {$errlev == 1} { return -code error [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { return $out }
-				}
-				{default} { eval [linsert $args 0 "${namespace}::pubsafetcl" $cmd] }
-			}
+		namespace eval [namespace current]::${interp} [list namespace ensemble create -command [namespace current]::${interp}::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} setting PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1]
+		
+		proc [namespace current]::${interp}::PubsafetclSet {var {value {}}} {
+			variable $var $value
+		}
+		
+		proc [namespace current]::${interp}::PubsafetclFancyeval {args} { set namespace [namespace current]
+			variable timeLimit
+			set timerid [after $timeLimit [list set ${namespace}::Cancel $timeLimit]]
+			# set arg [encoding convertto iso8859-1 $arg]
+			variable preEval
+			namespace eval $namespace $preEval
+			extraCommands remove
+			variable extraCommands
+			variable puts [list]
+			variable putloglev [list]
+			variable minclicks
+			#extraCommands add $extraCommands
+			# FixMe: Increase the recursionlimit as necessary:
+			catch { pubsafetcl recursionlimit 7 }
+			# Tcl v8.5's resource limits http://tcl.tk/man/tcl8.5/TclCmd/interp.htm#M45
+			catch { pubsafetcl limit time -granularity 1 -milliseconds 1000 -seconds [clock seconds] }
+			pubsafetcl limit commands -value {}
+			# 250 here is the number of commands we'll allow at a time:
+			variable CmdCount [expr { [pubsafetcl eval {info cmdcount}] + 250 }]
+			catch { pubsafetcl limit commands -value $CmdCount }
+			set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval {*}$args } out]
+			set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
+			variable Cancel
+			if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
+			variable postEval
+			namespace eval $namespace $postEval
+			if {$errlev == 1} { set results [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { set results $out }
+			#extraCommands remove $extraCommands
+			variable Count
+			return [list puts $puts putloglev $putloglev results $results errorlevel $errlev clicks $clicks count [incr Count]]
+		}
+		
+		proc [namespace current]::${interp}::PubsafetclEval {args} { set namespace [namespace current]
+			variable timeLimit
+			set timerid [after $timeLimit [list set ${namespace}::Cancel $timeLimit]]
+			# What the hell is ResourceReset? I don't see such a proc
+			ResourceReset
+			# set arg [encoding convertto iso8859-1 $arg]
+			set errlev [catch { pubsafetcl eval {*}$args] } out]
+			variable Cancel
+			if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
+			if {$errlev == 1} { return -code error [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { return $out }
 		}
 		
 		# Add traces for each initial command that deny rename and deletion of them
