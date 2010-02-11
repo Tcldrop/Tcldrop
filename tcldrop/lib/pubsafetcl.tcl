@@ -84,23 +84,37 @@ namespace eval pubsafetcl {
 
 		# We want to take out the timeout part of the body
 		# TODO: Maybe we should replace ::tcl::info::body - since 8.5 info is an ensemble
-		interp hide $interp info
-		proc Info {interp option args} {
-			switch -glob -- $option {
-				{b*} {
-					if {[set code [catch { eval [linsert $args 0 interp invokehidden $interp info $option] } out]]} {
-						return -code $code $out
-					} elseif {[string match {timeout ; *} $out]} {
+		#interp hide $interp info
+		#proc Info {interp option args} {
+			#switch -glob -- $option {
+				#{b*} {
+					#if {[set code [catch { eval [linsert $args 0 interp invokehidden $interp info $option] } out]]} {
+						#return -code $code $out
+					#} elseif {[string match {timeout ; *} $out]} {
 						# We take out the "timeout ;" part of the body..
-						string range $out 10 end
-					} else {
-						set out
-					}
-				}
-				{default} { eval [linsert $args 0 interp invokehidden $interp info $option] }
+						#string range $out 10 end
+					#} else {
+						#set out
+					#}
+				#}
+				#{default} { eval [linsert $args 0 interp invokehidden $interp info $option] }
+			#}
+		#}
+		#interp alias $interp info {} [namespace current]::Info $interp
+		
+		interp eval $interp rename ::tcl::info::body ::InfoBody
+		interp hide $interp InfoBody
+		proc InfoBody {interp procname} {
+			if {[set code [catch {interp invokehidden $interp InfoBody $procname} out opt]]} {
+				return -code $code -options $opt $out
+			} elseif {[string match {timeout ; *} $out]} {
+				# We take out the "timeout ;" part of the body..
+				string range $out 10 end
+			} else {
+				set out
 			}
 		}
-		interp alias $interp info {} [namespace current]::Info $interp
+		interp alias $interp ::tcl::info::body {} [namespace current]::InfoBody $interp
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
 		# This is borked too, [file join [file dirname ~] [file tail ~]] -- Johannes13 
@@ -247,15 +261,27 @@ namespace eval pubsafetcl {
 		interp alias $interp rename {} [namespace current]::Rename $interp
 
 		# We should replace ::tcl::string::repeat
-		interp hide $interp string
-		proc String {interp args} {
-			if {[string match {repe*} [lindex $args 0]] && ([set size [expr { [lindex $args end] * [string length [lindex $args end-1]] }]] > 400)} {
+		#interp hide $interp string
+		#proc String {interp args} {
+			#if {[string match {repe*} [lindex $args 0]] && ([set size [expr { [lindex $args end] * [string length [lindex $args end-1]] }]] > 400)} {
+				#return -code error "You can't repeat a string that long, that many times!  (Needed: $size  Allowed: 400)"
+			#} else {
+				#eval [linsert $args 0 interp invokehidden $interp string]
+			#}
+		#}
+		#interp alias $interp string {} [namespace current]::String $interp
+		
+		# We require Tcl 8.5, so this is safe
+		# rename is already replaced, so we have to use invokehidden, because InitialCommands are not set yet.
+		interp invokehidden $interp rename ::tcl::string::repeat ::StringRepeat
+		interp hide $interp StringRepeat
+		proc StringRepeat {interp string count} {
+			if {[set size [expr { $count * [string length $string]}]] > 400} {
 				return -code error "You can't repeat a string that long, that many times!  (Needed: $size  Allowed: 400)"
-			} else {
-				eval [linsert $args 0 interp invokehidden $interp string]
 			}
+			return [interp invokehidden $interp StringRepeat $string $count]
 		}
-		interp alias $interp string {} [namespace current]::String $interp
+		interp alias $interp ::tcl::string::repeat {} [namespace current]::StringRepeat $interp
 
 		interp hide $interp proc
 		proc Proc {interp name arguments body} {
