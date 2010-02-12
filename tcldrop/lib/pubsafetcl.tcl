@@ -117,6 +117,10 @@ namespace eval pubsafetcl {
 			}
 		}
 		interp alias $interp ::tcl::info::body {} [namespace current]::InfoBody $interp
+		
+		interp eval $interp rename ::tcl::info::cmdcount InfoCmdcount
+		interp hide $interp InfoCmdcount
+		interp alias $interp ::tcl::info::cmdcount interp invokehidden $interp InfoCmdcount
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
 		# This is borked too, [file join [file dirname ~] [file tail ~]] -- Johannes13 
@@ -597,7 +601,7 @@ namespace eval pubsafetcl {
 			catch { pubsafetcl limit time -granularity 1 -milliseconds 1000 -seconds [clock seconds] }
 			pubsafetcl limit commands -value {}
 			# 250 here is the number of commands we'll allow at a time:
-			variable CmdCount [expr { [pubsafetcl eval {info cmdcount}] + 250 }]
+			variable CmdCount [expr { [pubsafetcl invokehidden InfoCmdcount] + 250 }]
 			catch { pubsafetcl limit commands -value $CmdCount }
 			set errlev [catch { set clicks [clock clicks] ; pubsafetcl eval {*}$args } out]
 			set clicks [expr { [clock clicks] - $clicks - $minclicks - 9 }]
