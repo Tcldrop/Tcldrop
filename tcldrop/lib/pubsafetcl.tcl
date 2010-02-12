@@ -29,9 +29,11 @@ namespace eval pubsafetcl {
 
 	# This proc initializes/resets the safe interpreter, and basically does stuff to make it even safer or more complete:
 	# Note: this interp have to be a direct slave, that means not nested.
-	# TODO: we should move the procs out of this proc, so they are not redefined if a new interp is created. Maybe we should create a namespace for that, and hide/alias in a foreach, warning: do not hide file
+	# TODO: we should move the procs out of this proc, so they are not redefined if a new interp is created. Maybe we should create a namespace for that, and hide/alias in a foreach, warning: do not hide file (catch, this throws an error)
 	# TODO: We should discuss if we allow tm. We hide glob...
+	# TODO: We should protect ::tcl::*, proc ::tcl::info::cmdcount {return 1000000000} makes our command limit useless.
 	proc create {{interp {safetcl}} args} {
+		variable script
 		if {[llength $interp] > 1} {
 			return -code error "Nested interpreters are not supported"
 		}
@@ -59,7 +61,7 @@ namespace eval pubsafetcl {
 		# We have to hide these commands cuz they let people do nasty things:
 		foreach c {after vwait trace} { catch { $interp hide $c } }
 		# I moved the code for the interp initalisation to safeinit.tcl
-		$interp invokehidden source [file join [file dirname [info script]] safeinit.tcl]
+		$interp invokehidden source [file join [file dirname $script] safeinit.tcl]
 		# We want to make some harmless Eggdrop Tcl commands available:
 		foreach c {duration ctime strftime encrypt decrypt encpass unames md5 sha1 getchanlaston dccused getchanidle myip flushmode queuesize traffic inchain haschanrec wasop getting-users botisvoice modules islinked countusers validchan validuser finduser ischanjuped isban ispermban isexempt ispermexempt isinvite isperminvite isbansticky isexemptsticky isinvitesticky matchban matchexempt matchinvite isignore channame2dname chandname2name isbotnick botonchan isop isvoice onchan nick2hand hand2nick handonchan ischanban ischanexempt ischaninvite getchanjoin onchansplit valididx idx2hand maskhost hand2idx washalfop topic getchanhost isdynamic isbotnetnick getinfo realtime stripcodes} {
 			if {[info command $c] != {}} { if {[interp eval $interp [list info commands $c]] == {}} { interp alias $interp $c {} $c } else { interp alias $interp "${c}-eggdrop" {} $c } }
@@ -562,6 +564,8 @@ namespace eval pubsafetcl {
 				catch { pubsafetcl hide $c }
 				#if {[catch { pubsafetcl alias $c {} }]} {  }
 				if {[catch { pubsafetcl invokehidden rename ::tcl::${c}_orig ::$c }]} { catch { pubsafetcl eval rename ::tcl::${c}_orig ::$c } }
+				variable extraCommands_current
+				set extraCommands_current [lsearch -not -exact $c $extraCommands_current]
 			}
 		}
 
