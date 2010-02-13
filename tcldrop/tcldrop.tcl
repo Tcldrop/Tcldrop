@@ -6,6 +6,7 @@ if {[catch { package require Tcl 8.5 }]} {
 }
 
 # First try to load tcldrop without adding any tm paths ([package require] has to be done on SOMETHING anyway before the ::tcl::tm::* commands will exist.):
+# the tcl::tm::* commands should be loaded as they needed. Ethier by package unknown, or by a call to ::tcl::tm::*, ::auto_index(::tcl::tm::path) is set corectly on my system.
 if {[catch { package require tcldrop }]} {
 	foreach p [list [file join [file dirname [info script]] modules]] {
 		if {[file isdirectory $p]} { ::tcl::tm::path add $p }
@@ -59,6 +60,7 @@ namespace eval ::tcldrop {
 		# FixMe: Basically I want a readline or readline-like interface.  So that at least Tcl-commands can be entered on this interpreter (the bot(s) are running in slave interps).
 		# FixMe: In the future I'd like to see a screen-like interface, where each bot has its own "screen" that it runs on.
 		# FixMe: This code is untested...
+		# I suggest to try to use Tclx command-loop first (if we have Tclx)
 		fconfigure stdin -blocking 0 -buffering line
 		fconfigure stdout -blocking 0 -buffering line
 		fconfigure stderr -blocking 0 -buffering line

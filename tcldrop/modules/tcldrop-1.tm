@@ -4,7 +4,7 @@
 #
 # $Id$
 #
-# Copyright (C) 2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
+# Copyright (C) 2003,2004,2005,2006,2007,2008,2009,2010 Tcldrop-Dev <Tcldrop-Dev@Tcldrop.US>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -103,8 +103,10 @@ namespace eval ::tcldrop {
 		interp alias {} exit {} ::tcldrop::exit
 	}
 
-	# FixMe: Make this a namespace ensemble:
-	proc Tcldrop {command name {arg {}}} {
+	# What a huge command...
+	namespace ensemble create -command Tcldrop -map {excute TcldropExec run TcldropExec start TcldropStart create TcldropStart load TcldropStart init TcldropStart restart TcldropRestart force-restart TcldropRestart reload TcldropRestart force-reload TcldropRestart rehash TcldropRestart force-rehash TcldropRestart stop TcldropStop delete TcldropStop die TcldropStop kill TcldropStop close TcldropStop cleanup TcldropStop clean-up TcldropStop exit TcldropExit eval TcldropEval tcl TcldropEval stdin TcldropStdin} -unknown TcldropUnknown
+	
+	proc TcldropExec {name {arg {}}} {
 		variable Tcldrop
 		variable tcldrop
 		variable Default
@@ -115,30 +117,27 @@ namespace eval ::tcldrop {
 		} else {
 			set interpname "Tcldrop-[string tolower $name]"
 		}
-		# Note: I use Debian-ish init commands here, like start/stop/restart/etc, they shouldn't be confused with eval'ing the same commands inside the Tcldrop's interp.
-		switch -- $command {
-			{exec} - {execute} - {run} {
-				# This processes $name as if it were $::argv (command-line options)...
-				variable configs [list]
-				# FixMe: Need proper command-line option handling.
-				foreach a $name {
-					switch -glob -- $a {
-						{-*} {
-							foreach a [split $a {}] {
-								switch -- $a {
-									{-} { }
-									{n} { set tcldrop(background-mode) 0 }
-									{c} { set tcldrop(channel-stats) 1 }
-									{t} { set tcldrop(simulate-dcc) 1 }
-									{m} { set tcldrop(userfile-create) 1 }
-									{p} { set tcldrop(profiler) 1 }
-									{v} {
-										variable Exit 0
-										return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"
-									}
-									{h} - {?} {
-										variable Exit 0
-										return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev
+		# This processes $name as if it were $::argv (command-line options)...
+		variable configs [list]
+		# FixMe: Need proper command-line option handling.
+		foreach a $name {
+			switch -glob -- $a {
+				{-*} {
+					foreach a [split $a {}] {
+						switch -- $a {
+							{-} { }
+							{n} { set tcldrop(background-mode) 0 }
+							{c} { set tcldrop(channel-stats) 1 }
+							{t} { set tcldrop(simulate-dcc) 1 }
+							{m} { set tcldrop(userfile-create) 1 }
+							{p} { set tcldrop(profiler) 1 }
+							{v} {
+								variable Exit 0
+								return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009,2010 Tcldrop-Dev"
+							}
+							{h} - {?} {
+								variable Exit 0
+								return "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009,2010 Tcldrop-Dev
 
 			Command line arguments:
 			  -h   help
@@ -149,151 +148,226 @@ namespace eval ::tcldrop {
 			  -m   userfile creation mode
 			  -d   Debug mode.
 			  optional config filename (default 'tcldrop.conf')\n"
-									}
-									{d} {
-										# Debug mode.
-										set tcldrop(debug) 1
-										if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
-										# Also update the console flags to match:
-										if {![info exists tcldrop(console)] || ![string match {*d*} $tcldrop(console)]} {
-											append tcldrop(console) {d}
-										}
-									}
-									{default} {
-										variable Exit 1
-										return "Unknown option: -$a"
-									}
+							}
+							{d} {
+								# Debug mode.
+								set tcldrop(debug) 1
+								if {![info exists ::env(DEBUG)]} { set ::env(DEBUG) 1 }
+								# Also update the console flags to match:
+								if {![info exists tcldrop(console)] || ![string match {*d*} $tcldrop(console)]} {
+									append tcldrop(console) {d}
 								}
 							}
-						}
-						{+*} {
-							# If an arg starts with + we treat it as console flags:
-							append tcldrop(console) [string range $a 1 end]
-						}
-						{default} {
-							# Whatever's left is treated as config filenames:
-							lappend configs $a
-						}
-					}
-				}
-				# If no config was specified, use the default (tcldrop.conf):
-				if {![llength $configs]} { lappend configs {tcldrop.conf} }
-				set started [set failed 0]
-				foreach config $configs {
-					set tcldrop(config) $config
-					set name [file tail [file rootname $config]]
-					PutLogLev $name * - "*** Attempting to start $name... (configs: $configs)"
-					PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009 Tcldrop-Dev"
-					if {[tcldrop start [file tail [file rootname $config]] -config $config]} {
-						incr started
-						PutLogLev $name * - "*** $name Started."
-					} else {
-						incr failed
-						PutLogLev $name * - "*** $name Failed to Start."
-					}
-				}
-				if {!$started || $failed || ![array size Tcldrop]} { set ::tcldrop::Exit 1 }
-				if {!$failed} { return "--- Started $started bot(s)." } else { return "--- Started $started bot(s).  ($failed failed to start)" }
-			}
-			{start} - {create} - {load} - {init} {
-				array set options [list {-config} {} {-config-eval} {} {-name} $name]
-				array set options $arg
-				array set tcldrop [list config $options(-config) config-eval $options(-config-eval)]
-				set name $options(-name)
-				# This starts a single bot named $name with $arg being either the config file to load, or the Tcl-code to be evaluated in place of a config file.
-				#if {[file exists [file join [pwd] $arg]]} {
-				#	array set tcldrop [list config $arg config-eval {}]
-				#} else {
-				#	array set tcldrop [list config-eval $arg config {}]
-				#}
-				if {![catch {
-						set Default $name
-						# Create the interpreter that the Tcldrop will run in:
-						interp create $interpname
-						# Initialize the ::tcldrop namespace in the interpreter, and also create the global tcldrop array:
-						#puts "$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]"
-						$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]
-						# Make the Tcldrop's ::tcldrop::PutLogLev actually call ::tcldrop::PutLogLev in the parent interp:
-						interp alias $interpname ::tcldrop::PutLogLev {} [namespace current]::PutLogLev $name
-						interp alias $interpname ::tcldrop::stdout {} [namespace current]::stdout $name
-						interp alias $interpname ::tcldrop::tcldrop {} [namespace current]::tcldrop
-						interp alias $interpname ::tcldrop::Tcldrop {} [namespace current]::Tcldrop
-						# If the Tcldrop runs the exit command, it instead runs the [tcldrop exit] command here:
-						interp alias $interpname exit {} [namespace current]::tcldrop exit $name
-						# Load the core of the Tcldrop, which in turn will load the required modules, source the config file, etc:
-						# FixMe: There's some kind of bug in Tcl that prevents it from loading the ::tcl::tm::* procs until after a package require is done on some other package first.
-						$interpname eval [list package require http]
-						if {![info exists mod-paths]} { set mod-paths [list [file join . modules] $tcldrop(dirname)] }
-						$interpname eval [list ::tcl::tm::path add {*}${mod-paths}]
-						$interpname eval {
-							# This is the "last resort" method of loading packages, it allows the modules to be loaded from a remote location:
-							# Note: There's also a ::tcldrop::PkgUnknown proc inside modules/tcldrop/core-1.tm that will replace this one once it's loaded.
-							proc ::tcldrop::PkgUnknown {{name {}} {version {1}}} {
-								# FixMe: The limitation here is that we have to know the version in advance.. There's no way for the server to tell us what the latest version is.
-								set token [::http::geturl http://tcldrop.svn.sourceforge.net/viewvc/tcldrop/tcldrop/modules/[string map {{::} {/}} $name]-${version}.tm]
-								if {[::http::status $token] eq {ok}} { ::uplevel #0 [::http::data $token] } else { set version {} }
-								::http::cleanup $token
-								return $version
+							{default} {
+								variable Exit 1
+								return "Unknown option: -$a"
 							}
-							#::package unknown ::tcldrop::PkgUnknown
 						}
-						# Load the "core" module now:
-						$interpname eval [list package require tcldrop::core]
-					} error]} {
-					set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
-					return 1
-				} else {
-					# If $interpname calls [exit] from within itself it will delete its own interpreter, which means it closed gracefully and would have done its own putlog's (hopefully) explaining why it when down to fast, so we won't need to do any PutLogLev's here in that case:
-					if {[interp exists $interpname]} {
-						if {![catch {
-							PutLogLev $name e - "Problem Starting: $error"
-						}]} {
-							catch { PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]" }
-						}
-						catch { interp delete $interpname }
 					}
-					if {![array size Tcldrop]} { set ::tcldrop::Exit 1 }
-					return 0
 				}
-			}
-			{restart} - {force-restart} - {reload} - {force-reload} - {rehash} - {force-rehash} {
-				# This forcibly stops and starts a bot named $name, $arg will be passed to the start command.
-				# Note: This stops (kills) and restarts the bot
-				#       Do not confuse this with doing [tcldrop <botname> eval restart]
-				if {[Tcldrop stop $name] && [Tcldrop start $name $arg]} { return 1 } else { return 0 }
-			}
-			{stop} - {delete} - {die} - {kill} - {close} - {cleanup} - {clean-up} {
-				catch { tcldrop eval $name callevent exit }
-				array unset Tcldrop [string tolower $name]
-				if {![array size Tcldrop]} { set ::tcldrop::Exit 0 }
-				if {[catch { interp delete $interpname } error]} {
-					PutLogLev $name * - "Error while closing $name: $error"
-					return 0
-				} else {
-					PutLogLev $name * - "Closed Tcldrop: $name"
-					return 1
+				{+*} {
+					# If an arg starts with + we treat it as console flags:
+					append tcldrop(console) [string range $a 1 end]
 				}
-			}
-			{exit} {
-				# This is an alias to every bots [exit] command, it deletes the interp that $name is running from, and tells the vwait (if there is one) to return if there's no Tcldrop's left running.. $arg is the errorlevel to exit with.
-				set return [Tcldrop delete $name]
-				if {![array size Tcldrop]} { set ::tcldrop::Exit $arg }
-				set return
-			}
-			{eval} - {tcl} {
-				# This evaluates Tcl code in a running bots interpreter.
-				$interpname eval $arg
-			}
-			{stdin} {
-				# This sends $arg to the Stdin proc of a running bots interpreter.
-				$interpname eval [list ::tcldrop::stdin $arg]
-			}
-			{default} {
-				PutLogLev $name o - "Unknown command: $command"
-				return -code error "Unknown command: $command"
+				{default} {
+					# Whatever's left is treated as config filenames:
+					lappend configs $a
+				}
 			}
 		}
+		# If no config was specified, use the default (tcldrop.conf):
+		if {![llength $configs]} { lappend configs {tcldrop.conf} }
+		set started [set failed 0]
+		foreach config $configs {
+			set tcldrop(config) $config
+			set name [file tail [file rootname $config]]
+			PutLogLev $name * - "*** Attempting to start $name... (configs: $configs)"
+			PutLogLev $name * - "Tcldrop v$tcldrop(version)  (C) 2001,2002,2003,2004,2005,2006,2007,2008,2009,2010 Tcldrop-Dev"
+			if {[tcldrop start [file tail [file rootname $config]] -config $config]} {
+				incr started
+				PutLogLev $name * - "*** $name Started."
+			} else {
+				incr failed
+				PutLogLev $name * - "*** $name Failed to Start."
+			}
+		}
+		if {!$started || $failed || ![array size Tcldrop]} { set ::tcldrop::Exit 1 }
+		if {!$failed} { return "--- Started $started bot(s)." } else { return "--- Started $started bot(s).  ($failed failed to start)" }		
 	}
+	
+	proc TcldropStart {name {arg {}}} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		array set options [list {-config} {} {-config-eval} {} {-name} $name]
+		array set options $arg
+		array set tcldrop [list config $options(-config) config-eval $options(-config-eval)]
+		set name $options(-name)
+		# This starts a single bot named $name with $arg being either the config file to load, or the Tcl-code to be evaluated in place of a config file.
+		#if {[file exists [file join [pwd] $arg]]} {
+		#	array set tcldrop [list config $arg config-eval {}]
+		#} else {
+		#	array set tcldrop [list config-eval $arg config {}]
+		#}
+			if {![catch {
+				set Default $name
+				# Create the interpreter that the Tcldrop will run in:
+				interp create $interpname
+				# Initialize the ::tcldrop namespace in the interpreter, and also create the global tcldrop array:
+				#puts "$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]"
+				$interpname eval [list namespace eval tcldrop [list array set ::tcldrop [array get tcldrop]]]
+				# Make the Tcldrop's ::tcldrop::PutLogLev actually call ::tcldrop::PutLogLev in the parent interp:
+				interp alias $interpname ::tcldrop::PutLogLev {} [namespace current]::PutLogLev $name
+				interp alias $interpname ::tcldrop::stdout {} [namespace current]::stdout $name
+				interp alias $interpname ::tcldrop::tcldrop {} [namespace current]::tcldrop
+				interp alias $interpname ::tcldrop::Tcldrop {} [namespace current]::Tcldrop
+				# If the Tcldrop runs the exit command, it instead runs the [tcldrop exit] command here:
+				interp alias $interpname exit {} [namespace current]::tcldrop exit $name
+				# Load the core of the Tcldrop, which in turn will load the required modules, source the config file, etc:
+				# FixMe: There's some kind of bug in Tcl that prevents it from loading the ::tcl::tm::* procs until after a package require is done on some other package first.
+				# please try to execute set ::auto_index(::tcl::tm::path) and give me the result -- Johannes13
+				$interpname eval [list package require http]
+				if {![info exists mod-paths]} { set mod-paths [list [file join . modules] $tcldrop(dirname)] }
+				# We don't need the {*} here. $mod-paths shoud contain a valid list
+				$interpname eval ::tcl::tm::path add ${mod-paths}
+				$interpname eval {
+					# This is the "last resort" method of loading packages, it allows the modules to be loaded from a remote location:
+					# Note: There's also a ::tcldrop::PkgUnknown proc inside modules/tcldrop/core-1.tm that will replace this one once it's loaded.
+					# We should call the old pkgUnknown if our lookup failed.
+					proc ::tcldrop::PkgUnknown {{name {}} {version {1}}} {
+						# FixMe: The limitation here is that we have to know the version in advance.. There's no way for the server to tell us what the latest version is.
+						# We could provide an extra file with this information.
+						set token [::http::geturl http://tcldrop.svn.sourceforge.net/viewvc/tcldrop/tcldrop/modules/[string map {{::} {/}} $name]-${version}.tm]
+						if {[::http::status $token] eq {ok}} { ::uplevel #0 [::http::data $token] } else { set version {} }
+						::http::cleanup $token
+						return $version
+					}
+					#::package unknown ::tcldrop::PkgUnknown
+				}
+				# Load the "core" module now:
+				$interpname eval [list package require tcldrop::core]
+		} error]} {
+			set Tcldrop([string tolower $name]) [list name $name starttime [clock seconds]]
+			return 1
+		} else {
+			# If $interpname calls [exit] from within itself it will delete its own interpreter, which means it closed gracefully and would have done its own putlog's (hopefully) explaining why it when down to fast, so we won't need to do any PutLogLev's here in that case:
+			if {[interp exists $interpname]} {
+				if {![catch {
+					PutLogLev $name e - "Problem Starting: $error"
+				}]} {
+					catch { PutLogLev $name e - "Problem Starting (Full Error): \n [$interpname eval [list namespace eval tcldrop [list set errorInfo]]]" }
+				}
+				catch { interp delete $interpname }
+			}
+			if {![array size Tcldrop]} { set ::tcldrop::Exit 1 }
+			return 0
+		}
+	}
+	
+	proc TcldropRestart {name {arg {}}} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		# This forcibly stops and starts a bot named $name, $arg will be passed to the start command.
+		# Note: This stops (kills) and restarts the bot
+		#       Do not confuse this with doing [tcldrop <botname> eval restart]
+		if {[Tcldrop stop $name] && [Tcldrop start $name $arg]} { return 1 } else { return 0 }
+	}
+	
+	proc TcldropStop {name {arg {}}} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		catch { tcldrop eval $name callevent exit }
+		array unset Tcldrop [string tolower $name]
+		if {![array size Tcldrop]} { set ::tcldrop::Exit 0 }
+		if {[catch { interp delete $interpname } error]} {
+			PutLogLev $name * - "Error while closing $name: $error"
+			return 0
+		} else {
+			PutLogLev $name * - "Closed Tcldrop: $name"
+			return 1
+		}
+	}
+	
+	proc TcldropExit {name {arg {}}} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		# This is an alias to every bots [exit] command, it deletes the interp that $name is running from, and tells the vwait (if there is one) to return if there's no Tcldrop's left running.. $arg is the errorlevel to exit with.
+		set return [Tcldrop delete $name]
+		if {![array size Tcldrop]} { set ::tcldrop::Exit $arg }
+		set return
+	}
+	
+	# TODO: Discusion: arg is not longer optional. This might cause errors
+	proc TcldropEval {name arg} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		# This evaluates Tcl code in a running bots interpreter.
+		$interpname eval $arg
+	}
+	
+	proc TcldropStdin {name arg} {
+		variable Tcldrop
+		variable tcldrop
+		variable Default
+		variable mod-paths
+		if {$name == {-}} {
+			# If they used - for the name, we use the name of the last started bot, which is stored in Default.
+			set interpname "Tcldrop-[string tolower $Default]"
+		} else {
+			set interpname "Tcldrop-[string tolower $name]"
+		}
+		# This sends $arg to the Stdin proc of a running bots interpreter.
+		$interpname eval [list ::tcldrop::stdin $arg]
+	}
+	
+	# This is called when no command matches
+	proc TcldropUnknown {cmd subcmd args} {
+		lassign $args name
+		PutLogLev $name o - "Unknown command: $command"
+		# We return an empty list, so namespace ensemble generates the error. This is also a help.
+		return {}
+	}
+	
+
 	proc tcldrop {command name args} { Tcldrop $command $name $args }
 
 	if {![info exists tcldrop(argv)]} { set tcldrop(argv) $::argv }
