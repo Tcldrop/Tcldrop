@@ -3,7 +3,7 @@
 # Copyright (C) 2004,2005,2006,2007,2008,2009 by Philip Moore <FireEgl@Tcldrop.US>
 # This code may be distributed under the same terms as Tcl.
 #
-# RCS: @(#) $Id: pubsafetcl.tcl 358 2010-02-11 20:23:58Z johannes-kuhn $
+# RCS: @(#) $Id$
 #
 # Provides a safe Tcl interpreter that can be used without the worry of infinite loops.
 # See "man n interp" and "man n safe" for more info on safe interpreters.
@@ -27,7 +27,7 @@ namespace eval pubsafetclhost {
 	variable script [info script]
 	package provide pubsafetcl $version
 	package provirde pubsafetclhost $version
-	variable rcsid {$Id: pubsafetcl.tcl 358 2010-02-11 20:23:58Z johannes-kuhn $}
+	variable rcsid {$Id$}
 	
 	variable comminterp [interp create]
 	variable ids

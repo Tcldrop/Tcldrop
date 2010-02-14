@@ -120,7 +120,7 @@ namespace eval pubsafetcl {
 		
 		interp eval $interp rename ::tcl::info::cmdcount InfoCmdcount
 		interp hide $interp InfoCmdcount
-		interp alias $interp ::tcl::info::cmdcount interp invokehidden $interp InfoCmdcount
+		interp alias $interp ::tcl::info::cmdcount {} interp invokehidden $interp InfoCmdcount
 
 		# We hafta provide the limited file command since safe::interpCreate is b0rked...
 		# This is borked too, [file join [file dirname ~] [file tail ~]] -- Johannes13 
@@ -609,6 +609,11 @@ namespace eval pubsafetcl {
 			if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
 			variable postEval
 			namespace eval $namespace $postEval
+			# We always allow reset. If we get an error, we try to do it here. Without the (maybe) compromitted interp
+			if {$errlev == 1 && [string trim [lindex $args 0]] eq "reset" && [interp target [namespace tail [namespace current]] reset] eq ""} {
+				set out [{*}[pubsafetcl alias reset]]
+				set errlev 0
+			}
 			if {$errlev == 1} { set results [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { set results $out }
 			#extraCommands remove $extraCommands
 			variable Count
@@ -625,6 +630,14 @@ namespace eval pubsafetcl {
 			variable Cancel
 			if {[info exists Cancel]} { unset Cancel } else { after cancel $timerid }
 			if {$errlev == 1} { return -code error [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { return $out }
+		}
+		
+		# I guess ResourceReset should remove all the resource limits from the bot.
+		proc [namespace current]::${interp}::ResourceLimit {} {
+			# 1000 should be high enogh, my master interp has this value
+			pubsafetcl recursionlimit 1000
+			pubsafetcl limit commands -value {}
+			pubsafetcl limit time -seconds {}
 		}
 		
 		# Add traces for each initial command that deny rename and deletion of them
