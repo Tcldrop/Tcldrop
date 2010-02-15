@@ -2,7 +2,7 @@
 # TODO: fix ident
 
 			# Make some dummy variables:
-			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0 pubsafetcl-rcsid {$Id: pubsafetcl.tcl 351 2010-02-09 20:40:52Z pixelz $}]
+			array set tcl_platform [list user nobody machine unknown os Unknown osVersion 0.0 pubsafetcl-rcsid {$Id$}]
 			array set env [list HOME {.} NAME $tcl_platform(user) LOGNAME $tcl_platform(user) USER $tcl_platform(user) USERNAME $tcl_platform(user) TMP {.} PATH {.} HOSTNAME [info hostname] GROUP {nogroup} SHELL {tclsh}]
 			set uptime [set server-online [clock seconds]]
 			set botname "SafeTcl!$tcl_platform(user)@$env(HOSTNAME)"
@@ -13,8 +13,8 @@
 			set numversion {1062003}
 			set lastbind {tcl}
 			set config {eggdrop.conf}
-			set rcsid {$Id: pubsafetcl.tcl 351 2010-02-09 20:40:52Z pixelz $}
-			proc rcsid {args} { puts unknown {$Id: pubsafetcl.tcl 351 2010-02-09 20:40:52Z pixelz $} }
+			set rcsid {$Id$}
+			proc rcsid {args} { puts unknown {$Id$} }
 			# Make some fake commands that don't really do anything:
 			if {[info commands load] == {}} {
 				proc load {fileName {packageName {}} {interp {}}} { return -code error "couldn't load file \"$fileName\": [pwd]$fileName: cannot open shared object file: No such file or directory" }
