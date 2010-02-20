@@ -164,6 +164,7 @@ namespace eval ::tcldrop {
 			uplevel 1 [list ::msgtext::mc {*}$args]
 		}
 	}
+	proc noop {args} {}
 }
 
 # This is helpful to update the screen when running in wish for some reason:
@@ -688,12 +689,18 @@ proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
 	foreach {type flags mask proc} [bindlist log] {
 		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
 			if {[catch { $proc $levels $channel $text $tags } err]} {
+				set errorinfo $::errorInfo
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $err\n$::errorInfo" }
+				if {[catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $err\n$errorinfo" }]} {
+					catch {
+						puts "LOG ERROR $proc $levels $channel $args: $err\n$errorinfo" 
+						flush stdout
+					}
+				}
 				# put*log errors are considered fatal errors, so we really should exit:
-				if {![catch { exit 1 }]} { update idletasks }
+				if {![catch { exit 2 }]} { update idletasks }
 				catch { ::tcldrop::core::Exit 1 }
-				return -code error "putloglev $levels $channel error: $err"
+				return -code error "putloglev $levels $channel error: $err\n$errorinfo"
 			}
 			# For speed, we don't count the log binds:
 			#countbind $type $mask $proc
@@ -1454,7 +1461,6 @@ if {[::package unknown] eq {}} {
 # And because [namespace import] imports into the current namespace.
 # FixMe: We need to keep up with what modules are loaded, and their versions.
 proc ::tcldrop::core::loadmodule {module args} { LoadModule $module $args }
-# FixMe: Some parts of this may could be dicts:
 proc ::tcldrop::core::LoadModule {module {options {}}} {
 	set starttime [clock clicks -milliseconds]
 	array set opts [list -version {0} -force {0} -required {1}]
@@ -2119,6 +2125,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault net-type 0
 	setdefault config {}
 	setdefault owner {}
+	setdefault admin {} -protect 1
 	setdefault nick {Tcldrop}
 	setdefault fuzz {1}
 	setdefault handlen 9
@@ -2493,6 +2500,9 @@ proc ::tcldrop::core::start {} {
 		}
 	}
 }
+
+::tcldrop::core::bind unld - tcldrop ::tcldrop::UNLD
+proc ::tcldrop::UNLD {module} { return 1 }
 
 if {![info exists ::tcldrop::core::start]} {
 	# And now we set everything into motion...  \o/

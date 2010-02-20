@@ -458,7 +458,7 @@ proc ::tcldrop::server::callout {queue message status} {
 # $queue must be mode, serv, help, or an integer from 1-99.
 # $option can be -normal or -next (Like in Eggdrop).
 proc ::tcldrop::server::putqueue {queue text {option {-normal}}} {
-	if {[queuesize] < ${::max-queue-msg}} {
+	if {[queuesize] < ${::max-queue-msg} && ${::server-idx}} {
 		variable QueueAliases
 		# QueueAliases is what turns friendly queue names into their equivalent priority name (numbers).
 		if {[info exists QueueAliases($queue)]} {
@@ -625,9 +625,6 @@ proc ::tcldrop::server::LOAD {module} {
 	# Default server related settings (These are here in case the user doesn't provide them in his/her config):
 	setdefault servers [list]
 	setdefault default-port {6667}
-	setdefault nick {Tcldrop}
-	setdefault username {Tcldrop}
-	setdefault realname {www.Tcldrop.US}
 	setdefault server-online {0} -protect 1
 	setdefault server {} -protect 1
 	setdefault serveraddress {} -protect 1
@@ -646,6 +643,9 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault max-invites {13}
 	setdefault nicklen {9}
 	setdefault msg-rate {2}
+	setdefault username {Tcldrop}
+	setdefault realname {www.Tcldrop.US}
+	setdefault nick {Tcldrop}
 	bind raw - PONG ::tcldrop::server::PONG -priority 100
 	bind raw - PING ::tcldrop::server::PING -priority 100
 	bind raw - ERROR ::tcldrop::server::ERROR -priority 100

@@ -420,7 +420,7 @@ proc ::tcldrop::core::dcc::MODULES {handle idx text} {
 # FixMe: Add more stuff for the 'all' arg
 proc ::tcldrop::core::dcc::STATUS {handle idx text} {
 	putcmdlog "#$handle# status $text"
-	putdcc $idx "[mc_handle $handle {I am %1$s, running Tcldrop v%1$s: %3$d users.} ${::botnet-nick} $::tcldrop(version) [countusers]]"
+	putdcc $idx "[mc_handle $handle {I am %1$s, running Tcldrop v%2$s: %3$d users.} ${::botnet-nick} $::tcldrop(version) [countusers]]"
 	putdcc $idx "[mc_handle $handle {Online for}] [duration [expr { [clock seconds] - $::uptime }]]"
 	putdcc $idx "[mc_handle $handle {Admin}]: $::owner"
 	putdcc $idx "[mc_handle $handle {Config file}]: $::config"

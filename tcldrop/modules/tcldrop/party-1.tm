@@ -126,7 +126,7 @@ proc ::tcldrop::party::CallParty {command usermask arguments} {
 		set userinfo(idletime) [clock seconds]
 		set party_users($u) [array get userinfo]
 		foreach {type flags mask proc} [bindlist party] {
-			if {[bindmatch$mask $command]} {
+			if {[bindmatch $mask $command]} {
 				if {[catch { $proc $command $u $party_users($u) } err]} {
 					putlog "[mc {Error in script}]: $proc: $err"
 					puterrlog "$::errorInfo"
