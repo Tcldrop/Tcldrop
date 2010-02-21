@@ -272,7 +272,7 @@ proc ::tcldrop::core::know {what} {
 #::tcldrop::core::know { if {[regexp -- (.+):$ [lindex $args 0] -> name]} { return [lreplace $args 0 0 $name =] } }
 # Command: 1 + 1
 # Results: 2
-::tcldrop::core::know { if {![catch { expr $args } res]} { return $res } }
+#::tcldrop::core::know { if {![catch { expr $args } res]} { return $res } }
 # Command: set i 4 ; i--
 # Results: 3
 ::tcldrop::core::know { if {[regexp -- {^([^ ]+)--$} $args -> vname]} { return [uplevel [list incr $vname -1]] } }
@@ -691,16 +691,17 @@ proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
 			if {[catch { $proc $levels $channel $text $tags } err]} {
 				set errorinfo $::errorInfo
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				if {[catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $err\n$errorinfo" }]} {
-					catch {
-						puts "LOG ERROR $proc $levels $channel $args: $err\n$errorinfo" 
-						flush stdout
-					}
+				if {[catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $errorinfo" }]} {
+					catch { puts "LOG ERROR $proc $levels $channel $args: $errorinfo" }
 				}
-				# put*log errors are considered fatal errors, so we really should exit:
-				if {![catch { exit 2 }]} { update idletasks }
-				catch { ::tcldrop::core::Exit 1 }
-				return -code error "putloglev $levels $channel error: $err\n$errorinfo"
+				# Don't exit during a restart process if we're in debug mode (makes finding bugs in the restart process easier):
+				if {![info exists ::restart] || ![info exists ::tcldrop(debug)] || !$::tcldrop(debug)} {
+					# put*log errors are considered fatal errors, so we really should exit:
+					if {![catch { exit 2 }]} { update idletasks }
+					catch { ::tcldrop::core::Exit 1 }
+				}
+				# Return the whole error info, because it's hard to see otherwise (without a normal/working putlog system):
+				return -code error "putloglev $levels $channel error: $errorinfo"
 			}
 			# For speed, we don't count the log binds:
 			#countbind $type $mask $proc
@@ -1576,7 +1577,7 @@ proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
 			# FixMe: Prevent loops when 2 modules depend on each other (modules shouldn't depend on each other though).
 			switch -- $m {
 				$d - {core} - {tcldrop} {}
-				{default} { after 0 [list UnloadModule $d $options] }
+				{default} { after 0 [namespace code [list UnloadModule $d $options]] }
 			}
 		}
 		set force 0
