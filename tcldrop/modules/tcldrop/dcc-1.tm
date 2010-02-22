@@ -384,6 +384,6 @@ proc ::tcldrop::dcc::LOAD {module} {
 	bind log - * ::tcldrop::dcc::LOG
 	# This module is critical, don't let it be unloaded:
 	::tcldrop::bind unld - dcc ::tcldrop::dcc::UNLD -priority 0
-	proc ::tcldrop::dcc::UNLD {module} { return 1 }
+	proc ::tcldrop::dcc::UNLD {module} { return 2 }
 }
 

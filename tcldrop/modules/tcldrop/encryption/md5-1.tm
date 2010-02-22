@@ -53,12 +53,14 @@ namespace eval ::tcldrop::encryption::md5 {
 			switch -- $Output {
 				{d41d8cd98f00b204e9800998ecf8427e} { }
 				{D41D8CD98F00B204E9800998ECF8427E} {
-					rename ::md5 ::md5_orig
-					proc md5 {args} {
-						if {[llength $args] == 1} {
-							string tolower [::md5_orig [lindex $args 0]]
-						} else {
-							::md5_orig {*}$args
+					if {[llength [info commands ::md5_orig]] == 0} {
+						rename ::md5 ::md5_orig
+						proc md5 {args} {
+							if {[llength $args] == 1} {
+								string tolower [::md5_orig [lindex $args 0]]
+							} else {
+								::md5_orig {*}$args
+							}
 						}
 					}
 				}
@@ -98,6 +100,7 @@ namespace eval ::tcldrop::encryption::md5 {
 	}
 	proc UNLD {module} {
 		catch { package forget md5 }
+		if {[llength [info procs ::md5]]} { rename ::md5 {} }
 		catch { rename ::md5_orig ::md5 }
 		return 0
 	}

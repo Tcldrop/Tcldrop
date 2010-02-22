@@ -34,7 +34,7 @@ namespace eval ::tcldrop::console::dcc {
 	# This makes sure we're loading from a tcldrop environment:
 	if {![info exists ::tcldrop]} { return }
 	variable predepends {console}
-	variable depends {channels core::users core::conn core}
+	variable depends {console channels core::users core::conn core}
 	variable author {Tcldrop-Dev}
 	variable description {Console related DCC commands.}
 	variable rcsid {$Id$}
@@ -133,5 +133,6 @@ proc ::tcldrop::console::dcc::UNLD {module} {
 	unbind dcc * * ::tcldrop::console::dcc::*
 	unloadhelp console.help
 	unloadhelp [file join set console.help]
+	unbind unld - console::dcc ::tcldrop::console::dcc::UNLD
 	return 0
 }

@@ -322,11 +322,13 @@ proc ::tcldrop::core::conn::Write {idx {sock {}}} {
 			#if {$trycontrol && [dict exists $idxlist($idx) -control] && [catch { [dict get $idxlist($idx) -control] $idx {} } error]} { putloglev d * "[mc {Error in script}]: [dict get $idxlist($idx) -control]: $error" }
 		} else {
 			# Try to set the remote-* things now (in case they failed to get set from ProxyControl):
-			catch {
-				lassign [fconfigure $sock -peername] remote-ip remote-hostname remote-port
-				dict set idxlist($idx) remote-ip ${remote-ip}
-				dict set idxlist($idx) remote-hostname ${remote-hostname}
-				dict set idxlist($idx) remote-port ${remote-port}
+			if {$sock ne {} || [set sock [dict get $idxlist($idx) sock]] ne {}} {
+				catch {
+					lassign [fconfigure $sock -peername] remote-ip remote-hostname remote-port
+					dict set idxlist($idx) remote-ip ${remote-ip}
+					dict set idxlist($idx) remote-hostname ${remote-hostname}
+					dict set idxlist($idx) remote-port ${remote-port}
+				}
 			}
 			if {[dict exists $idxlist($idx) -writable]} {
 				[dict get $idxlist($idx) -writable] $idx
