@@ -21,12 +21,13 @@
 namespace eval pubsafetcl {
 
 	# You have to set this in order to use this package
-	variable remoteport 0
+	variable remoteport 12140
 	# If your executable is not tclsh or wish, than you have to set this.
-	variable tclsh [info executable]
+	variable tclsh [info nameofexecutable]
 
 	package require Tcl 8.5
 	package require comm
+	# If we have to exec kill. Otherwise we use Tclx kill
 	variable exec [catch {package require Tclx}]
 	variable version {2.2.0}
 	variable name {pubsafetcl}
@@ -34,7 +35,7 @@ namespace eval pubsafetcl {
 	variable description {This is used to make pubsafetcl safer. It starts a new process with the pubsafetcl interp}
 	variable script [info script]
 	package provide pubsafetcl $version
-	package provirde pubsafetclhost $version
+	package provide pubsafetclhost $version
 	variable rcsid {$Id$}
 	variable commands {pubsafetcl Reset}
 	namespace export $commands
@@ -48,10 +49,10 @@ namespace eval pubsafetcl {
 		namespace eval [namespace current]::$interp {
 			namespace path [list [namespace parent]]
 			# Because we use namespace path, the variables from the parent namespace are used. After that, they are created.
-			variable remoteport $remoteport
-			variable exec $exec
+			variable remoteport [set [namespace parent]::remoteport]
+			variable exec [set [namespace parent]::exec]
 			variable extraCommands_current {}
-			variable tclsh $tclsh
+			variable tclsh [set [namespace parent]::tclsh]
 			# we create an interp
 			variable targetinterp [interp create]
 			# remove all commands
@@ -62,11 +63,12 @@ namespace eval pubsafetcl {
 				}
 				
 				foreach cmd [info commands] {
-					if {$cmd ni {namespace rename}} {rename $cmd {}}
+					if {$cmd ni {namespace rename if}} {rename $cmd {}}
 				}
 				
 				namespace forget ::tcl
 				rename namespace {}
+				rename if {}
 				# we don't delete rename, this is required later
 			}
 			interp hide $targetinterp rename
@@ -86,8 +88,7 @@ namespace eval pubsafetcl {
 					interp alias $targetinterp $c {} $c
 				}
 				comm send $remoteport [list ::pubsafetcl::${$interp}::extraCommands add $extraCommands]
-			}
-			variable extraCommands_current $extraCommands
+				variable extraCommands_current $extraCommands
 			}
 			proc ExtraCommandsRemove {{extraCommands {}}} {
 				variable remoteport
@@ -101,42 +102,44 @@ namespace eval pubsafetcl {
 				}
 				comm send $remoteport [list ::pubsafetcl::${interp}::extraCommands remove $extraCommands]
 			}
-			namespace eval :: [list namespace import -force $interp]
+			namespace eval :: [list namespace import -force [namespace current]::$interp]
 			# We have now to create the host in background - yeah, a litte bit confusing
-			variable pid [exec $tclsh [file nativename [file join [file dirname [set [namespace parrent]::script] pubsafetclhost.tcl]]] &]
+			variable pid [exec $tclsh [file nativename [file join [file dirname [set [namespace parent]::script]] pubsafetclhost.tcl]] &]
 			# Create the interp remote
-			comm $targetport ::pubsafetcl::create $interp $args
+			comm send $remoteport ::pubsafetcl::create $interp $args
 			return $interp
 		}
 	}
 	
 	# TODO: think again..
 	proc Reset {{interp safetcl} {mode 0}} {
-		namespace eval [namespace current]::$interp [list variable mode $mode]
-		namespace eval [namespace current]::$interp {
-			if {$mode == 0} {
-				# force the destroy of host process in 3 sec
-				set timer [after 3000 [list [namespace parent]::Reset $interp 1]
-				send comm $remoteport exit
-				catch {after calcel $timer}
-				if {$force} {
-					# the timer has cleaned up
-					return
-				}
-			} else {
-				# this is usually the timer
-				# kill the proc
-				# I hope, this is good enogh. If not, I've to add -SIGKILL. But I don't like to.
-				# The target process should have a changce to cleanup, even tcl is busy. (expr)
-				if {!$exec} {
-					# use Tclx's kill command
-					kill pid
+		catch {
+			namespace eval [namespace current]::$interp [list variable mode $mode]
+			namespace eval [namespace current]::$interp {
+				if {$mode == 0} {
+					# force the destroy of host process in 3 sec
+					set timer [after 3000 [list [namespace parent]::Reset $interp 1]]
+					comm send $remoteport exit
+					catch {after calcel $timer}
+					if {$force} {
+						# the timer has cleaned up
+						return
+					}
 				} else {
-					exec kill $pid
+					# this is usually the timer
+					# kill the proc
+					# I hope, this is good enogh. If not, I've to add -SIGKILL. But I don't like to.
+					# The target process should have a changce to cleanup, even tcl is busy. (expr)
+					if {!$exec} {
+						# use Tclx's kill command
+						kill $pid
+					} else {
+						exec kill $pid
+					}
 				}
+				# comm destroy destroys the interp too
+				comm destroy
 			}
-			# comm destroy destroys the interp too
-			comm destroy
 		}
 	}
 }

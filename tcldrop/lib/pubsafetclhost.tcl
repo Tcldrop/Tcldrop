@@ -10,13 +10,15 @@
 #
 # Usage:
 #
-#	load it, and load the client in an other application
+#	this is the entry point for the pubsafetcl process. It is used by pubsafetclclient.tcl
 #
 
 # TODO: Add support for extraCommands
 namespace eval pubsafetclhost {
 
-	variable port 0
+	source [file join [file dirname [info script]] pubsafetcl.tcl]
+
+	variable port 12140
 
 	package require Tcl 8.5
 	package require comm
@@ -25,27 +27,28 @@ namespace eval pubsafetclhost {
 	variable author {johannes-kuhn}
 	variable description {This is the entry point for the pubsafetcl process}
 	variable script [info script]
-	package provide pubsafetcl $version
-	package provirde pubsafetclhost $version
+	# package provide pubsafetcl $version
+	package provide pubsafetclhost $version
 	variable rcsid {$Id$}
 	
 	variable comminterp [interp create]
 	variable ids
 	array set ids {}
 	
-	interp eval comminterp {
+	interp eval $comminterp {
 		foreach ns [namespace children] {
 		# we don't delete ::tcl here, there are some internal commands that might be required
 			if {$ns ne "::tcl"} {namespace delete $ns}
 		}
 		foreach cmd [info commands] {
-			if {$cmd ni {namespace rename}} {rename $cmd {}}
+			if {$cmd ni {namespace rename if}} {rename $cmd {}}
 		}
 		namespace forget ::tcl
 		rename namespace {}
+		rename if {}
 		# we don't delete rename, this is required later
 	}
-	interp hide comminterp rename
+	interp hide $comminterp rename
 	::comm::comm new [namespace current]::comm -local 1 -port $port -listen 1 -silent 1 -interp $comminterp
 	proc Exit args {
 		comm destroy
