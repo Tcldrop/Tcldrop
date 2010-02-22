@@ -185,7 +185,7 @@ namespace eval ::tcldrop::core {
 	# The 'sanitize' ensemble:
 	namespace ensemble create -command sanitize -subcommands [list glob regex] -map [dict create glob SanitizeGlob regex SanitizeRegex]
 	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch sanitize
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch sanitize
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1564,59 +1564,78 @@ proc ::tcldrop::core::CheckModule {module {options {}}} {
 	}
 }
 
-proc ::tcldrop::core::unloadmodule {{module {*}} args} { UnloadModule $module $args }
-proc ::tcldrop::core::UnloadModule {{module {*}} {options {}}} {
-	putlog "[mc {UnloadModule:}] $module"
+# Unloads a list of modules, and returns a list of any that weren't unloaded:
+proc ::tcldrop::core::unloadmodules {modulelist args} {
+	set success 1
+	# Keep looping over the modulelist until we can no longer unload any more modules:
+	while {$success} {
+		set success 0
+		set remaining [list]
+		foreach m $modulelist {
+			# Try to unload modules that depend on this one first:
+			foreach m [concat [moduledeps $m] [list $m]] {
+				if {![catch { UnloadModule $m $args } msg returnoptions] && [dict get $returnoptions success]} {
+					# The return option tells us wether or not it was successfully unloaded:
+					set success 1
+				} elseif {$m ni $remaining} {
+					lappend remaining $m
+				}
+			}
+		}
+		set modulelist $remaining
+	}
+	return $modulelist
+}
+
+proc ::tcldrop::core::unloadmodule {module args} { UnloadModule $module $args }
+proc ::tcldrop::core::UnloadModule {module {options {}}} {
 	array set opts [list -force {0}]
 	array set opts $options
 	set out {}
+	set success 1
 	global modules
-	foreach m [array names modules $module] {
-		foreach d [moduledeps $m] {
-			if {![info exists modules($d)]} { continue }
-			# FixMe: Prevent loops when 2 modules depend on each other (modules shouldn't depend on each other though).
-			switch -- $m {
-				$d - {core} - {tcldrop} {}
-				{default} { after 0 [namespace code [list UnloadModule $d $options]] }
-			}
-		}
-		set force 0
-		foreach {type flags mask proc} [bindlist unld] {
-			if {[string match -nocase $mask $m]} {
-				if {[catch { $proc $m } force]} {
-					putlog "[mc {Error in script}]: $proc $m: $force"
-					puterrlog "$::errorInfo"
-					set force 0
-				} elseif {[string is int $force]} {
-					break
-				} else {
-					set force 0
-				}
-				countbind $type $mask $proc
-			}
-		}
-		set success 0
-		# If -force is greater or equal, we forget the package (which still leaves it loaded BTW):
-		if {$opts(-force) >= $force && ![catch { uplevel #0 [list package forget tcldrop::${m}] }]} {
-			lappend msg {package forgot}
-			set success 1
-		}
-		# If -force is greater, we also delete the namespace (which should completely unload it):
-		if {$opts(-force) > $force && ![catch { uplevel #0 [list namespace delete "::tcldrop::${m}"] }]} {
-			namespace forget "::tcldrop::${m}"
-			lappend msg {namespace deleted}
-			set success 1
-		}
-		if {$success} {
-			set msg "([join $msg {, }])"
-			putlog "[format {%-2.40s %-18.32s %-0.38s} [mc {Module unloaded:}] $m $msg]"
-			unset -nocomplain modules($m)
+	if {[info exists modules($module)]} {
+		# Require -force 1 or more before we'll try to unload a module while other modules depend on it:
+		if {$opts(-force) <= 0 && [llength [moduledeps $module]]} { 
+			set out [mc {Needed by another module}]
+			set success 0
 		} else {
-			set out [mc {No such module}]
+			putlog "[mc {UnloadModule:}] $module"
+			set force 0
+			foreach {type flags mask proc} [bindlist unld] {
+				if {[string match -nocase $mask $module]} {
+					if {[catch { $proc $module } force]} {
+						putlog "[mc {Error in script}]: $proc $module: $force"
+						puterrlog "$::errorInfo"
+						set force 0
+					} elseif {[string is int $force]} {
+						break
+					} else {
+						set force 0
+					}
+					#countbind $type $mask $proc
+				}
+			}
+			package forget "tcldrop::${module}"
+			lappend msg {package forgot}
+			# If -force is greater, we also delete the namespace (which should completely unload it):
+			if {($opts(-force) > $force)} {
+				if {[namespace exists "::tcldrop::${module}"]} {
+					namespace forget "::tcldrop::${module}"
+					catch { namespace delete "::tcldrop::${module}" }
+					lappend msg {namespace deleted}
+				} else {
+					lappend msg {namespace missing}
+				}
+			}
+			unset -nocomplain modules($module)
+			set msg "([join $msg {, }])"
+			putlog "[format {%-2.40s %-18.32s %-0.38s} [mc {Module unloaded:}] $module $msg]"
 		}
-		set msg [list]
+	} else {
+		set out [mc {No such module.}]
 	}
-	set out
+	return -options [dict create success $success message $out module $module options [array get opts]] $out
 }
 
 proc ::tcldrop::core::reloadmodule {{module {*}} args} { ReloadModule $module $args }
@@ -1639,7 +1658,7 @@ proc ::tcldrop::core::moduledeps {module} {
 	set deps [list]
 	global modules
 	foreach m [array names modules] {
-		if {[dict exists $modules($m) depends] && [lsearch -exact [dict get $modules($m) depends] $module] != -1} { lappend deps $m }
+		if {[lsearch -exact [dict get $modules($m) depends] $module] != -1} { lappend deps $m }
 	}
 	return $deps
 }
@@ -2198,7 +2217,7 @@ proc ::tcldrop::core::EVNT_prestart {event} {
 proc ::tcldrop::core::EVNT_prerestart {event} {
 
 	# Unload all modules:
-	unloadmodule * -force 1
+	unloadmodules [array names ::modules] -force 1
 
 	# Kill all timers/utimers:
 	set count 0
