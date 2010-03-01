@@ -1153,7 +1153,7 @@ proc ::tcldrop::core::timers {{timerid {*}}} {
 	global timers
 	set timerlist {}
 	foreach t [array names timers $timerid] {
-		dict with timers($t) { lappend timerlist [list [expr {($executetime - [clock seconds]) / 60}] $command $timerid] }
+		dict with timers($t) { lappend timerlist [list [expr {($executetime - [clock seconds]) / 60}] $command ${-timerid}] }
 	}
 	return $timerlist
 }
@@ -1163,7 +1163,7 @@ proc ::tcldrop::core::utimers {{timerid {*}}} {
 	global timers
 	set utimerlist {}
 	foreach t [array names timers $timerid] {
-		dict with timers($t) { lappend utimerlist [list [expr {$executetime - [clock seconds]}] $command $timerid] }
+		dict with timers($t) { lappend utimerlist [list [expr {$executetime - [clock seconds]}] $command ${-timerid}] }
 	}
 	return $utimerlist
 }
@@ -1173,7 +1173,7 @@ proc ::tcldrop::core::timerslist {{timerid {*}}} {
 	global timers
 	set timerlist {}
 	foreach t [array names timers $timerid] {
-		dict with timers($t) { lappend timerlist [expr {($executetime - [clock seconds]) / 60}] $command $timerid }
+		dict with timers($t) { lappend timerlist [expr {($executetime - [clock seconds]) / 60}] $command ${-timerid} }
 	}
 	return $timerlist
 }
@@ -1183,7 +1183,7 @@ proc ::tcldrop::core::utimerslist {{timerid {*}}} {
 	global timers
 	set utimerlist {}
 	foreach t [array names timers $timerid] {
-		dict with timers($t) { lappend utimerlist [expr {$executetime - [clock seconds]}] $command $timerid }
+		dict with timers($t) { lappend utimerlist [expr {$executetime - [clock seconds]}] $command ${-timerid} }
 	}
 	return $utimerlist
 }
@@ -1214,7 +1214,11 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 	if {[info exists ::timers($timerid)]} { array set timerinfo $::timers($timerid) }
 	switch -- $command {
 		{get} {
-			return $timerinfo([lindex $args 0])
+			if {[llength $args]} {
+				return $timerinfo([lindex $args 0])
+			} else {
+				return $::timers($timerid)
+			}
 		}
 		{set} {
 			array set timerinfo $info
@@ -2473,10 +2477,10 @@ proc ::tcldrop::core::start {} {
 		if {([info exists tcldrop(debug)] && $tcldrop(debug)) || ([info exists env(DEBUG)] && $env(DEBUG))} {
 			# Add debug flag to the console if set in tcldrop(debug) or env(DEBUG):
 			if {![string match {*d*} $console]} { append console {d} }
-			# Setting an error trace, to catch hard to see errors:
+			# Setting an error trace, to catch rare/hard to see errors:
 			proc ::tcldrop::core::TraceError {var var2 op} { variable LastError
 				switch -glob -- [string trim $::errorInfo] {
-					{can't find package *} - {couldn't load file *} - {version conflict for package "Tcl": have *, need 8.6*} - {package TclOO 0.6 is not present*} - {} {
+					{can't find package *} - {couldn't load file *} - {version conflict for package "Tcl": have *, need 8.6*} - {package TclOO 0.6 is not present*} - {invalid command name "::md5"*} - {couldn't open socket: host is unreachable (Name or service not known)*while executing*} - {SSL channel "*": error: unknown protocol} - {} {
 						# Ignore this stuff.
 					}
 					{default} {
