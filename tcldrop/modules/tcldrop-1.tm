@@ -146,6 +146,7 @@ namespace eval ::tcldrop {
 			  -c   (with -n) display channel stats every 10 seconds
 			  -t   (with -n) use terminal to simulate dcc-chat
 			  -m   userfile creation mode
+			  -p   source code profiling (debug)
 			  -d   Debug mode.
 			  optional config filename (default 'tcldrop.conf')\n"
 							}
