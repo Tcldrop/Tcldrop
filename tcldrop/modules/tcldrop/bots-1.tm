@@ -315,6 +315,8 @@ proc ::tcldrop::bots::addbot {handle {address {}} {hostmask {}} args} {
 		setuser $handle
 		chattr $handle +b
 		setuser $handle hosts $hostmask
+		# FixMe: if/when tcldrop supports bottypes other than eggdrop, fix this next line:
+		setuser $handle BOTTYPE {eggdrop}
 		# Note/FixMe: Splitting on : is incompatible with IPv6 IPs:
 		set host [lindex [split $address :] 0]
 		set ports [lindex [split $address :] end]

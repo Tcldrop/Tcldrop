@@ -389,11 +389,12 @@ proc ::tcldrop::bots::eggdrop::link {viabot {bot {}}} {
 proc ::tcldrop::bots::eggdrop::unlink {bot} {
 	if {[info exists ::bots([set lowerbot [string tolower $bot]])]} {
 		variable Peers
-		if {[info exists Peers([dict get $bots($bot) peeridx])]} {
+		if {[info exists Peers([dict get $::bots($lowerbot) peeridx])]} {
 			# We're directly connected to $bot.
-			killidx $botinfo(peeridx)
+			#killidx $botinfo(peeridx)
+			killidx [dict get $::bots($lowerbot) peeridx]
 			calldisc $bot
-			unset Peers([dict get $bots($bot) peeridx])
+			unset Peers([dict get $::bots($lowerbot) peeridx])
 		} else {
 			# We're not directly connected.
 			# FixMe: Make it request the remote bot to unlink $bot.

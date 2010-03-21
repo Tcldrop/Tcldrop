@@ -115,6 +115,18 @@ proc ::tcldrop::bots::dcc::LINK {handle idx text} {
 	return 0
 }
 
+proc ::tcldrop::bots::dcc::UNLINK {handle idx text} {
+	if {![islinked $text]} {
+		putcmdlog "#$handle# unlink $text"
+		putdcc $idx "[mc_handle $handle {Not connected to that bot.}]"
+	} else {
+		putcmdlog "#$handle# unlink $text"
+		putdcc $idx "[mc_handle $handle {Breaking link with %s.} $text]"
+		unlink $text
+	}
+	return 0
+}
+
 # proc by thommey
 proc ::tcldrop::bots::dcc::getallbotschildren {} {
 	set result [dict create]
