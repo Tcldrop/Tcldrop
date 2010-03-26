@@ -1,4 +1,29 @@
-#! /usr/bin/tclsh
+# cron -- A cron-like scheduler for scripts.
+
+# Copyright (C) 2010 Tcldrop Development Team <Tcldrop-Dev>
+
+# $Id$
+
+# Usage:
+#
+# cron valid $cron
+# 	Returns 1 if the cron format is valid, 0 otherwise.
+# cron parse $cron
+# 	Takes a standard cron time format and returns a dict containing all the possible minutes/hours/days/months/weekdays.
+# cron match $dict
+# 	Takes the dict returned from parse and returns 1 if the current time/date matches, 0 otherwise.
+# crontab add $cron $command ...
+# 	Add a new crontab, where $cron is a standard cron time format, and $command is the command to run when there's a match.  Returns an ID for the new crontab.
+# crontab remove $id
+# 	Removes a crontab by ID. 
+# crond start
+# 	Starts the 1-minute loop necessary for running the crontab commands.
+# 	Note: It's started automatically when a crontab is added.
+# crond stop
+# 	Stops the 1-minute loop.
+# 	Note: It's stopped automatically when all the crontabs are removed.
+
+# For the cron syntax, see "man 5 crontab".
 
 namespace eval ::cron {
 	package provide cron 1.0
@@ -6,6 +31,10 @@ namespace eval ::cron {
 	if {![info exists IDCount]} { variable IDCount 0 }
 	variable TimerID
 	if {![info exists TimerID]} { variable TimerID {} }
+	namespace export cron crontab crond
+	namespace ensemble create -command cron -subcommands [list match valid parse add remove start stop]
+	namespace ensemble create -command crontab -subcommands [list add remove]
+	namespace ensemble create -command crond -subcommands [list start stop]
 }
 
 # parses $cron and returns a dict containing all the minutes/hours/days/months/weekdays specified by $cron
@@ -23,7 +52,7 @@ proc ::cron::parse {cron} {
 		{@yearly} - {@annually} { set cron {0 0 1 1 *} }
 		{@reboot} { return -code error {@reboot not supported.} }
 	}
-	foreach info {{minutes 0 59} {hours 0 23} {days 1 31} {months 1 12} {weekdays 0 6}} element [split $cron] {
+	foreach info {{minutes 0 59} {hours 0 23} {days 1 31} {months 1 12} {weekdays 0 6}} element $cron {
 		lassign $info name min max
 		dict set times $name [list]
 		# Calls parse_element to turn the cron-syntax into one we can more generically deal with:
@@ -69,26 +98,19 @@ proc ::cron::parse {cron} {
 		}
 		# Remove duplicates:
 		dict set times $name [lsort -unique -integer [dict get $times $name]]
-		# For speed in the match proc, we see if the requested range is also the complete range, 
-		# and if so we replace it with "" and just check for that rather than searching a list
-		# for something that always matches:
-		if {[llength [dict get $times $name]] >= ($max + 1 - $min)} { dict set times $name [list] }
 	}
 	return $times
 }
 
 # Used by [parse]
 # Parses a single cron element, returning {{skip start end} ...}
-# skip = the skip/step value
+# skip = the skip/step value (defaults to 1)
 # start = the start of the range (may not be specified)
 # end = the end of the range (may not be specified)
 proc ::cron::parse_element {element {name {}}} {
 	set retval [list]
 	foreach element [split $element {,;:|&}] {
-		if {$element eq {}} {
-			# Ignore.
-			continue
-		} elseif {$element eq {*}} {
+		if {$element eq {*}} {
 			# Example: *
 			lappend retval [list 1]
 		} elseif {[string is digit -strict $element]} {
@@ -106,7 +128,8 @@ proc ::cron::parse_element {element {name {}}} {
 		} elseif {[regexp -- {^(\d+)/(\d*)$} $element -> from div] && $div >= 1} {
 			# Example: 9/2
 			lappend retval [list $div $from]
-		} else {
+		} elseif {[string trim $element] ne {}} {
+			# Ignore ""
 			# Try to deal with names for days/months (ranges and skip/step are not supported in this case):
 			switch -- $name {
 				{days} {
@@ -143,25 +166,15 @@ proc ::cron::parse_element {element {name {}}} {
 			lappend retval [list 1 $element $element]
 		}
 	}
-	return $retval
+	# Return the lists of skips/ranges we built up, or return {1} which means a skip of 1 and the full range.
+	if {[llength $retval]} { return $retval } else { list 1 }
 }
 
-# Takes the dict given by the output of [parse] and returns 1 or 0 if the current time/date is a match.
+# Takes the dict given by the output of [parse] and returns 1 if the current time/date is a match, else 0.
 proc ::cron::match {dict} {
-	if {[matchtime [dict get $dict minutes] {%M}] && [matchtime [dict get $dict hours] {%H}] && [matchtime [dict get $dict months] {%m}] && ([matchtime [dict get $dict weekdays] {%w}] || [matchtime [dict get $dict days] {%d}])} {
-		return 1
-	}
-	return 0
-}
-
-# Used by [match]
-# Searches the given $list to see any are a match for the current time.
-proc ::cron::matchtime {list format} {
-	# If $list is empty, it means always match.
-	if {[llength $list] == 0 || [scan [clock format [clock seconds] -format $format] %d] in $list} {
-		return 1
-	}
-	return 0
+	lassign [clock format [clock seconds] -format {%M %H %d %m %w}] minute hour day month dayofweek
+	# Convert the clock values (padded with 0's) into a decimal integers and see if they're in the lists:
+	if {[scan $minute {%d}] in [dict get $dict minutes] && [scan $hour {%d}] in [dict get $dict hours] && [scan $month {%d}] in [dict get $dict months] && ($dayofweek in [dict get $dict weekdays] || [scan $day {%d}] in [dict get $dict days])} { return 1 } else { return 0 }
 }
 
 # Checks to see if the supplied cron is valid:
@@ -196,25 +209,25 @@ proc ::cron::valid {cron} {
 
 # Creates a new crontab which will run $args (the script) whenever the current time/date matches, 
 # returns an identifier which can be used to remove it.
-proc ::cron::crontab {cron args} {
+proc ::cron::add {cron args} {
 	if {[llength $args]} {
 		variable IDCount
 		variable crontabs
-		dict set crontabs [incr IDCount] [dict create cron [parse $cron] command $args]]
+		dict set crontabs [incr IDCount] [dict create cron [parse $cron] command $args]
 		# Start the 1-minute loop:
-		crond start
+		start
 		return $IDCount
 	}
 }
 
 # Removes a crontab:
-proc ::cron::uncrontab {id} {
+proc ::cron::remove {id} {
 	variable crontabs
 	if {[dict exists $crontabs $id]} {
 		dict unset crontabs $id
 		if {[dict size $crontabs] == 0} {
 			# Stop the 1-minute loop if there aren't any crontabs set.
-			crond stop
+			stop
 		}
 	}
 }
@@ -224,31 +237,26 @@ proc ::cron::DoCron {} {
 	variable crontabs
 	dict for {id info} $crontabs {
 		if {[match [dict get $info cron]]} {
-			# Use after idle here, in case the scripts run for over 60 seconds, so we don't miss the next minute:
 			after idle [dict get $info command]
 		}
 	}
-	# Start another after timer to do this again at the start of the next minute:
-	variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1000 }] [namespace code [list DoCron]]]
+	# Start another after timer to do this again in the next minute + some fuzz (up to 99ms):
+	variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1001 + int(rand() * 39) }] [namespace code [list DoCron]]]
 }
 
-# Makes starting/stopping the 1-minute looping proc (DoCron) easier:
-proc ::cron::crond {{command {}}} {
-	switch -- $command {
-		{start} - {init} {
-			# Start the 1-minute loop if it's not already running:
-			variable TimerID
-			if {$TimerID eq {}} {
-				variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1000 }] [namespace code [list DoCron]]]
-			}
-		}
-		{stop} {
-			# Stop the 1-minute loop:
-			variable TimerID
-			after cancel $TimerID
-			variable TimerID {}
-		}
+# Starts the 1-minute loop if it's not already running:
+proc ::cron::start {} {
+	variable TimerID
+	if {$TimerID eq {}} {
+		variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1000 }] [namespace code [list DoCron]]]
 	}
+}
+
+# Stops the 1-minute loop:
+proc ::cron::stop {} {
+	variable TimerID
+	after cancel $TimerID
+	variable TimerID {}
 }
 
 # The rest is just used for testing purposes:
@@ -261,14 +269,23 @@ proc ::cron::crond {{command {}}} {
 #              month          1-12 (or names, see below)
 #              day of week    0-7 (0 or 7 is Sun, or use names)
 
-#namespace eval ::cron {
-	#puts "now: [clock format [clock seconds] -format {%M %H %d %m %w}]"
-	# minute hour day month weekday
-	#set testval "50-60/2;09 */4,21 09/2 7-9,december 7-4"
-	##set testval $argv
-	#puts "cron input: $testval"
-	#puts "parse result: [set parseresult [::cron::parse $testval]]"
-	#puts "match result: [::cron::match $parseresult]"
-	#puts "parse time: [time { ::cron::parse $testval } 10000]"
-	#puts "match time: [time { ::cron::match $parseresult } 10000]"
-#}
+if {0} {
+	namespace eval ::cron {
+		puts "now: [clock format [clock seconds] -format {%M %H %d %m %w}]"
+		# minute hour day month weekday
+		set testval "50-60/2;09 */4,21 09/2 7-9,december *"
+		#set testval $argv
+		puts "cron input: $testval"
+		puts "parse result: [set parseresult [::cron::parse $testval]]"
+		puts "match result: [::cron::match $parseresult]"
+		puts "parse time: [time { ::cron::parse $testval } 10000]"
+		puts "match time: [time { ::cron::match $parseresult } 10000]"
+		set matchmax [dict create minutes {0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59} hours {0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23} days {1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31} months {1 2 3 4 5 6 7 8 9 10 11 12} weekdays {0 1 2 3 4 5 6}]
+		puts "match time (max): [time { ::cron::match $matchmax } 10000]"
+		set matchmin [dict create minutes {} hours {} days {} months {} weekdays {}]
+		puts "match time (min): [time { ::cron::match $matchmin } 10000]"
+		add {*/2} puts test
+	}
+	after 999999 [list set ::forever 1]
+	vwait ::forever
+}
