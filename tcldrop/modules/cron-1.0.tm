@@ -172,9 +172,8 @@ proc ::cron::parse_element {element {name {}}} {
 
 # Takes the dict given by the output of [parse] and returns 1 if the current time/date is a match, else 0.
 proc ::cron::match {dict} {
-	lassign [clock format [clock seconds] -format {%M %H %d %m %w}] minute hour day month dayofweek
-	# Convert the clock values (padded with 0's) into a decimal integers and see if they're in the lists:
-	if {[scan $minute {%d}] in [dict get $dict minutes] && [scan $hour {%d}] in [dict get $dict hours] && [scan $month {%d}] in [dict get $dict months] && ($dayofweek in [dict get $dict weekdays] || [scan $day {%d}] in [dict get $dict days])} { return 1 } else { return 0 }
+	lassign [clock format [clock seconds] -format {%M %k %e %N %w}] minute hour day month dayofweek
+	if {[scan $minute {%d}] in [dict get $dict minutes] && $hour in [dict get $dict hours] && $month in [dict get $dict months] && ($dayofweek in [dict get $dict weekdays] || $day in [dict get $dict days])} { return 1 } else { return 0 }
 }
 
 # Checks to see if the supplied cron is valid:
@@ -234,21 +233,47 @@ proc ::cron::remove {id} {
 
 # This is the 1-minute looping proc, it processes all the matching crontabs for this minute:
 proc ::cron::DoCron {} {
+	# Start another after timer to run this proc again at the start of the next minute + 1 second + 17ms to 126ms:
+	variable TimerID [after [expr { 60000 - ([clock milliseconds] % 60000) + 1017 + int(rand() * 127) }] [namespace code DoCron]]
+	# Run all the crontabs that match for this minute:
 	variable crontabs
+	set count 231
 	dict for {id info} $crontabs {
 		if {[match [dict get $info cron]]} {
-			after idle [dict get $info command]
+			# Run this command 16 to 256ms from now..
+			# (Trying to make each command in this batch run 16ms apart.)
+			after [expr { 16 + ([incr count 16] % 247) }] [dict get $info command]
 		}
 	}
-	# Start another after timer to do this again in the next minute + some fuzz (up to 99ms):
-	variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1001 + int(rand() * 39) }] [namespace code [list DoCron]]]
+	# Notes and logic behind the weird expr's:
+	# The extra 1 second added to the 1-minute loop is to avoid any issue with leap seconds...
+	# If an extra second is added due to leap seconds, 
+	# the loop would start at the 59th second of the minute it already did.
+	# (I think, I don't know this for sure.)
+	# 
+	# Example:
+	# An after timer is started at 23:59:00 to run 1000ms in the future.
+	# If a leap-second is added, when the script runs after 1000ms is up
+	# it will then be 23:59:59 when the script does a [clock format].
+	# (Somebody correct me if I'm wrong please.)
+	# I may be off by 1 minute..  If the leap second is added at 00:00:00,
+	# the script, when run, would see the time as 00:00:59.
+	#
+	# The extra 16ms between running the commands is so they don't run 
+	# all at once, causing the process to use a lot of CPU-time in a short
+	# amount of time.  If they're 16ms apart, it spreads the load out.
+	# 16ms, on Windows XP at least, is how often a process gets its share of the CPU.
+	#
+	# There's no good reason for the rand(). =P
+	#
+	# The effect of all this, is that the command scripts will run at most 1.4 seconds into the minute.
 }
 
 # Starts the 1-minute loop if it's not already running:
 proc ::cron::start {} {
 	variable TimerID
 	if {$TimerID eq {}} {
-		variable TimerID [after [expr { (60 - ([clock seconds] % 60) ) * 1000 }] [namespace code [list DoCron]]]
+		variable TimerID [after [expr { 60000 - ([clock milliseconds] % 60000) + 1017 + int(rand() * 127) }] [namespace code DoCron]]
 	}
 }
 
