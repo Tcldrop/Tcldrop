@@ -384,6 +384,13 @@ proc ::tcldrop::core::ircstreql {string1 string2} {
 		string equal -nocase $string1 $string2
 	}
 }
+proc ::tcldrop::core::ircstrcmp {string1 string2} {
+	if {${::rfc-compliant}} {
+		string compare -nocase [string map [list \{ \[ \} \] ~ ^ | \\] $string1] [string map [list \{ \[ \} \] ~ ^ | \\] $string2]
+	} else {
+		string compare -nocase $string1 $string2
+	}
+}
 proc ::tcldrop::core::ircstrhasspecial {string} {
 	switch -glob $string {
 		{*[*} - {*]*} - "*\{*" - "*\}*" - {*^*} - {*~*} - {*|*} - "\\" { return 1 }
@@ -688,7 +695,8 @@ proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
 	# Call all of the LOG binds here:
 	foreach {type flags mask proc} [bindlist log] {
 		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
-			if {[catch { $proc $levels $channel $text $tags } err]} {
+			# Eggdrop doesn't support the tags argument, so we check to see how many arguments the proc wants:
+			if {([catch { info args $proc } arglist] || [llength $arglist] < 4 || [catch { $proc $levels $channel $text $tags } err]) || [catch { $proc $levels $channel $text } err]} {
 				set errorinfo $::errorInfo
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
 				if {[catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $errorinfo" }]} {
@@ -1258,7 +1266,7 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 # timer: drift (lastmin=25, now=26)
 # (!) timer drift -- spun 4 minutes
 proc ::tcldrop::core::calltime {} {
-	lassign [set current [clock format [clock seconds] -format {%M %H %e %m %Y}]] minute hour day month year
+	lassign [set current [clock format [clock seconds] -format {%M %H %d %m %Y %w}]] minute hour day month year dayofweek
 	foreach {type flags mask proc} [bindlist time] {
 		if {[bindmatch $mask $current]} {
 			if {[catch { $proc $minute $hour $day $month $year } err]} {
@@ -1270,6 +1278,7 @@ proc ::tcldrop::core::calltime {} {
 		# time binds aren't really time critical, so trigger any other events that are waiting:
 		update idletasks
 	}
+	# FixMe: Do "CRON" binds here.
 }
 
 # Runs $args after we're idle, and after a short amount of time:
