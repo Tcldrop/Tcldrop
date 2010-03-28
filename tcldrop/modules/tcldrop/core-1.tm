@@ -185,7 +185,7 @@ namespace eval ::tcldrop::core {
 	# The 'sanitize' ensemble:
 	namespace ensemble create -command sanitize -subcommands [list glob regex] -map [dict create glob SanitizeGlob regex SanitizeRegex]
 	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch sanitize
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql ircstrcmp irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch sanitize
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -693,14 +693,15 @@ proc ::tcldrop::core::LOG {levels channel text {tags {}}} {
 proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
 	dict set tags log-time ${::log-time}
 	# Call all of the LOG binds here:
-	foreach {type flags mask proc} [bindlist log] {
-		if {[string match -nocase $mask $channel] && [checkflags $flags $levels]} {
+	dict for {id info} [getbinds log] {
+		# type flags mask proc
+		if {[string match -nocase [dict get $info mask] $channel] && [checkflags [dict get $info flags] $levels]} {
 			# Eggdrop doesn't support the tags argument, so we check to see how many arguments the proc wants:
-			if {([catch { info args $proc } arglist] || [llength $arglist] < 4 || [catch { $proc $levels $channel $text $tags } err]) || [catch { $proc $levels $channel $text } err]} {
+			if {([catch { [dict get $info proc] $levels $channel $text $tags } err]) && [catch { [dict get $info proc] $levels $channel $text } err]} {
 				set errorinfo $::errorInfo
 				# Note: We log to PutLogLev, because it avoids recursive put*log errors..
-				if {[catch { PutLogLev edo $channel "LOG ERROR $proc $levels $channel $args: $errorinfo" }]} {
-					catch { puts "LOG ERROR $proc $levels $channel $args: $errorinfo" }
+				if {[catch { PutLogLev edo $channel "LOG ERROR [dict get $info proc] $levels $channel $args: $errorinfo" }]} {
+					catch { puts "LOG ERROR [dict get $info proc] $levels $channel $args: $errorinfo" }
 				}
 				# Don't exit during a restart process if we're in debug mode (makes finding bugs in the restart process easier):
 				if {![info exists ::restart] || ![info exists ::tcldrop(debug)] || !$::tcldrop(debug)} {
@@ -712,7 +713,7 @@ proc ::tcldrop::core::putloglev {levels channel text {tags {}}} {
 				return -code error "putloglev $levels $channel error: $errorinfo"
 			}
 			# For speed, we don't count the log binds:
-			#countbind $type $mask $proc
+			#countbind [dict get $info type] [dict get $info mask] [dict get $info proc]
 		}
 	}
 	#update idletasks
@@ -903,11 +904,12 @@ proc ::tcldrop::core::bindlist {{typemask {*}} {mask {*}}} {
 	return $matchbinds
 }
 
+# Similar to bindlist, but returns a dict containing the matching binds and their infos:
 proc ::tcldrop::core::getbinds {{typemask {*}} {mask {*}}} {
-	set matchbinds {}
+	set matchbinds [dict create]
 	global binds
 	# Search by type:
-	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] { lappend matchbinds $binds($b) }
+	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] { dict set matchbinds $b $binds($b) }
 	return $matchbinds
 }
 
