@@ -75,6 +75,8 @@ namespace eval ::tcldrop {
 	variable rcsid {$Id$}
 	# Provide tcldrop as a package:
 	package provide $name 1
+	# Pretend to provide eggdrop:
+	if {{eggdrop} ni [package names]} { package provide eggdrop 1.6.20 }
 	# tcldrop stores info's that each tcldrop needs while starting up:
 	variable tcldrop
 	array set tcldrop [list name $name config {} config-eval {} background-mode 1 channel-stats 0 simulate-dcc 0 userfile-create 0 console {oe} host_env {unknown} dirname [file dirname $script] version $version numversion $numversion depends $depends author $author description $description rcsid $rcsid script $script]
