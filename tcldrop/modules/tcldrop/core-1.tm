@@ -1406,9 +1406,8 @@ proc ::tcldrop::core::SanitizeRegex {string} {
 }
 
 # matchstr, like in Eggdrop:
-proc ::tcldrop::core::matchstr {pattern string args} {
-	# Note: Only the open [ needs to be escaped before passing to string match.
-	string match {*}$args [string map {{[} {\[}} $pattern] $string
+proc ::tcldrop::core::matchstr {pattern string} {
+	string match -nocase [string map {{[} {\[} "\\" {\\}} $pattern] $string
 }
 
 # detectflood returns 1 if a flood was detected, or 0 if it wasn't.
