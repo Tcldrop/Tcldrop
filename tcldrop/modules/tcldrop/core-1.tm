@@ -178,6 +178,8 @@ namespace eval ::tcldrop::core {
 	regexp -- {^[_[:alpha:]][:_[:alnum:]]*-([[:digit:]].*)[.]tm$} [file tail $script] -> version
 	package provide tcldrop::${name} $version
 	package provide tcldrop::${name}::main $version
+	# Pretend to provide eggdrop:
+	if {{eggdrop} ni [package names]} { package provide eggdrop 1.6.20 }
 	variable depends {tcldrop}
 	variable author {Tcldrop-Dev}
 	variable description {Provides all the core components.}
@@ -384,6 +386,8 @@ proc ::tcldrop::core::ircstreql {string1 string2} {
 		string equal -nocase $string1 $string2
 	}
 }
+# FixMe: Add more of the commands like this as sub-commands to [string] or to other Tcl commands:
+namespace ensemble configure string -map [dict merge [namespace ensemble configure string -map] {ircequal ::tcldrop::ircstreql}]
 proc ::tcldrop::core::ircstrcmp {string1 string2} {
 	if {${::rfc-compliant}} {
 		string compare -nocase [string map [list \{ \[ \} \] ~ ^ | \\] $string1] [string map [list \{ \[ \} \] ~ ^ | \\] $string2]
