@@ -1220,7 +1220,7 @@ proc ::tcldrop::irc::resetinvites {channel} {
 #    Returns: 1 if someone by that nickname is on the specified channel (or
 #      any channel if none is specified); 0 otherwise
 proc ::tcldrop::irc::onchan {nick {channel {*}}} {
-	if {[llength [array names ::channelnicks [irctoupper "$channel,$nick"]]]} {
+	if {[llength [array names ::channelnicks [string map {{[} {\[}} [irctoupper "$channel,$nick"]]]]} {
 		return 1
 	} else {
 		return 0
