@@ -187,7 +187,7 @@ namespace eval ::tcldrop::core {
 	# The 'sanitize' ensemble:
 	namespace ensemble create -command sanitize -subcommands [list glob regex] -map [dict create glob SanitizeGlob regex SanitizeRegex]
 	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql ircstrcmp irchasspecial matchaddr matchcidr getenv dict'sort clockres bindmatch sanitize
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql ircstrcmp irchasspecial matchaddr matchcidr matchstr getenv dict'sort clockres bindmatch sanitize
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -1403,6 +1403,12 @@ proc ::tcldrop::core::SanitizeGlob {string} {
 
 proc ::tcldrop::core::SanitizeRegex {string} {
 	string map {\$ \\$ \( \\( \) \\) \* \\* \+ \\+ \. \\. \? \\? \[ \\[ \\ \\\\ \] \\] \^ \\^ \{ \\{ \| \\| \} \\}} $string
+}
+
+# matchstr, like in Eggdrop:
+proc ::tcldrop::core::matchstr {pattern string args} {
+	# Note: Only the open [ needs to be escaped before passing to string match.
+	string match {*}$args [string map {{[} {\[}} $pattern] $string
 }
 
 # detectflood returns 1 if a flood was detected, or 0 if it wasn't.
