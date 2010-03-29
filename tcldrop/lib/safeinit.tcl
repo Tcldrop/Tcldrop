@@ -132,6 +132,13 @@
 				foreach char [split $input {}] { if {![regexp -nocase -- {[a-z0-9&=]} $char]} { append output % [format %X [scan $char %c]] } else { append output $char } }
 				return $output
 			}
+			# matchstr, like in Eggdrop:
+			if {![llength [info commands matchstr]]} {
+				proc matchstr {pattern string args} {
+					# Note: Only the open [ needs to be escaped before passing to string match.
+					string match {*}$args [string map {{[} {\[}} $pattern] $string
+				}
+			}
 			proc strlwr {string} { string tolower $string }
 			proc strupr {string} { string toupper $string }
 			proc strcmp {string1 string2} { string compare $string1 $string2 }
