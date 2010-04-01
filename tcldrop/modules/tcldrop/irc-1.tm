@@ -1684,16 +1684,26 @@ bind join - * ::tcldrop::irc::JOIN_+cycle -priority 1000
 
 
 bind channel - {remove *} ::tcldrop::irc::CHANNEL_remove -priority 10000
-proc ::tcldrop::irc::CHANNEL_remove {command channel data} {
+proc ::tcldrop::irc::CHANNEL_remove {command channel args} {
 	if {[botonchan $channel]} {
-		array unset ::channelnicks [irctoupper "$channel,$::botnick"]
+		unset -nocomplain ::channelnicks([irctoupper "$channel,$::botnick"])
 		putserv "PART $channel"
 	}
+	# Return what we're given as-is:
+	list $command $channel {*}$args
 }
 bind channel - {add *} ::tcldrop::irc::CHANNEL_add -priority 10000
-proc ::tcldrop::irc::CHANNEL_add {command channel data} { JoinOrPart }
+proc ::tcldrop::irc::CHANNEL_add {command channel args} { 
+	JoinOrPart
+	# Return what we're given as-is:
+	list $command $channel {*}$args
+}
 bind channel - {set * flag inactive *} ::tcldrop::irc::CHANNEL_set -priority 10000
-proc ::tcldrop::irc::CHANNEL_set {command channel data} { JoinOrPart }
+proc ::tcldrop::irc::CHANNEL_set {command channel type option value} {
+	JoinOrPart
+	# Return what we're given as-is:
+	list $command $channel $type $option $value
+}
 
 # This gets called once a minute and joins the channels we need in, and parts the ones we're not supposed to be in.
 # It also does a [callneed $channel op] if the bot is in a channel but doesn't have ops.

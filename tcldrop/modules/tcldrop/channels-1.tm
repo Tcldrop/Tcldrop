@@ -59,14 +59,12 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 	global database
 	switch -- [set command [string tolower $command]] {
 		{add} {
-			# FixMe: I think there's something wrong about this next line:
-			if {[llength $args] > 1} { set options $args } else { set options [lindex $args 0] }
-			# Add the channel:
+			set args [lassign [callchannel $command $channel {*}$args] command channel]
+			# Add the channel to the database:
 			database channels set $upperchannel name $channel
 			SetUdefDefaults
-			after idle [list callchannel $command $channel $options]
 			# Call ourself again to set the options:
-			after idle [list channel set $channel {*}$options]
+			if {[llength $args]} { channel set $channel {*}$args }
 			return {}
 		}
 		{set} {
@@ -79,16 +77,16 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 					switch -- $type {
 						{int} - {integer} {
 							# Note, settings such as flood-chan are treated as int's.  Hence the need for using split here:
-							database channels set $upperchannel $name [set o [split $o {:{ }}]]
-							after idle [list callchannel $command $channel $type $o]
+							lassign [callchannel $command $channel $type $name [split $o {:{ }}]] command channel type name o
+							database channels set $upperchannel $name $o
 						}
 						{str} - {string} {
+							lassign [callchannel $command $channel $type $name $o] command channel type name o
 							database channels set $upperchannel $name $o
-							after idle [list callchannel $command $channel $type $name $o]
 						}
-						{list} {
+						{list} - {lappend} {
+							lassign [callchannel $command $channel $type $name $o] command channel type name o
 							database channels lappend $upperchannel $name $o
-							after idle [list callchannel $command $channel $type $name $o]
 						}
 						{flag} {
 							# This is so we can support flags being set like:
@@ -96,18 +94,12 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 							# or: [channel set #channel revenge 1]
 							# The old way is still supported though. (see below)
 							switch -- $o {
-								{+} - {1} - {y} - {Y} {
-									database channels set $upperchannel $name 1
-									after idle [list callchannel $command $channel $type $name 1]
-								}
-								{-} - {0} - {n} - {N} {
-									database channels set $upperchannel $name 0
-									after idle [list callchannel $command $channel $type $name 0]
-								}
-								{default} {
-									return -code error "[mc {Invalid value for a channel flag: %s} $o]"
-								}
+								{+} { set o 1 }
+								{-} { set o 0 }
+								{default} { set o [string is true -strict $o] }
 							}
+							lassign [callchannel $command $channel $type $name $o] command channel type name o
+							database channels set $upperchannel $name $o
 						}
 						{unknown} - {default} {
 							return -code error "[mc {Invalid channel option: %s} $name]"
@@ -118,12 +110,12 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 						{flag} {
 							switch -- [string index $o 0] {
 								{+} {
-									database channels set $upperchannel $name 1
-									after idle [list callchannel $command $channel $type $name 1]
+									lassign [callchannel $command $channel $type $name 1] command channel type name o
+									database channels set $upperchannel $name $o
 								}
 								{-} {
-									database channels set $upperchannel $name 0
-									after idle [list callchannel $command $channel $type $name 0]
+									lassign [callchannel $command $channel $type $name 0] command channel type name o
+									database channels set $upperchannel $name $o
 								}
 								{default} {
 									# They must want to set it using a second arg...
@@ -165,8 +157,8 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 		{count} { dict size $database(channels) }
 		{remove} - {rem} - {delete} - {del} {
 			if {[dict exists $database(channels) $upperchannel]} {
+				set args [lassign [callchannel $command $channel {*}$args] $command $channel]
 				database channels unset $upperchannel
-				after idle [list callchannel $command $channel $args]
 			} else {
 				return -code error "[mc {No such channel record: %s} $channel]"
 			}
@@ -252,16 +244,20 @@ proc ::tcldrop::channels::validchanname {channel} {
 # Note, types for udef's should be: flag, int, str, and list.
 # In the case of lists, the channel command should provide lappend, lreplace, and lremove commands.
 
+# This is a filter type bind for [channel add], [channel set], and [channel remove].
+# Whatever's given to the binds can be returned, changed, or raise an error.
 proc ::tcldrop::channels::callchannel {command channel args} {
 	foreach {type flags mask proc} [bindlist channel] {
 		if {[bindmatch $mask "$command $channel [join $args]"]} {
 			countbind $type $mask $proc
-			if {[catch { $proc $command $channel $args } err]} {
+			if {[catch { set args [lassign [$proc $command $channel {*}$args] command channel] } err]} {
 				putlog "[mc {Error in %s} $proc]: $err"
 				puterrlog "$::errorInfo"
+				return -code error $err
 			}
 		}
 	}
+	list $command $channel {*}$args
 }
 
 # Defines a new udef:
@@ -802,7 +798,7 @@ proc ::tcldrop::channels::LOAD {module} {
 	setudef str need-limit {}
 	setudef str need-halfop {}
 	setudef str need-voice {}
-	# Note/FixMe: global-chanset should be a list, see if it's a list in Eggdrop.
+	# Note: global-chanset should be a list.
 	foreach n ${::global-chanset} { if {$n ne {}} { catch { setudef flag [string range $n 1 end] [string index $n 0] } } }
 	loadbeis ignore
 	loadbeis ban
