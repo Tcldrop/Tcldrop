@@ -1272,7 +1272,7 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 # timer: drift (lastmin=25, now=26)
 # (!) timer drift -- spun 4 minutes
 proc ::tcldrop::core::calltime {} {
-	lassign [set current [clock format [clock seconds] -format {%M %H %d %m %Y %w}]] minute hour day month year dayofweek
+	lassign [set current [clock format [clock seconds] -format {%M %H %d %m %Y}]] minute hour day month year
 	foreach {type flags mask proc} [bindlist time] {
 		if {[bindmatch $mask $current]} {
 			if {[catch { $proc $minute $hour $day $month $year } err]} {
@@ -1284,7 +1284,23 @@ proc ::tcldrop::core::calltime {} {
 		# time binds aren't really time critical, so trigger any other events that are waiting:
 		update idletasks
 	}
-	# FixMe: Do "CRON" binds here.
+	callcron
+}
+
+proc ::tcldrop::core::callcron {} {
+	lassign [clock format [clock seconds] -format {%M %k %e %N %w}] minute hour day month dayofweek
+	# Remove the zero-padding from the minutes:
+	set minute [scan $minute {%d}]
+	foreach {type flags mask proc} [bindlist cron] {
+		# FixMe: We should do the parse only once, when the bind is added, and use the stored result for doing this match:
+		if {[::cron::match [::cron::parse $mask]]} {
+			if {[catch { $proc $minute $hour $day $month $dayofweek } err]} {
+				putlog "[mc {Error in script}]: $proc: $err"
+				puterrlog "$::errorInfo"
+			}
+			countbind $type $mask $proc
+		}
+	}
 }
 
 # Runs $args after we're idle, and after a short amount of time:
@@ -2175,8 +2191,17 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	setdefault handlen 9
 	setdefault max-logs 25
 	setdefault quick-logs 0
+	#setdefault my-hostname {}
 	setdefault my-ip {}
+	# FixMe: Trace this variable, and mirror its contents into my-ipv6:
+	setdefault my-ip6 {}
+	# FixMe: Add Eggdrop-style IPv6 support (make the following variables work):
+	setdefault my-ipv6 {}
+	setdefault listen-addr {}
+	setdefault prefer-ipv6 1
+	# Tcldrop specific:
 	setdefault default-ip {0.0.0.0}
+	setdefault default-ipv6 {::}
 	setdefault timezone [clock format 0 -format {%Z}]
 	setdefault hourly-updates "[rand 6][rand 10]"
 	setdefault daily-updates "[format %02s [rand 25]]"
@@ -2207,6 +2232,7 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 		setdefault botnet-nick $::nick -protect 1
 		callevent $type
 		callevent loaded
+		package require cron 1
 		# Every $hourly-updates we call the "hourly-updates" event:
 		proc ::tcldrop::core::HourlyUpdates {minute hour day month year} { callevent hourly-updates }
 		bind time - "${::hourly-updates} * * * *" ::tcldrop::core::HourlyUpdates
