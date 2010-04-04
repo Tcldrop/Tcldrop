@@ -865,9 +865,32 @@ proc ::tcldrop::core::bind {type flags mask proc args} {
 		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { set flags {+|+} }
 		{default} { if {![string match {*|*} $flags]} { set flags "$flags|-" } }
 	}
-	set options [dict create -priority 50 type $type flags $flags mask $mask proc $proc count 0 {*}$args]
-	set ::binds($type,[dict get $options -priority],$proc,$mask) $options
-	set mask
+	# Send the bind info through callbind ("BIND" binds) so they can possibly change it or return an error:
+	if {[catch { set bindinfo [callbind [dict create -priority 50 type $type flags $flags mask $mask regex [mask2regex $mask] proc $proc count 0 {*}$args]] } err opt]} {
+		return -code error -options $opt $err
+	} else {
+		# Accept and store the new bind:
+		set ::binds([dict get $bindinfo type],[dict get $bindinfo -priority],[dict get $bindinfo proc],[dict get $bindinfo mask]) $bindinfo
+		return $mask
+	}
+}
+
+# "BIND" binds are called when a bind is added.
+# They act as a filter, so they can return the bind info as-is, or change it and return it, or return an error to deny adding the bind.
+# bindinfo = the info (dict) for the new bind being set
+proc ::tcldrop::core::callbind {bindinfo} {
+	foreach {id info} [getbinds bind "[dict get $bindinfo type] [dict get $bindinfo mask]"] {
+		if {[catch { set bindinfo [[dict get $info proc] $bindinfo] } err opt]} {
+			# FixMe: Do putlog's here, unless they result in duplicate putlogs:
+			putlog "[mc {Error in script}]: [dict get $info proc]: $err"
+			puterrlog "$::errorInfo"
+			# Return an error, causing the bind command to fail:
+			return -code error -options $opt $err
+		}
+		countbind $id
+	}
+	# Return the (possibly changed) bindinfo:
+	return $bindinfo
 }
 
 # FixMe: Make $priority part of $args:
@@ -897,34 +920,65 @@ proc ::tcldrop::core::binds {{typemask {*}} {mask {*}}} {
 	return $matchbinds
 }
 
-# FixMe: Add support for options, such as -exact 1/0 and -matchmask <arg> (which should match the $bind(mask)).
-proc ::tcldrop::core::bindlist {{typemask {*}} {mask {*}}} {
+# typemask is the type of bind
+# text is the text to compare against each binds regex pattern
+# Note: Use of bindlist is deprecated internally, we should start using getbinds instead.
+proc ::tcldrop::core::bindlist {{typemask {*}} {text {}}} {
 	set matchbinds {}
 	global binds
-	# Search by type:
-	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] {
-		dict with binds($b) { lappend matchbinds $type $flags $mask $proc }
+	if {$text eq {}} {
+		# Match type only:
+		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
+			dict with binds($b) { lappend matchbinds $type $flags $mask $proc }
+		}
+	} else {
+		# Match type and regex:
+		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
+			if {[regexp -- [dict get $binds($b) regex] $text]} {
+				lappend matchbinds [dict get $binds($b) type] [dict get $binds($b) flags] [dict get $binds($b) mask] [dict get $binds($b) proc]
+			}
+		}
 	}
 	return $matchbinds
 }
 
-# Similar to bindlist, but returns a dict containing the matching binds and their infos:
-proc ::tcldrop::core::getbinds {{typemask {*}} {mask {*}}} {
+# Similar to bindlist, but returns a dict containing the matching binds and ALL their infos (unlike bindlist):
+# typemask is the type of bind
+# text is the text to compare against each binds regex pattern
+proc ::tcldrop::core::getbinds {{typemask {*}} {text {}}} {
 	set matchbinds [dict create]
 	global binds
-	# Search by type:
-	foreach b [lsort [array names binds [string tolower $typemask],*,*,[string tolower $mask]]] { dict set matchbinds $b $binds($b) }
+	if {$text eq {}} {
+		# Match type only:
+		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
+			dict set matchbinds $b $binds($b)
+		}
+	} else {
+		# Match type and regex:
+		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
+			if {[regexp -- [dict get $binds($b) regex] $text]} {
+				dict set matchbinds $b $binds($b)
+			}
+		}
+	}
 	return $matchbinds
 }
 
 # Counts how many times a bind has been triggered:
-proc ::tcldrop::core::countbind {type mask proc {priority {*}}} {
-	after idle [list ::tcldrop::core::CountBind $type $mask $proc $priority]
-	set ::lastbind $mask
-}
-proc ::tcldrop::core::CountBind {type mask proc {priority {*}}} {
+# id is the bind id.
+proc ::tcldrop::core::countbind {id args} {
 	global binds
-	foreach name [array names binds [string tolower $type],$priority,$proc,[string tolower $mask]] { dict incr binds($name) count }
+	if {[info exists binds($id)]} {
+		dict incr binds($id) count
+		set ::lastbind [dict get $binds($id) mask]
+	} else {
+		# This part exists for compatibility.
+		set type $id
+		lassign $args mask proc priority
+		if {$priority eq {}} { set priority {*} }
+		foreach id [array names binds [string tolower $type],$priority,$proc,$mask] { dict incr binds($id) count }
+		set ::lastbind $mask
+	}
 }
 
 # Alternative to doing "upvar 1 flags flags" in binds (mainly msg binds):
@@ -934,8 +988,9 @@ proc ::tcldrop::core::bindflags {{level {1}}} {
 	return $flags
 }
 
-# proc by thommey
-proc ::tcldrop::core::bindmatch {mask string} {
+# Converts an Eggdrop-style wildcard mask (like that used in binds) into the regex equivalent:
+# code by thommey
+proc ::tcldrop::core::mask2regex {mask} {
 	set escaped 0
 	set re {^}
 	foreach ch [split $mask {}] {
@@ -946,9 +1001,10 @@ proc ::tcldrop::core::bindmatch {mask string} {
 				{?} { append re {.{1}} }
 				{%} { append re {\S*} }
 				{~} { append re {\s+} }
-				default { # make sure regexp characters are escaped (\ never arrives here)
+				default {
+					# make sure regexp characters are escaped (\ never arrives here)
 					if {[string first $ch {{}().+^|$[]}] != -1} {
-						append re \\$ch
+						append re "\\" $ch
 					} else {
 						append re $ch
 					}
@@ -956,16 +1012,18 @@ proc ::tcldrop::core::bindmatch {mask string} {
 			}
 		} else {
 			if {[string first $ch {\*?~%}] != -1} {
-				append re "\\$ch"
-			} else {; #pointless escape
+				# Escape character
+				append re "\\" $ch
+			} else {
 				append re $ch
 			}
 			set escaped 0
 		}
 	}
+	# Return the regexp:
 	append re {$}
-	regexp -- $re $string
 }
+proc ::tcldrop::core::bindmatch {mask string} { regexp -- [mask2regex $mask] $string }
 
 # % time {bindmatch {*foo~bar % gril?} {xxx foo   bar baz grill}} 10000
 # 37.6199 microseconds per iteration <-- current proc used
@@ -1291,14 +1349,13 @@ proc ::tcldrop::core::callcron {} {
 	lassign [clock format [clock seconds] -format {%M %k %e %N %w}] minute hour day month dayofweek
 	# Remove the zero-padding from the minutes:
 	set minute [scan $minute {%d}]
-	foreach {type flags mask proc} [bindlist cron] {
-		# FixMe: We should do the parse only once, when the bind is added, and use the stored result for doing this match:
-		if {[::cron::match [::cron::parse $mask]]} {
-			if {[catch { $proc $minute $hour $day $month $dayofweek } err]} {
-				putlog "[mc {Error in script}]: $proc: $err"
+	dict for {id info} [getbinds cron] {
+		if {[::cron::match [dict get $info cron]]} {
+			if {[catch { [dict get $info proc] $minute $hour $day $month $dayofweek } err]} {
+				putlog "[mc {Error in script}]: [dict get $info proc]: $err"
 				puterrlog "$::errorInfo"
 			}
-			countbind $type $mask $proc
+			countbind $id
 		}
 	}
 }
@@ -2211,6 +2268,10 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 	# Load the required modules:
 	# FixMe: There should be a variable or something that tells us what core/main modules to load or even which to exclude..
 	checkmodule core
+	package require cron 1
+	# Filter for CRON binds as they're added...adds the parsed cron mask to the binds info:
+	proc ::tcldrop::core::BIND_CRON {bindinfo} { dict set bindinfo cron [::cron::parse [dict get $bindinfo mask]] }
+	bind bind - "cron *" ::tcldrop::core::BIND_CRON
 	checkmodule core::database
 	checkmodule core::users
 	checkmodule core::conn
@@ -2232,7 +2293,6 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 		setdefault botnet-nick $::nick -protect 1
 		callevent $type
 		callevent loaded
-		package require cron 1
 		# Every $hourly-updates we call the "hourly-updates" event:
 		proc ::tcldrop::core::HourlyUpdates {minute hour day month year} { callevent hourly-updates }
 		bind time - "${::hourly-updates} * * * *" ::tcldrop::core::HourlyUpdates
