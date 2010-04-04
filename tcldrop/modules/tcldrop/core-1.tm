@@ -865,13 +865,14 @@ proc ::tcldrop::core::bind {type flags mask proc args} {
 		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { set flags {+|+} }
 		{default} { if {![string match {*|*} $flags]} { set flags "$flags|-" } }
 	}
-	# Send the bind info through callbind ("BIND" binds) so they can possibly change it or return an error:
-	if {[catch { set bindinfo [callbind [dict create -priority 50 type $type flags $flags mask $mask regex [mask2regex $mask] proc $proc count 0 {*}$args]] } err opt]} {
-		return -code error -options $opt $err
+	# Send the bind info through callbind (triggering "BIND" binds) so they can possibly change it or return an error:
+	if {[catch { callbind [dict create regex [mask2regex $mask] proc $proc count 0 flags $flags -priority 50 type $type mask $mask {*}$args] } bindinfo opt]} {
+		# Return an error, causing the bind command to fail:
+		return -code error -options $opt $bindinfo
 	} else {
 		# Accept and store the new bind:
 		set ::binds([dict get $bindinfo type],[dict get $bindinfo -priority],[dict get $bindinfo proc],[dict get $bindinfo mask]) $bindinfo
-		return $mask
+		dict get $bindinfo mask
 	}
 }
 
@@ -879,13 +880,10 @@ proc ::tcldrop::core::bind {type flags mask proc args} {
 # They act as a filter, so they can return the bind info as-is, or change it and return it, or return an error to deny adding the bind.
 # bindinfo = the info (dict) for the new bind being set
 proc ::tcldrop::core::callbind {bindinfo} {
-	foreach {id info} [getbinds bind "[dict get $bindinfo type] [dict get $bindinfo mask]"] {
-		if {[catch { set bindinfo [[dict get $info proc] $bindinfo] } err opt]} {
-			# FixMe: Do putlog's here, unless they result in duplicate putlogs:
-			putlog "[mc {Error in script}]: [dict get $info proc]: $err"
-			puterrlog "$::errorInfo"
+	dict for {id info} [getbinds bind "[dict get $bindinfo type] [dict get $bindinfo mask]"] {
+		if {[catch { [dict get $info proc] $bindinfo } bindinfo opt]} {
 			# Return an error, causing the bind command to fail:
-			return -code error -options $opt $err
+			return -code error -options $opt $bindinfo
 		}
 		countbind $id
 	}
