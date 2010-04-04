@@ -865,8 +865,10 @@ proc ::tcldrop::core::bind {type flags mask proc args} {
 		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { set flags {+|+} }
 		{default} { if {![string match {*|*} $flags]} { set flags "$flags|-" } }
 	}
+	# Allow the mask to be a regex pattern (anything starting with ^ and ending with $ will be considered a regex pattern):
+	if {[string match {^*$} $mask] && ![catch { regexp -- $mask {} }]} { set regex $mask } else { set regex [mask2regex $mask] }
 	# Send the bind info through callbind (triggering "BIND" binds) so they can possibly change it or return an error:
-	if {[catch { callbind [dict create regex [mask2regex $mask] proc $proc count 0 flags $flags -priority 50 type $type mask $mask {*}$args] } bindinfo opt]} {
+	if {[catch { callbind [dict create regex $regex proc $proc count 0 flags $flags -priority 50 type $type mask $mask {*}$args] } bindinfo opt]} {
 		# Return an error, causing the bind command to fail:
 		return -code error -options $opt $bindinfo
 	} else {
