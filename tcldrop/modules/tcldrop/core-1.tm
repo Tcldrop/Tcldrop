@@ -1931,7 +1931,7 @@ proc ::tcldrop::core::uptime {} { expr { [clock seconds] - $::uptime } }
 
 # Detects if critcl is present and creates Sysup procs for different systems
 proc ::tcldrop::core::CreateSysupProc {} {
-	if {![info exists ::tcl_platform(os)] || ![catch { package require critcl }]} { return 0 }
+	if {![info exists ::tcl_platform(os)] || [catch { package require critcl }]} { return 0 }
 	switch -- $::tcl_platform(os) {
 		{Linux} {
 			::critcl::ccode {
@@ -2017,9 +2017,9 @@ proc ::tcldrop::core::Sysuptime {} {
 				return [Sysup]
 			# Read file modified time of /proc. This will likely be the system uptime on all/most Linux systems.
 			# Fails on cygwin for whatever reason. /proc/uptime should work fine on Cygwin though.
-			} elseif {[file exists /proc] && ![catch {file mtime /proc} sysup]} {
+			} elseif {[info exists ::tcl_platform(os)] && $::tcl_platform(os) eq {Linux} && [file exists /proc] && ![catch {file mtime /proc} sysup]} {
 				return $sysup
-			# Exec the uptime command and parse it. This is not very reliable and shoud be used as the last option.
+			# Exec the uptime command and parse it. This is not very reliable and should be used as the last option.
 			} elseif {![catch {exec uptime} Sysup]} {
 				# FixMe: find out what the output is if uptime < 1 min
 				# Linux:  23:30:24 up 132 days,  3:28,  2 users,  load average: 0.00, 0.00, 0.00
