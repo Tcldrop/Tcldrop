@@ -76,7 +76,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 			{CHAT} {
 				if {![callircparty $idx [set command [string toupper [lindex [set sline [split [string trim $line]]] 0]]] [join [lrange $sline 1 end]]]} {
 					PutRAW $idx "421 [getircparty user $idx nick] $command :Unknown command"
-					putdebuglog "$idx: $line"
+					putloglev 1 * "$idx: $line"
 				}
 				return 0
 			}
@@ -86,7 +86,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 						# ^ These are the only commands available until they send the PASS/NICK/USER commands. ^
 						if {![callircparty $idx $command [join [lrange $sline 1 end]]]} {
 							PutRAW $idx "421 [getircparty user $idx nick] $command :Unknown command"
-							putdebuglog "$idx: $line"
+							putloglev 1 * "$idx: $line"
 							return 1
 						} elseif {[ircparty registered $idx]} {
 							idxinfo $idx state CHAT other {chat} timestamp [clock seconds]
@@ -96,7 +96,7 @@ proc ::tcldrop::dcc::irc::Read {idx line} {
 					}
 					{default} {
 						PutRAW $idx "451 [getircparty user $idx nick] :You have not registered"
-						putdebuglog "$idx: $line"
+						putloglev 1 * "$idx: $line"
 						return 0
 					}
 				}
@@ -299,11 +299,11 @@ proc ::tcldrop::dcc::irc::ircparty {command args} {
 proc ::tcldrop::dcc::irc::putircparty {args} {
 	array set putinfo [list -excludeidx {} -chan {} -text [lindex $args end] -flags {}]
 	array set putinfo [lrange $args 0 end-1]
-	#putdebuglog "::tcldrop::dcc::irc::putircparty putinfo [array get putinfo]"
+	#putloglev 1 * "::tcldrop::dcc::irc::putircparty putinfo [array get putinfo]"
 	if {$putinfo(-chan) != {}} {
 		foreach i [ircparty chanlist $putinfo(-chan)] {
 			if {$i != $putinfo(-excludeidx) && [valididx $i] && [matchattr [idx2hand $i] $putinfo(-flags) $putinfo(-chan)]} {
-				putdebuglog "Putidx: $i $putinfo(-text)"
+				putloglev 1 * "Putidx: $i $putinfo(-text)"
 				Putidx $i $putinfo(-text)
 			}
 		}
@@ -373,7 +373,7 @@ proc ::tcldrop::dcc::irc::ircparty_PONG {idx command arg} {
 }
 
 proc ::tcldrop::dcc::irc::ircparty_NICK {idx command arg} {
-	putdebuglog "IN ::tcldrop::dcc::irc::NICK $idx $command $arg"
+	putloglev 1 * "IN ::tcldrop::dcc::irc::NICK $idx $command $arg"
 	set nick [string trimleft $arg {: }]
 	if {[set handle [idx2hand $idx]] == {*}} { set handle "${nick}" }
 	setircparty user $idx nick $nick nickname [set nickname "${handle}@${::botnet-nick}:$idx"]
@@ -382,7 +382,7 @@ proc ::tcldrop::dcc::irc::ircparty_NICK {idx command arg} {
 }
 
 proc ::tcldrop::dcc::irc::ircparty_USER {idx command arg} {
-	putdebuglog "IN ::tcldrop::dcc::irc::USER $idx $command $arg"
+	putloglev 1 * "IN ::tcldrop::dcc::irc::USER $idx $command $arg"
 	if {[set username [string trim [lindex [set sarg [split $arg]] 0]]] == {}} {
 		return 0
 	} else {
@@ -432,7 +432,7 @@ proc ::tcldrop::dcc::irc::ircparty_QUIT {idx command arg} {
 # :irc.choopa.net 324 Tcldrop #Test +tnl 2147483647
 # :irc.choopa.net 329 Tcldrop #Test 985416044
 proc ::tcldrop::dcc::irc::ircparty_MODE {idx command arg} {
-	putdebuglog "in ::tcldrop::dcc::irc::ircparty_MODE $idx $command $arg"
+	putloglev 1 * "in ::tcldrop::dcc::irc::ircparty_MODE $idx $command $arg"
 	if {[llength [set sarg [split $arg]]] == 1 && [validchan $arg]} {
 		puthelp "$command $arg"
 		RAWCapture {324 329} $idx
@@ -444,7 +444,7 @@ proc ::tcldrop::dcc::irc::ircparty_MODE {idx command arg} {
 
 # :irc.choopa.net 302 Tcldrop :Tcldrop=+Tcldrop@2001:5c0:84dc:7::
 proc ::tcldrop::dcc::irc::ircparty_USERHOST {idx command arg} {
-	putdebuglog "in ::tcldrop::dcc::irc::ircparty_USERHOST $idx $command $arg"
+	putloglev 1 * "in ::tcldrop::dcc::irc::ircparty_USERHOST $idx $command $arg"
 	array set userinfo [getircparty user $idx]
 	switch -- $arg {
 		$userinfo(nickname) {
@@ -461,12 +461,12 @@ proc ::tcldrop::dcc::irc::ircparty_USERHOST {idx command arg} {
 }
 
 proc ::tcldrop::dcc::irc::ircparty_VERSION {idx command arg} {
-	putdebuglog "in ::tcldrop::dcc::irc::ircparty_VERSION $idx $command $arg"
+	putloglev 1 * "in ::tcldrop::dcc::irc::ircparty_VERSION $idx $command $arg"
 	return 1
 }
 
 proc ::tcldrop::dcc::irc::ircparty_ISON {idx command arg} {
-	#putdebuglog "in ::tcldrop::dcc::irc::ircparty_ISON $idx $command $arg"
+	#putloglev 1 * "in ::tcldrop::dcc::irc::ircparty_ISON $idx $command $arg"
 	return 1
 }
 
@@ -474,7 +474,7 @@ proc ::tcldrop::dcc::irc::ircparty_JOIN {idx command arg} {
 	# Allow anybody to join any partyline channel.
 	# Only allow +vofmn to join already valid channels on irc.
 	# Only allow global +mn to join invalid channels. (they'll be [channel add]'d on JOIN)
-	putdebuglog "ircparty_JOIN $idx $command $arg"
+	putloglev 1 * "ircparty_JOIN $idx $command $arg"
 	array set userinfo [getircparty user $idx]
 	array set idxinfo [idxinfo $idx]
 	foreach chankey [split $arg ,] {
@@ -516,7 +516,7 @@ proc ::tcldrop::dcc::irc::ircparty_NAMES {idx command arg} {
 		# FixMe: Split this into multiple 353's if when the line gets too long:
 		PutRAW $idx "353 $userinfo(nickname) $chanflag $chan :[join $nicklist]"
 	}
-	putdebuglog "ircparty names: [join [ircparty chanlist $chan nickname]]"
+	putloglev 1 * "ircparty names: [join [ircparty chanlist $chan nickname]]"
 	PutRAW $idx "353 $userinfo(nickname) = $chan :[join [ircparty chanlist $chan nickname]]"
 	PutRAW $idx "366 $userinfo(nickname) $chan :End of /NAMES list."
 }
