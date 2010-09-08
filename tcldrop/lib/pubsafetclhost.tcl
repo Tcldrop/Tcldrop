@@ -35,7 +35,14 @@ namespace eval pubsafetclhost {
 	# create an empty interp, used for the public interface (see comm package)
 	variable comminterp [interp create]
 	variable ids
+	# key: interp, value: the id used by comm for the client
 	array set ids {}
+	variable extraCommands_current
+	array set extraCommands_current {}
+	variable extraCommands_info
+	# Used to restore the original command
+	# key: interp, value: dict (key: command, value: (hidden|client|current))
+	array set extraCommands_info {}
 	
 	# delete all commands now. note: I don't clear vars, so be careful that no variable substitution is done
 	interp eval $comminterp {
@@ -92,25 +99,57 @@ namespace eval pubsafetclhost {
 	
 	# I whish I could use a 8.6 feature. But I must not do that: namespace ensemble -parameters
 	
-	# calling this proc with empty extraCommands removes all extra commands
+	# calling this proc with empty extraCommands and command remove removes all extra commands
+	# Todo: check if the command already exist or hidden or target interp...
+	# This replaces pubsafetcls extraCommands
 	proc ExtraCommands {interp command {extraCommands {}}} {
-		variable ips
+		variable ids
+		variable extraCommands_info
+		variable extraCommands_current
 		switch $command -- {
 			add {
 				foreach c $extraCommands {
-					interp $interp alias $c {} [namespace current]::comm send $ips($interp) $c
+					if {$c in $extraCommands_current($interp)} continue;
+					set info [list]
+					# Avoid the glob style info commands
+					if {[interp invokehidden $interp namespace which $c] ne ""} {
+						lappend info rename
+						interp invokehidden $interp rename $c ::tcl::${c}_orig
+					}
+					if {$c in [interp hidden $interp]} {
+						interp expose $interp $c
+						lappend info hidden
+					} elseif {[namespace which $c] ne ""} {
+						interp alias $interp $c {} $c
+						lappend info current
+					} else {
+						interp alias $interp $c {} [namespace current]::comm send $ids($interp) $c
+						lappend info client
+					}
+					dict set extraCommands_info($interp) $c $info
 				}
-				variable extraCommands_current
 				set extraCommands_current($interp) [lsort -unique [concat $extraCommands $extraCommands_current($interp)]]
 			}
 			remove {
-				variable extraCommands_current
 				if {$extraCommands eq ""} {
 					set extraCommands extraCommands_current($interp)
 				}
 				foreach c $extraCommands {
-					set extraCommands_current($interp) [lsearch -exact -not $extraCommands_current $c]
-					interp $interp invokehidden rename $c {}
+					set extraCommands_current($interp) [lsearch -exact -not $extraCommands_current($interp) $c]
+					set rename 0
+					foreach action [dict get $extraCommanfs_info($interp) $c] {
+						switch -- $action {
+							rename {set rename 1}
+							hidden {interp hide $interp $c}
+							current - 
+							client {interp invokehidden $interp rename ::${c} {}}
+						}
+						if {$rename} {
+							interp invokehidden $interp rename ::tcl::${c}_orig ::${c}
+						}
+					}
+					dict unset extraCommands_info($interp) $c
+					interp invokehidden $interp rename $c {}
 				}
 			}
 		}

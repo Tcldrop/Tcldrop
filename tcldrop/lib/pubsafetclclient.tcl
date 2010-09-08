@@ -48,12 +48,11 @@ namespace eval pubsafetcl {
 		namespace eval [namespace current]::$interp [list variable args $args]
 		namespace eval [namespace current]::$interp {
 			namespace path [list [namespace parent]]
-			# Because we use namespace path, the variables from the parent namespace are used. After that, they are created.
 			variable remoteport [set [namespace parent]::remoteport]
 			variable exec [set [namespace parent]::exec]
 			variable extraCommands_current {}
 			variable tclsh [set [namespace parent]::tclsh]
-			# we create an interp
+			# we create an interp for the extra commands
 			variable targetinterp [interp create]
 			# remove all commands
 			interp eval $targetinterp {
@@ -75,23 +74,37 @@ namespace eval pubsafetcl {
 			# Add aliases
 			::comm::comm new [namespace current]::comm -listen 1 -interp $targetinterp -local 1
 			namespace export $interp
-			proc $interp {args} {
+			proc pubsafetcl {args} {
 				variable interp
 				variable remoteport
-				comm send $remoteport $interp $args
+				comm send $remoteport $interp {*}$args
 			}
+			namespace eval [namespace current]::${interp} [list namespace ensemble create -command [namespace current]::${interp}::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} set PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1]
+			
+			proc PubsafetclSet {name {value {}}} {
+				if {$name eq "extraCommands"} {
+					extraCommands remove
+					extraCommands add $value
+				} else {
+					variable $name $value
+				}
+			}
+			
+			
 			namespace ensemble create -command [namespace current]::extraCommands -map {add ExtraCommmandsAdd remove ExtraCommandsRemove}
 			proc ExtraCommandsAdd {{extraCommands {}}} {
 				variable targetinterp
+				variable extraCommands_current
 				foreach c $extraCommands {
 					# add this command to the interp
 					interp alias $targetinterp $c {} $c
 				}
 				comm send $remoteport [list ::pubsafetcl::${$interp}::extraCommands add $extraCommands]
-				variable extraCommands_current $extraCommands
+				set extraCommands_current [lsort -unique [concat $extraCommands $extraCommands_current]]
 			}
 			proc ExtraCommandsRemove {{extraCommands {}}} {
 				variable remoteport
+				variable extraCommands_current
 				if {$extraCommands == {}} {
 					variable extraCommands_current
 					set extraCommands $extraCommands_current
@@ -99,6 +112,7 @@ namespace eval pubsafetcl {
 				variable targetinterp
 				foreach c $extraCommands {
 					interp invokehidden $targetinterp rename $c {}
+					set extraCommands_current [lsearch -exact -not $extraCommands_current $c]
 				}
 				comm send $remoteport [list ::pubsafetcl::${interp}::extraCommands remove $extraCommands]
 			}
@@ -106,7 +120,7 @@ namespace eval pubsafetcl {
 			# We have now to create the host in background - yeah, a litte bit confusing
 			variable pid [exec $tclsh [file nativename [file join [file dirname [set [namespace parent]::script]] pubsafetclhost.tcl]] &]
 			# Create the interp remote
-			comm send $remoteport ::pubsafetcl::create $interp $args
+			comm send $remoteport ::pubsafetcl::create $interp {*}$args
 			return $interp
 		}
 	}
@@ -119,8 +133,9 @@ namespace eval pubsafetcl {
 				if {$mode == 0} {
 					# force the destroy of host process in 3 sec
 					set timer [after 3000 [list [namespace parent]::Reset $interp 1]]
+					# This is a blocking call. If it returns, I think it has succeed
 					comm send $remoteport exit
-					catch {after calcel $timer}
+					catch {after cancel $timer}
 					if {$force} {
 						# the timer has cleaned up
 						return
