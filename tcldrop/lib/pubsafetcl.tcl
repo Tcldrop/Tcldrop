@@ -31,7 +31,7 @@ namespace eval pubsafetcl {
 	# Note: this interp have to be a direct slave, that means not nested.
 	# TODO: we should move the procs out of this proc, so they are not redefined if a new interp is created. Maybe we should create a namespace for that, and hide/alias in a foreach, warning: do not hide file (catch, this throws an error)
 	# TODO: We should discuss if we allow tm. We hide glob...
-	# TODO: We should protect ::tcl::*, proc ::tcl::info::cmdcount {return 1000000000} makes our command limit useless.
+	# TODO: We should protect ::tcl::*
 	proc create {{interp {safetcl}} args} {
 		variable script
 		if {[llength $interp] > 1} {
@@ -164,7 +164,7 @@ namespace eval pubsafetcl {
 							set socket {stdout}
 						}
 						{default} {
-							set newline {}
+							set newline "\n"
 							set socket [lindex $args 0]
 						}
 					}
@@ -243,6 +243,7 @@ namespace eval pubsafetcl {
 		#interp alias $interp lsearch {} [namespace current]::Lsearch $interp
 
 		# Interp is safe, even in a safe interp. This means invokehidden and marktrusted etc. are not allowed. Also to change the resource limits
+		# but they can create a new interp with all the hidden commands that we don't want.
 		interp hide $interp interp
 		proc Interp {interp cmd args} {
 			switch -glob -- [string tolower $cmd] {
@@ -299,6 +300,9 @@ namespace eval pubsafetcl {
 				return -code error "You can't have that many arguments!  (Needed: $size Allowed: 400)"
 			} elseif {[set size [string length $body]] > 2048} {
 				return -code error "You can't have a body that large!  (Needed: $size Allowed: 2048)"
+			} elseif {[string match *tcl::* $name]}{
+				# TODO: This check is not perfect, as it allows namespace ::tcl {proc foo ...}
+				return -code error "You can't define a command the ::tcl namespace"
 			} else {
 				interp invokehidden $interp proc $name $arguments "update idletasks ; $body"
 			}
@@ -312,7 +316,7 @@ namespace eval pubsafetcl {
 				{d*} {
 					foreach ns $args {
 						switch -- [string trim $ns {: 	}] {
-							{} {
+							{} - {tcl} {
 								after idle [list after 0 [list [namespace current]::create $interp]]
 								return "Resetting $interp ..."
 							}
@@ -577,7 +581,7 @@ namespace eval pubsafetcl {
 
 		catch { rename ::$interp [namespace current]::${interp}::pubsafetcl }
 
-		namespace eval [namespace current]::${interp} [list namespace ensemble create -command [namespace current]::${interp}::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} setting PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1]
+		namespace eval [namespace current]::${interp} [list namespace ensemble create -command [namespace current]::${interp}::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} set PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1]
 		
 		proc [namespace current]::${interp}::PubsafetclSet {var {value {}}} {
 			variable $var $value
@@ -614,6 +618,7 @@ namespace eval pubsafetcl {
 				set out [{*}[pubsafetcl alias reset]]
 				set errlev 0
 			}
+			# TODO: rewite map
 			if {$errlev == 1} { set results [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { set results $out }
 			#extraCommands remove $extraCommands
 			variable Count
@@ -632,13 +637,14 @@ namespace eval pubsafetcl {
 			if {$errlev == 1} { return -code error [string map [list ${namespace}::Proc {proc} ${namespace}::Rename {rename} ${namespace}::While {while} ${namespace}::File {file} ${namespace}::For {for} ${namespace}::Lsearch {lsearch} ${namespace}::Interp {interp} ${namespace}::Info {info} ${namespace}::Timeout {timeout} {::safe::AliasLoad} {load}] $out] } else { return $out }
 		}
 		
-		# I guess ResourceReset should remove all the resource limits from the bot.
+		# I guess ResourceReset should remove all the resource limits from the interp.
 		proc [namespace current]::${interp}::ResourceLimit {} {
 			# 1000 should be high enogh, my master interp has this value
 			pubsafetcl recursionlimit 1000
 			pubsafetcl limit commands -value {}
 			pubsafetcl limit time -seconds {}
 		}
+		interp alias {} [namespace current]::${interp}::ResourceReset {} [namespace current]::${interp}::ResourceLimit
 		
 		# Add traces for each initial command that deny rename and deletion of them
 		proc [namespace current]::${interp}::AddTraces args {

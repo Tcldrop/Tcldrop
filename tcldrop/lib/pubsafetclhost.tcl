@@ -13,7 +13,8 @@
 #	this is the entry point for the pubsafetcl process. It is used by pubsafetclclient.tcl
 #
 
-# TODO: Add support for extraCommands
+# Client access the host who executes the commands...
+
 namespace eval pubsafetclhost {
 
 	source [file join [file dirname [info script]] pubsafetcl.tcl]
@@ -31,10 +32,12 @@ namespace eval pubsafetclhost {
 	package provide pubsafetclhost $version
 	variable rcsid {$Id$}
 	
+	# create an empty interp, used for the public interface (see comm package)
 	variable comminterp [interp create]
 	variable ids
 	array set ids {}
 	
+	# delete all commands now. note: I don't clear vars, so be careful that no variable substitution is done
 	interp eval $comminterp {
 		foreach ns [namespace children] {
 		# we don't delete ::tcl here, there are some internal commands that might be required
@@ -43,26 +46,37 @@ namespace eval pubsafetclhost {
 		foreach cmd [info commands] {
 			if {$cmd ni {namespace rename if}} {rename $cmd {}}
 		}
-		namespace forget ::tcl
+		namespace delete ::tcl
 		rename namespace {}
 		rename if {}
 		# we don't delete rename, this is required later
 	}
 	interp hide $comminterp rename
+	# We only allow local connections
 	::comm::comm new [namespace current]::comm -local 1 -port $port -listen 1 -silent 1 -interp $comminterp
+	
+	
 	proc Exit args {
 		comm destroy
+		set forever 1
 		exit 0
 	}
 	interp alias $comminterp exit {} [namespace current]::Exit
+	
 	proc Create {{interp safetcl} args} {
 		variable ids
+		variable comminterp
 		set ids($interp) [comm remoteid]
-		::pubsafetcl::create $interp $args
+		::pubsafetcl::create $interp {*}$args
+		variable extraCommands_current
+		set extraCommands($interp) {}
 		interp alias $comminterp $interp {} ::$interp
+		interp alias $comminterp ::pubsafetcl::${interp}::extraCommands {} [namespace current]::ExtraCommands $interp
+		interp alias $comminterp ::pubsafetcl::${interp}::${interp} {} ::pubsafetcl::${interp}::${interp}
 		return $interp
 	}
 	interp alias $comminterp ::pubsafetcl::create {} [namespace current]::Create
+	
 	# We have to provide our own Reset. Some people may use that to create an interp
 	proc Reset {{interp safetcl}} {
 		variable ids
@@ -75,7 +89,10 @@ namespace eval pubsafetclhost {
 		set $res
 	}
 	interp alias $comminterp ::pubsafetcl::Reset
+	
 	# I whish I could use a 8.6 feature. But I must not do that: namespace ensemble -parameters
+	
+	# calling this proc with empty extraCommands removes all extra commands
 	proc ExtraCommands {interp command {extraCommands {}}} {
 		variable ips
 		switch $command -- {
@@ -92,9 +109,12 @@ namespace eval pubsafetclhost {
 					set extraCommands extraCommands_current($interp)
 				}
 				foreach c $extraCommands {
-				
+					set extraCommands_current($interp) [lsearch -exact -not $extraCommands_current $c]
+					interp $interp invokehidden rename $c {}
 				}
 			}
 		}
 	}
 }
+
+vwait forever
