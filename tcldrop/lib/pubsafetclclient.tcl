@@ -42,7 +42,7 @@ namespace eval pubsafetcl {
 	
 	proc create {{interp safetcl} args} {
 		if {[namespace exist [namespace current]::$interp]} {
-			Reset $interp
+			Reset2 $interp
 		}
 		namespace eval [namespace current]::$interp [list variable interp $interp]
 		namespace eval [namespace current]::$interp [list variable args $args]
@@ -77,9 +77,10 @@ namespace eval pubsafetcl {
 			proc pubsafetcl {args} {
 				variable interp
 				variable remoteport
-				comm send $remoteport $interp {*}$args
+				comm send $remoteport $interp $args
 			}
-			namespace eval [namespace current]::${interp} [list namespace ensemble create -command [namespace current]::${interp}::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} set PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1]
+			namespace ensemble create -command [namespace current]::$interp -map {alias {pubsafetcl alias} aliases {pubsafetcl aliases} bgerror {pubsafetcl bgerror} eval PubsafetclEval expose {pubsafetcl expose} hide {pubsafetcl hide} hidden {pubsafetcl hidden} issafe {pubsafetcl issafe} invokehidden {pubsafetcl invokehidden} limit {pubsafetcl limit} marktrusted {pubsafetcl marktrusted} recursionlimit {pubsafetcl recursionlimit} setting PubsafetclSet variable PubsafetclSet option PubsafetclSet configure PubsafetclSet fancyeval PubsafetclFancyeval} -prefixes 1
+			namespace export $interp
 			
 			proc PubsafetclSet {name {value {}}} {
 				if {$name eq "extraCommands"} {
@@ -90,20 +91,32 @@ namespace eval pubsafetcl {
 				}
 			}
 			
+			proc PubsafetclFancyeval {args} {
+				variable interp
+				variable remoteport
+				set timer [after 3000 [list [namespace parent]::Reset $interp]]
+				set res [comm send $remoteport [list $interp fancyeval {*}$args]]
+				after cancel $timer
+				return $res
+			}
 			
-			namespace ensemble create -command [namespace current]::extraCommands -map {add ExtraCommmandsAdd remove ExtraCommandsRemove}
+			
+			namespace ensemble create -command [namespace current]::extraCommands -map {add ExtraCommandsAdd remove ExtraCommandsRemove}
 			proc ExtraCommandsAdd {{extraCommands {}}} {
 				variable targetinterp
 				variable extraCommands_current
+				variable remoteport
+				variable interp
 				foreach c $extraCommands {
 					# add this command to the interp
 					interp alias $targetinterp $c {} $c
 				}
-				comm send $remoteport [list ::pubsafetcl::${$interp}::extraCommands add $extraCommands]
+				comm send $remoteport [list ::pubsafetcl::${interp}::extraCommands add $extraCommands]
 				set extraCommands_current [lsort -unique [concat $extraCommands $extraCommands_current]]
 			}
 			proc ExtraCommandsRemove {{extraCommands {}}} {
 				variable remoteport
+				variable interp
 				variable extraCommands_current
 				if {$extraCommands == {}} {
 					variable extraCommands_current
@@ -111,8 +124,9 @@ namespace eval pubsafetcl {
 				}
 				variable targetinterp
 				foreach c $extraCommands {
+					if {$c ni $extraCommands_current} continue
 					interp invokehidden $targetinterp rename $c {}
-					set extraCommands_current [lsearch -exact -not $extraCommands_current $c]
+					set extraCommands_current [lsearch -all -inline -exact -not $extraCommands_current $c]
 				}
 				comm send $remoteport [list ::pubsafetcl::${interp}::extraCommands remove $extraCommands]
 			}
@@ -125,20 +139,20 @@ namespace eval pubsafetcl {
 		}
 	}
 	
-	# TODO: think again..
-	proc Reset {{interp safetcl} {mode 0}} {
+	proc Reset2 {{interp safetcl} {mode 0}} {
 		catch {
 			namespace eval [namespace current]::$interp [list variable mode $mode]
 			namespace eval [namespace current]::$interp {
 				if {$mode == 0} {
 					# force the destroy of host process in 3 sec
-					set timer [after 3000 [list [namespace parent]::Reset $interp 1]]
+					set timer [after 3000 [list [namespace parent]::Reset2 $interp 1]]
 					# This is a blocking call. If it returns, I think it has succeed
-					comm send $remoteport exit
+					# Note: this _always_ returns an error
+					catch {comm send $remoteport exit}
 					catch {after cancel $timer}
-					if {$force} {
-						# the timer has cleaned up
-						return
+					if {$mode} {
+						# the timer has cleaned up the rest, nothing to do now
+						return 1
 					}
 				} else {
 					# this is usually the timer
@@ -155,6 +169,12 @@ namespace eval pubsafetcl {
 				# comm destroy destroys the interp too
 				comm destroy
 			}
+			namespace delete [namespace current]::$interp
 		}
+	}
+	
+	proc Reset {{interp safetcl}} {
+		Reset2 0
+		create $interp
 	}
 }

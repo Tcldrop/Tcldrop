@@ -71,7 +71,7 @@
 
 ### Begin Script:
 catch { package forget pubsafetcl::eggdrop }
-catch { package forget pubsafetcl }
+#catch { package forget pubsafetcl }
 if {[catch { package require pubsafetcl }] && (![file readable [file join scripts pubsafetcl.tcl]] || [catch { source [file join scripts pubsafetcl.tcl] }]) && (![file readable [file join [file dirname [info script]] pubsafetcl.tcl]] || [catch { source [file join [file dirname [info script]] pubsafetcl.tcl] }]) && (![file readable [file join lib pubsafetcl.tcl]] || [catch { source [file join lib pubsafetcl.tcl] }])} { putlog {ERROR: pubsafetcl-eggdrop.tcl won't load without the pubsafetcl.tcl package.} }
 namespace eval pubsafetcl::eggdrop {
 	### Options:
@@ -102,15 +102,19 @@ namespace eval pubsafetcl::eggdrop {
 	variable UsePubm 1
 
 	variable extraCommands
-	# FEATURE DISABLED.  These are extra commands that will be available for people with certain flags..
+	# FEATURE ENABLED.  These are extra commands that will be available for people with certain flags..
+	#array set extraCommands {
+	#	n {time encoding fconfigure pid glob pwd loadmodule loadhelp reloadhelp dellang binds addlangsection checkmodule language addlang relang dellangsection putdcc putact putmsg putnotc rehash}
+	#	mn {dcclist putcmdlog iscompressed utimers timers ignorelist backup savechannels save addchanrec getchan}
+	#	tmn {matchbotattr link getaddr}
+	#	jmn {getdccdir getuploads getfilesendtime}
+	#	omn {gethosts getchanmode getchaninfo memory}
+	#	fomn {handonanychan ispermowner chanlist findnick userlist matchchanattr matchattr chanbans ishalfop banlist exemptlist botisop chanexempts chaninvites invitelist botishalfop channels}
+	#	ptmn {whom botlist bots getdccidle getdccaway}
+	#	
+	#}
 	array set extraCommands {
-		n {time encoding fconfigure pid glob pwd loadmodule loadhelp reloadhelp dellang binds addlangsection checkmodule language addlang relang dellangsection putdcc putact putmsg putnotc rehash}
-		mn {dcclist putcmdlog iscompressed utimers timers ignorelist backup savechannels save addchanrec getchan}
-		tmn {matchbotattr link getaddr}
-		jmn {getdccdir getuploads getfilesendtime}
-		omn {gethosts getchanmode getchaninfo memory}
-		fomn {handonanychan ispermowner chanlist findnick userlist matchchanattr matchattr chanbans ishalfop banlist exemptlist botisop chanexempts chaninvites invitelist botishalfop channels}
-		ptmn {whom botlist bots getdccidle getdccaway}
+		- {duration ctime strftime encrypt decrypt encpass unames md5 sha1 getchanlaston dccused getchanidle myip flushmode queuesize traffic inchain haschanrec wasop getting-users botisvoice modules islinked countusers validchan validuser finduser ischanjuped isban ispermban isexempt ispermexempt isinvite isperminvite isbansticky isexemptsticky isinvitesticky matchban matchexempt matchinvite isignore channame2dname chandname2name isbotnick botonchan isop isvoice onchan nick2hand hand2nick handonchan ischanban ischanexempt ischaninvite getchanjoin onchansplit valididx idx2hand maskhost hand2idx washalfop topic getchanhost isdynamic isbotnetnick getinfo realtime stripcodes matchstr}
 	}
 
 	# Initialize/reset the safe interpreter:
@@ -223,7 +227,7 @@ namespace eval pubsafetcl::eggdrop {
 		} elseif {[preferredbot $chan]} {
 			variable extraCommands
 			set commands {}
-			if {[isop $nick $chan]} { foreach f [array names extraCommands] { if {[matchattr $hand $f|$f $chan]} { set commands [lsort -unique [concat $extraCommands($f) $commands]] } } }
+			foreach f [array names extraCommands] { if {[matchattr $hand $f|$f $chan]} { set commands [lsort -unique [concat $extraCommands($f) $commands]] } }
 			safetcl setting extraCommands $commands
 			array set evalinfo [list puts {} putloglev {}]
 			array set evalinfo [safetcl fancyeval $arg]

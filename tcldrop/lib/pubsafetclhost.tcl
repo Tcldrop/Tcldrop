@@ -14,10 +14,10 @@
 #
 
 # Client access the host who executes the commands...
-
+source [file join [file dirname [info script]] pubsafetcl.tcl]
 namespace eval pubsafetclhost {
 
-	source [file join [file dirname [info script]] pubsafetcl.tcl]
+	
 
 	variable port 12140
 
@@ -76,7 +76,9 @@ namespace eval pubsafetclhost {
 		set ids($interp) [comm remoteid]
 		::pubsafetcl::create $interp {*}$args
 		variable extraCommands_current
-		set extraCommands($interp) {}
+		set extraCommands_current($interp) {}
+		variable extraCommands_info
+		set extraCommands_info($interp) {}
 		interp alias $comminterp $interp {} ::$interp
 		interp alias $comminterp ::pubsafetcl::${interp}::extraCommands {} [namespace current]::ExtraCommands $interp
 		interp alias $comminterp ::pubsafetcl::${interp}::${interp} {} ::pubsafetcl::${interp}::${interp}
@@ -86,16 +88,13 @@ namespace eval pubsafetclhost {
 	
 	# We have to provide our own Reset. Some people may use that to create an interp
 	proc Reset {{interp safetcl}} {
-		variable ids
-		set ids($interp) [comm remoteid]
-		set res [::pubsafetcl::Reset $interp]
-		variable extraCommands_current
-		set extraCommands($interp) {}
-		interp alias $comminterp $interp {} ::$interp
-		interp alias $comminterp ::pubsaftcl::${interp}::extraCommands {} [namespace current]::ExtraCommands $interp
-		set $res
+		Create $interp
 	}
-	interp alias $comminterp ::pubsafetcl::Reset
+	interp alias $comminterp ::pubsafetcl::Reset {} [namespace current]::Reset
+	######################################################
+	### DEBUG LINE -- REMOVE IN PRODUCTION ENVIRONMENT ###
+	######################################################
+	# interp alias $comminterp unknown {} ::eval
 	
 	# I whish I could use a 8.6 feature. But I must not do that: namespace ensemble -parameters
 	
@@ -106,12 +105,12 @@ namespace eval pubsafetclhost {
 		variable ids
 		variable extraCommands_info
 		variable extraCommands_current
-		switch $command -- {
+		switch -- $command {
 			add {
 				foreach c $extraCommands {
-					if {$c in $extraCommands_current($interp)} continue;
+					if {$c in $extraCommands_current($interp)} {continue}
 					set info [list]
-					# Avoid the glob style info commands
+					# Avoid the glob style [info commands]
 					if {[interp invokehidden $interp namespace which $c] ne ""} {
 						lappend info rename
 						interp invokehidden $interp rename $c ::tcl::${c}_orig
@@ -127,30 +126,33 @@ namespace eval pubsafetclhost {
 						lappend info client
 					}
 					dict set extraCommands_info($interp) $c $info
+					lappend extraCommands_current($interp) $c
 				}
-				set extraCommands_current($interp) [lsort -unique [concat $extraCommands $extraCommands_current($interp)]]
 			}
 			remove {
 				if {$extraCommands eq ""} {
 					set extraCommands extraCommands_current($interp)
 				}
 				foreach c $extraCommands {
-					set extraCommands_current($interp) [lsearch -exact -not $extraCommands_current($interp) $c]
+					if {$c ni $extraCommands_current($interp)} {continue}
+					set extraCommands_current($interp) [lsearch -all -inline -exact -not $extraCommands_current($interp) $c]
 					set rename 0
-					foreach action [dict get $extraCommanfs_info($interp) $c] {
+					foreach action [dict get $extraCommands_info($interp) $c] {
 						switch -- $action {
 							rename {set rename 1}
-							hidden {interp hide $interp $c}
+							hidden {catch {interp hide $interp $c}}
 							current - 
-							client {interp invokehidden $interp rename ::${c} {}}
-						}
-						if {$rename} {
-							interp invokehidden $interp rename ::tcl::${c}_orig ::${c}
+							client {catch {interp invokehidden $interp rename ::${c} {}}}
 						}
 					}
+					if {$rename} {
+						interp invokehidden $interp rename ::tcl::${c}_orig ::${c}
+					}
 					dict unset extraCommands_info($interp) $c
-					interp invokehidden $interp rename $c {}
 				}
+			}
+			default {
+				return -code error "Args: [list $interp $command $extraCommands]"
 			}
 		}
 	}
