@@ -174,7 +174,7 @@ namespace eval pubsafetcl {
 	}
 	
 	proc Reset {{interp safetcl}} {
-		Reset2 0
+		Reset2 $interp 0
 		create $interp
 	}
 }

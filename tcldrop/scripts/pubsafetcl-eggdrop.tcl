@@ -226,7 +226,7 @@ namespace eval pubsafetcl::eggdrop {
 			return 0
 		} elseif {[preferredbot $chan]} {
 			variable extraCommands
-			set commands {}
+			set commands $extraCommands(-)
 			foreach f [array names extraCommands] { if {[matchattr $hand $f|$f $chan]} { set commands [lsort -unique [concat $extraCommands($f) $commands]] } }
 			safetcl setting extraCommands $commands
 			array set evalinfo [list puts {} putloglev {}]
