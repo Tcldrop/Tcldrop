@@ -50,6 +50,8 @@ namespace eval ::tcldrop::channels {
 
 # Note: - is used in place of a channel name when it applies globally.
 
+#TODO: make this a namespace ensemble
+#TODO: make this a namespace ensemble
 proc ::tcldrop::channels::channel {command {channel {}} args} {
 	# Note: Follow RFC 2812 regarding "2.2 Character codes", http://tools.ietf.org/html/rfc2812
 	# Note that RFC 2812 gets the case of ^ and ~ backwards. ^ = uppercase ~ = lowercase
@@ -447,7 +449,7 @@ proc ::tcldrop::channels::ispermbei {bei mask {channel {-}}} {
 			return 0
 		}
 	} else {
-		return -code error "[mc {No such %1$s %2$s %3$s} ${bei} $channel $mask]"
+		return 0
 	}
 }
 
@@ -455,7 +457,7 @@ proc ::tcldrop::channels::isbeisticky {bei mask {channel {-}}} {
 	if {[dict exists $::database(${bei}s) [irctoupper $channel] [string tolower $mask] sticky]} {
 		dict get $::database(${bei}s) [irctoupper $channel] [string tolower $mask] sticky
 	} else {
-		return -code error "[mc {No such %1$s %2$s %3$s} ${bei} $channel $mask]"
+		return 0
 	}
 }
 
