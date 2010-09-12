@@ -192,6 +192,7 @@ proc ::tcldrop::channels::channel {command {channel {}} args} {
 
 # Just like in Eggdrop, returns the list of channels.
 # FixMe: Make [channels] a namespace ensemble if/when they fix it so the -unknown option works properly.
+# The unknown option works (for me) you have to return the command that should be called (a list). :P
 proc ::tcldrop::channels::channels {args} {
 	if {$args eq {*} || [llength $args] == 0 || [validchan [lindex $args 0]]} {
 		set list [list]
@@ -344,7 +345,8 @@ proc ::tcldrop::channels::SetUdefDefaults {{name {*}}} {
 		#}
 		foreach channel [channels] {
 			if {[catch { channel get $channel $udef }]} {
-				channel set $channel $udef $UdefDefaults($udef)
+				# channel set $channel $udef $UdefDefaults($udef)
+				database channels set [irctoupper $channel] $udef $UdefDefaults($udef)
 			}
 		}
 	}
