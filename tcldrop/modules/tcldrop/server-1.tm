@@ -211,6 +211,7 @@ proc ::tcldrop::server::jump {args} {
 	# Proxychain style: address:port or http://127.0.0.1:8080/address:port
 	# Option type style: -address <address> -port <port>
 	# Eggdrop style: address port
+	# FixMe: Add support for: 2001:db8:618:5c0:263::,6669:password
 	switch -glob -- [lindex $args 0] {
 		{*:*} {
 			# Proxychain style.
@@ -635,7 +636,7 @@ proc ::tcldrop::server::LOAD {module} {
 	setdefault server-cycle-wait {93}
 	setdefault servererror-quit {1}
 	setdefault check-stoned {1}
-	setdefault max-queue-msg {99}
+	setdefault max-queue-msg {999}
 	setdefault network {Unknown}
 	setdefault modes-per-line {3} -protect 1
 	setdefault max-bans {12}
