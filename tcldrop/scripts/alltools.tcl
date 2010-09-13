@@ -240,6 +240,7 @@ proc inchain {bot} {
   islinked $bot
 }
 
+if {![llength [info commands randstring]]} {
 proc randstring {length {chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789}} {
   if {([string compare "" $length]) && \
       (![regexp \[^0-9\] $length])} then {
@@ -255,6 +256,7 @@ proc randstring {length {chars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
     error "invalid random string length"
   }
   return $result
+}
 }
 
 proc putdccall {text} {
