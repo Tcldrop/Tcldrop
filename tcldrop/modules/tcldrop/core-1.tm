@@ -45,11 +45,11 @@ namespace eval ::tcldrop {
 	if {![llength [info commands Tcldrop]]} { proc Tcldrop {args} { namespace eval ::tcldrop $args } }
 	if {![llength [info commands tcldrop]]} { proc tcldrop {args} { namespace eval ::tcldrop $args } }
 	namespace export Tcldrop tcldrop PutLogLev stdout stderr
-	foreach {V D} [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 host_env tclsh version 0 numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}] {
+	foreach {V D} [list botname {} userfile-create 0 dirname . channel-stats 0 config tcldrop.conf background-mode 0 hostenv unknown version 0 numversion 0 config-eval {} simulate-dcc 1 author {Tcldrop-Dev} name {Tcldrop} depends {Tcl} description {Tcldrop, the Eggdrop-like IRC bot written in pure-Tcl.} rcsid {} commands [list Tcldrop tcldrop PutLogLev stdout stderr] script {}] {
 		if {![info exists ::tcldrop($V)]} { set ::tcldrop($V) $D }
 	}
 	unset V D
-	if {{eggdrop} in [package names]} { set ::tcldrop(host_env) {eggdrop} }
+	#if {{eggdrop} in [package names]} { set ::tcldrop(hostenv) {eggdrop} }
 	namespace export {*}$::tcldrop(commands)
 	set ::modules(tcldrop) [array get ::tcldrop]
 	# Stub commands, in case they don't already exist:
@@ -202,6 +202,8 @@ namespace eval ::tcldrop::core {
 	variable TimerIDCount 0
 	variable Flood
 	array set Flood {}
+	variable Minutely_AfterID
+	if {![info exists Minutely_AfterID]} { variable Minutely_AfterID {} }
 	set ::modules(core) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script]
 }
 
@@ -859,16 +861,22 @@ proc ::tcldrop::core::callbinds {type args} {
 # Tcldrop also allows these extra (optional) options in $args:
 # -priority <1-99>    This defines the order of priority. (lower gets processed first)
 #                     Default is 50.  Priorities <0 and >100 are reserved for Tcldrop internal use.
-proc ::tcldrop::core::bind {type flags mask proc args} {
+proc ::tcldrop::core::bind {type flags mask {proc {}} args} {
 	# Note/FixMe: Eggdrop checks to make sure $type is a valid bind type before accepting it, but currently I don't see why that's such a great idea.
 	switch -- $flags {
 		{-} - {+} - {*} - {-|-} - {*|*} - {|} - {} - { } - {	} { set flags {+|+} }
 		{default} { if {![string match {*|*} $flags]} { set flags "$flags|-" } }
 	}
 	# Allow the mask to be a regex pattern (anything starting with ^ and ending with $ will be considered a regex pattern):
-	if {[string match {^*$} $mask] && ![catch { regexp -- $mask {} }]} { set regex $mask } else { set regex [mask2regex $mask] }
+	set mask-type {glob}
+	if {[string match {(\?*)^*$} $mask] && ![catch { regexp -- $mask {} }]} {
+		set regex $mask
+		set mask-type {regexp}
+	} else {
+		set regex [mask2regex $mask] 
+	}
 	# Send the bind info through callbind (triggering "BIND" binds) so they can possibly change it or return an error:
-	if {[catch { callbind [dict create regex $regex proc $proc count 0 flags $flags -priority 50 type $type mask $mask {*}$args] } bindinfo opt]} {
+	if {[catch { callbind [dict create regex $regex proc $proc count 0 flags $flags -priority 50 type $type mask $mask mask-type glob-nocase {*}$args] } bindinfo opt]} {
 		# Return an error, causing the bind command to fail:
 		return -code error -options $opt $bindinfo
 	} else {
@@ -949,15 +957,54 @@ proc ::tcldrop::core::getbinds {{typemask {*}} {text {}}} {
 	set matchbinds [dict create]
 	global binds
 	if {$text eq {}} {
-		# Match type only:
+		# Match by type only:
 		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
 			dict set matchbinds $b $binds($b)
 		}
 	} else {
-		# Match type and regex:
+		# Match by type and mask:
 		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
-			if {[regexp -- [dict get $binds($b) regex] $text]} {
-				dict set matchbinds $b $binds($b)
+			switch -- [dict get $binds($b) mask-type] {
+				{regexp-nocase} - {regex-nocase} {
+					if {[regexp -nocase -- [dict get $binds($b) regex] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{regexp} - {regex} {
+					if {[regexp -- [dict get $binds($b) regex] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{exact-nocase} {
+					if {[string equal -nocase [dict get $binds($b) mask] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{exact} {
+					if {[string equal [dict get $binds($b) mask] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{glob-nocase} {
+					if {[string match -nocase [dict get $binds($b) mask] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{glob} {
+					if {[string match [dict get $binds($b) mask] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{matchstr} {
+					if {[string match -nocase [string map {{[} {\[} "\\" {\\}} [dict get $binds($b) mask]] $text]} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
+				{unknown} - {} - {default} {
+					if {[dict get $binds($b) mask] eq $text} {
+						dict set matchbinds $b $binds($b)
+					}
+				}
 			}
 		}
 	}
@@ -1315,38 +1362,42 @@ proc ::tcldrop::core::timerinfo {command timerid args} {
 	}
 }
 
-# Note: This doesn't guaranty that time-specific binds will always be
-#       triggered..  For example, if the bot/process is busy for over 60
-#       seconds and there was proc was supposed to be trigged during that
-#       minute, the proc won't be called.. We'll have skipped over that minute.
-#       At any rate, this proc should be as small and as fast as possible...
-#       So, I don't believe it should call time binds for times that have
-#       already past.  Any script that needs to simply be repeated every so
-#       often should use the timer command and its -1 (repeat forever) option.
-# FixMe: Add the ability to log the following:
-# timer: drift (lastmin=22, now=26)
-# timer: drift (lastmin=23, now=26)
-# timer: drift (lastmin=24, now=26)
-# timer: drift (lastmin=25, now=26)
-# (!) timer drift -- spun 4 minutes
-proc ::tcldrop::core::calltime {} {
-	lassign [set current [clock format [clock seconds] -format {%M %H %d %m %Y}]] minute hour day month year
-	foreach {type flags mask proc} [bindlist time] {
-		if {[bindmatch $mask $current]} {
-			if {[catch { $proc $minute $hour $day $month $year } err]} {
-				putlog "[mc {Error in script}]: $proc: $err"
-				puterrlog "$::errorInfo"
-			}
-			countbind $type $mask $proc
-		}
-		# time binds aren't really time critical, so trigger any other events that are waiting:
-		update idletasks
+# 1-Minute loop, offset to +1 second into each minute.
+proc ::tcldrop::core::Minutely {last} {
+	# Start another after timer to run this proc again at the start of the next minute + 1 second + 17ms to 126ms:
+	variable Minutely_AfterID [after [expr { 60000 - ([clock milliseconds] % 60000) + 1017 + int(rand() * 127) }] [namespace code [list Minutely [set now [clock seconds]]]]]
+	# FixMe: Add the ability to log the following:
+	# timer: drift (lastmin=22, now=26)
+	# timer: drift (lastmin=23, now=26)
+	# timer: drift (lastmin=24, now=26)
+	# timer: drift (lastmin=25, now=26)
+	# (!) timer drift -- spun 4 minutes
+	putlog "LAST: [clock format $last]"
+	putlog "NOW:  [clock format $now]"
+	# For every minute that's passed since we last ran, do the TIME and CRON binds:
+	set drift 0
+	while {[incr last 60] <= $now} {
+		calltime $last
+		callcron $last
+		incr drift
 	}
-	callcron
+	putlog "NEXT: [clock format $last]"
+	if {$drift > 1} { putlog "[mc {(!) timer drift -- spun %d minutes} $drift]" }
 }
 
-proc ::tcldrop::core::callcron {} {
-	lassign [clock format [clock seconds] -format {%M %k %e %N %w}] minute hour day month dayofweek
+proc ::tcldrop::core::calltime {seconds} {
+	lassign [set current [clock format $seconds -format {%M %H %d %m %Y}]] minute hour day month year
+	foreach {type flags mask proc} [bindlist time $current] {
+		if {[catch { $proc $minute $hour $day $month $year } err]} {
+			putlog "[mc {Error in script}]: $proc: $err"
+			puterrlog "$::errorInfo"
+		}
+		countbind $type $mask $proc
+	}
+}
+
+proc ::tcldrop::core::callcron {seconds} {
+	lassign [clock format $seconds -format {%M %k %e %N %w}] minute hour day month dayofweek
 	# Remove the zero-padding from the minutes:
 	set minute [scan $minute {%d}]
 	dict for {id info} [getbinds cron] {
@@ -2300,7 +2351,10 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 		proc ::tcldrop::core::DailyUpdates {minute hour day month year} { callevent daily-updates }
 		bind time - "* ${::daily-updates} * * *" ::tcldrop::core::DailyUpdates
 		# Start the one-minute loop needed by scripts that use "bind time":
-		afteridle timer 1 [list {::tcldrop::core::calltime}] -1
+		#afteridle timer 1 [list {::tcldrop::core::calltime}] -1
+		variable Minutely_AfterID
+		after cancel $Minutely_AfterID
+		Minutely [clock seconds]
 	}
 	# Don't allow the core module to be unloaded:
 	proc ::tcldrop::core::UNLD {module} { return 1 }
