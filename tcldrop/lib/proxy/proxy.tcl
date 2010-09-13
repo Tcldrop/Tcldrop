@@ -61,10 +61,7 @@ proc ::proxy::connect {chain args} {
 	array set info [list -command {} -readable {} -writable {} -errors {} socket {} -buffering line -encoding [encoding system] -blocking 0 -myaddr {} -async 1 -ssl 0 -timeout 99999 -socket-command [list socket]]
 	array set info $args
 	if {$info(-async)} { set async [list {-async}] } else { set async [list] }
-	switch -- $info(-myaddr) {
-		{0.0.0.0} - {::} - {} { set myaddr [list] }
-		{default} { set myaddr [list {-myaddr} $info(-myaddr)] }
-	}
+	if {$info(-myaddr) ne {}} { set myaddr [list {-myaddr} $info(-myaddr)] } else { set myaddr [list] }
 	array set info [splitchain $chain]
 	array set firstinfo $info(1)
 	variable [set info(socket) [eval $info(-socket-command) $async $myaddr [list $firstinfo(address) $firstinfo(port)]]]
