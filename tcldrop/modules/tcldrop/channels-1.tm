@@ -250,17 +250,16 @@ proc ::tcldrop::channels::validchanname {channel} {
 # This is a filter type bind for [channel add], [channel set], and [channel remove].
 # Whatever's given to the binds can be returned, changed, or raise an error.
 proc ::tcldrop::channels::callchannel {command channel args} {
-	foreach {type flags mask proc} [bindlist channel] {
-		if {[bindmatch $mask "$command $channel [join $args]"]} {
-			countbind $type $mask $proc
-			if {[catch { set args [lassign [$proc $command $channel {*}$args] command channel] } err]} {
-				putlog "[mc {Error in %s} $proc]: $err"
-				puterrlog "$::errorInfo"
-				return -code error $err
-			}
+	foreach {id info} [getbinds channel "$command $channel [join $args]"] {
+		countbind $id
+		if {[catch { set args [lassign [[dict get $info proc] $command $channel {*}$args] command channel] } err opt]} {
+			# FixMe: If these putlogs result in duplicate putlogs, remove them:
+			putlog "[mc {Error in %s} [dict get $info proc]]: $err"
+			puterrlog "$::errorInfo"
+			return -code error -level 2 -options $opt $err
 		}
 	}
-	list $command $channel {*}$args
+	return [list $command $channel {*}$args]
 }
 
 # Defines a new udef:
