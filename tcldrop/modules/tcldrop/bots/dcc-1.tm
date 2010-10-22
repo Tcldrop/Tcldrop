@@ -143,7 +143,7 @@ proc ::tcldrop::bots::dcc::getallbotschildren {} {
 
 # proc by thommey
 # walk the tree recursively starting with us
-proc ::tcldrop::bots::dcc::printtree {idx {version 0} {childrendict {}} {root {}} {indentionlvl -1} {endlvl 0}} {
+proc ::tcldrop::bots::dcc::printtree {idx {version 0} {childrendict {}} {root {}} {indentionlvl -1} {endlvls {}}} {
 	if {$root eq {}} { set root ${::botnet-nick} }
 	if {$childrendict eq {}} { set childrendict [getallbotschildren] }
 	set children [dict get $childrendict [string tolower $root]]
@@ -154,22 +154,22 @@ proc ::tcldrop::bots::dcc::printtree {idx {version 0} {childrendict {}} {root {}
 	incr indentionlvl
 	set prefix "  "
 	for {set i 0} {$i < $indentionlvl} {incr i} {
-		if {$i < $endlvl} { append prefix " " } else { append prefix "|" }
+		if {$i in $endlvls} { append prefix " " } else { append prefix "|" }
 		append prefix "    "
 	}
 	for {set i 0} {$i < [llength $children]} {incr i} {
 		set child [lindex $children $i]
 		set suffix "[dict get $::bots($child) icon][dict get $::bots($child) handle]"
-		if {$version} { append suffix " ([dict get $::bots($child) type] [dict get $::bots($child) numversion])" }; # FixMe: this should display version instead of numversion
+		if {$version} { append suffix " ([dict get $::bots($child) type] [dict get $::bots($child) numversion])" }; # FixMe: this shold display version instead of numversion
 		# not last child? "`--", else "|--"
 		if {$i < [llength $children]-1} {
 			putdcc $idx "$prefix|-$suffix"
 		} else {
 			putdcc $idx "$prefix`-$suffix"
-			incr endlvl
+			lappend endlvls $indentionlvl
 		}
 		# and walk on with the recursion for this child
-		printtree $idx $version $childrendict $child $indentionlvl $endlvl
+		printtree $idx $version $childrendict $child $indentionlvl $endlvls
 	}
 }
 
