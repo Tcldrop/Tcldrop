@@ -1249,8 +1249,8 @@ proc ::tcldrop::core::callutimer {timerinfo} { calltimer $timerinfo }
 # If -timerid ID is specified, ID will override the default choice of the TimerID.
 proc ::tcldrop::core::utimer {seconds command args} {
 	if {[string is int -strict $args]} {
-		# Deprecated.  We should start using: -repeat -1  (or whatever we want repeat to be set to)
-		set repeat $args
+		# Eggdrop style repeat..err.."count"..  Decrease by -1 to make it work like the -repeat option.
+		set repeat [incr $args -1]
 		# Set args to something else so it'll work with [dict merge]:
 		set args [dict create -repeat $args]
 	} else {
@@ -2132,13 +2132,16 @@ proc ::tcldrop::core::Sysuptime {} {
 if {![llength [info commands ::tcldrop::core::Exit]]} {
 	rename ::exit ::tcldrop::core::Exit
 	proc ::tcldrop::core::exit {{code {0}} {reason {Exit}}} {
-		if {![info exists ::exit]} { set ::exit $code }
+		global exit die shutdown pidfile
+		if {![info exists shutdown]} { set shutdown $reason }
+		if {![info exists die]} { set die $reason }
+		if {![info exists exit]} { set exit $code }
 		catch { callevent exit }
 		# Save the untranslated strings to ROOT.msg:
 		#mcsaveunknowns
-		catch { file delete -force -- $::pidfile }
+		catch { file delete -force -- $pidfile }
 		# This is the real exit command:
-		catch { ::tcldrop::core::Exit $::exit }
+		catch { ::tcldrop::core::Exit $exit }
 		# We shouldn't ever make it to here..  o_O But unset these variables so the bot can keep running normally (maybe..who knows):
 		after idle [list after 999 [list unset -nocomplain ::exit ::die ::shutdown]]
 		return $code
