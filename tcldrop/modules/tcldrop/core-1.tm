@@ -1250,7 +1250,7 @@ proc ::tcldrop::core::callutimer {timerinfo} { calltimer $timerinfo }
 proc ::tcldrop::core::utimer {seconds command args} {
 	if {[string is int -strict $args]} {
 		# Eggdrop style repeat..err.."count"..  Decrease by -1 to make it work like the -repeat option.
-		set repeat [incr $args -1]
+		set repeat [incr args -1]
 		# Set args to something else so it'll work with [dict merge]:
 		set args [dict create -repeat $args]
 	} else {
