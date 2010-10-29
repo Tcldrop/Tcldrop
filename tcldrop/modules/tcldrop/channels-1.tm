@@ -40,7 +40,7 @@ namespace eval ::tcldrop::channels {
 	variable predepends {core}
 	variable depends {core::database core}
 	variable rcsid {$Id$}
-	namespace export channel channels loadchannels savechannels validchan setudef renudef deludef validudef callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores isdynamic udeftype udefs validchanname
+	namespace export channel channels loadchannels savechannels validchan udefs setudef renudef deludef validudef getudefs udeftype chansettype callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores isdynamic validchanname
 	variable commands [namespace export]
 	namespace path [list ::tcldrop]
 	namespace unknown unknown
@@ -244,7 +244,9 @@ proc ::tcldrop::channels::validchanname {channel} {
 	}
 }
 
-# Note, types for udef's should be: flag, int, str, and list.
+# COMPATIBILITY NOTICE: udefs in Tcldrop contain both "built-in" and "user-defined" udefs.
+
+# Note, types for udef's should be: flag, int, pair, str, and list.
 # In the case of lists, the channel command should provide lappend, lreplace, and lremove commands.
 
 # This is a filter type bind for [channel add], [channel set], and [channel remove].
@@ -279,6 +281,24 @@ proc ::tcldrop::channels::setudef {type name {default {}}} {
 	putloglev d - "UDEF: $name (${type}) defined.  Default: $UdefDefaults($name)"
 	# Apply the default to all channels that don't already have it set:
 	SetUdefDefaults $name
+}
+
+#  getudefs <flag/int/str>
+#    Returns: a list of user defined channel settings of the given type, 
+#             or all of them if no type is given.
+proc ::tcldrop::channels::getudefs {{type {}}} {
+	# Note/FixMe: Eggdrop probably errors if $type is invalid.
+	variable Udefs
+	set list [list]
+	# Note/FixMe: We could also create a new array, called UdefTypes, which looks like (for example):
+	# UdefTypes(flag) "autoop enforcebans ..."
+	# That way we don't need a foreach here, and could just return the list..
+	foreach u [array names Udefs] {
+		if {$type eq {} || $type eq $Udefs($u)} {
+			lappend list $u
+		}
+	}
+	return $list
 }
 
 #  renudef <flag/int> <oldname> <newname>
@@ -352,11 +372,15 @@ proc ::tcldrop::channels::SetUdefDefaults {{name {*}}} {
 }
 
 # Gives the type of the udef given in $name:
-# It returns one of the following: int, flag, str, list, or unknown.
+# It returns one of the following: int, flag, str, list, pair, or unknown.
 proc ::tcldrop::channels::udeftype {name} {
 	variable Udefs
 	if {[info exists Udefs($name)]} { return $Udefs($name) } else { return {unknown} }
 }
+# Eggdrop calls it [chansettype] instead, so create an alias for it:
+# Note/FixMe: Eggdrop probably errors if $name is invalid, so this could be 
+#             a separate command (which also errors) rather than an alias..
+interp alias {} ::tcldrop::channels::chansettype {} ::tcldrop::channels::udeftype
 
 # FixMe: remove all references to this and use udeftype
 proc ::tcldrop::channels::UdefType {name} {
