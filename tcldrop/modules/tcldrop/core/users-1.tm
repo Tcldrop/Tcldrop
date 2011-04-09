@@ -89,8 +89,32 @@ proc ::tcldrop::core::users::validuser {handle} { dict exists $::database(users)
 # Returns the matching handle, or "*" if none found.
 proc ::tcldrop::core::users::finduser {nuhost} {
 	if {![string match {*!*} $nuhost]} { set nuhost "*!$nuhost" }
-	foreach u [userlist] { foreach h [getuser $u hosts] { if {[string match -nocase $h $nuhost]} { return $u } } }
-	return {*}
+	# First search where each hostmask in [getuser $u hosts] is the glob pattern:
+	foreach u [userlist] {
+		foreach h [getuser $u hosts] {
+			if {[string match -nocase $h $nuhost]} {
+				if {[matchattr $u c]} {
+					set common $u
+				} else {
+					return $u
+				}
+			}
+		}
+	}
+	# Then search where $nuhost is the glob pattern (blocking use of [0-9]):
+	if {[string match {*\**} $nuhost] || [string match {*\?*} $nuhost]} {
+		set nuhost [string map {{[} {\[} "\\" {\\}} $nuhost]
+		foreach u [userlist] {
+			if {[lsearch -nocase -glob [getuser $u hosts] $nuhost] != -1} {
+				if {[matchattr $u c]} {
+					set common $u
+				} else {
+					return $u
+				}
+			}
+		}
+	}
+	if {[info exists common]} { return $common } else { return {*} }
 }
 
 # Checks $handle for $flags, $channel is optional.
