@@ -939,7 +939,8 @@ proc ::tcldrop::core::bindlist {{typemask {*}} {text {}}} {
 		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
 			dict with binds($b) { lappend matchbinds $type $flags $mask $proc }
 		}
-	} else {
+	# [llength [info level 0]] == 3 just checks to see if $text was provided or not:
+	} elseif {[llength [info level 0]] == 3} {
 		# Match type and regex:
 		foreach b [lsort [array names binds [string tolower $typemask],*,*,*]] {
 			if {[regexp -- [dict get $binds($b) regex] $text]} {
@@ -2246,7 +2247,7 @@ proc ::tcldrop::core::rehash {{type {}}} {
 }
 
 # Returns 1 if we're in the middle of a restart, 0 if we're not:
-proc ::tcldrop::core::isrestart {{type {*}}} { if {[info exists ::restart] && [string match -nocase $type $::restart]} { return 1 } else { return 0 } }
+proc ::tcldrop::core::isrestart {{type {*}}} { expr {[info exists ::restart] && [string match -nocase $type $::restart]} }
 
 proc ::tcldrop::core::restart {{type {restart}}} {
 	variable StartTime
