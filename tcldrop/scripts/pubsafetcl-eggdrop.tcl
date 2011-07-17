@@ -285,7 +285,8 @@ namespace eval pubsafetcl::eggdrop {
 	proc EggdropPubm {nick host hand chan arg} {
 		if {[channel get $chan safetcl] && [preferredbot $chan]} {
 			set errors 0
-			if {([string trim $arg ;] == {}) || [hassmiley $arg]} {
+			# Ignore lines with ; or nothing but whitespace or if it's just a smiley face:
+			if {([string trim $arg ;] eq {}) || [string trim $arg] eq {} || [hassmiley $arg]} {
 				return 0
 			} elseif {[string index [set arg [string trim $arg]] 0] == {;} && [string length $arg] > 2} {
 				set arg [string trimleft $arg {;}]
