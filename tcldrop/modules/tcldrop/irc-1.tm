@@ -161,6 +161,8 @@ proc ::tcldrop::irc::callpubm {nick uhost handle channel text} {
 # This calls all MSG binds:
 proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 	set retval 0
+	# $command has to be something other than whitespace, otherwise just ignore it:
+	if {[string trim $command] eq {}} { return $retval }
 	set log 0
 	set failed 0
 	set matchattr -1
@@ -192,6 +194,8 @@ proc ::tcldrop::irc::callmsg {nick uhost handle command text} {
 # This calls all PUB binds:
 proc ::tcldrop::irc::callpub {nick uhost handle channel command text} {
 	set retval 0
+	# $command has to be something other than whitespace, otherwise just ignore it:
+	if {[string trim $command] eq {}} { return $retval }
 	set log 0
 	set failed 0
 	set matchattr -1
