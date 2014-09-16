@@ -54,8 +54,8 @@ namespace eval ::tcldrop::dcc::terminal {
 proc ::tcldrop::dcc::terminal::start {event} {
 	if {$::tcldrop(simulate-dcc) && !$::tcldrop(background-mode)} {
 		# Turn the console into a simulated DCC session:
-		fconfigure stdout -buffering line -blocking 0
-		fconfigure stdin -buffering line -blocking 0
+		#fconfigure stdout -buffering line -blocking 0
+		#fconfigure stdin -buffering line -blocking 0
 		fileevent stdout writable [list ::tcldrop::dcc::terminal::Write [set idx [assignidx]]]
 		fileevent stdin readable [list ::tcldrop::dcc::terminal::ConsoleRead $idx]
 		# Note: Under the right conditions, this logs the person in automatically as the first owner in the $owner setting.
@@ -82,17 +82,17 @@ proc ::tcldrop::dcc::terminal::start {event} {
 		proc ::tcldrop::dcc::terminal::Read {idx line} { ::tcldrop::dcc::telnet::Read $idx $line }
 		# Turn off logging to PutLogLev, because it's a dcc session now, not a screen:
 		unbind log - * ::tcldrop::PutLogLev
-		fconfigure stderr -buffering line -blocking 0
+		#fconfigure stderr -buffering line -blocking 0
 	}
 }
 
 proc ::tcldrop::dcc::terminal::EVNT_init {event} {
-	if {$::tcldrop(host_env) == {wish}} {
+	#if {$::tcldrop(host_env) == {wish}} {
 		proc ::tcldrop::stdin {text} { ::tcldrop::dcc::telnet::Read 1 $text }
 		registeridx 1 idx 1 sock stdout filter ::tcldrop::dcc::terminal::IDXFilter handle * ident User hostname Console port 1 remote User@Console state TELNET_ID other {t-in} timestamp [clock seconds] traffictype partyline nonewline 1 module dcc::terminal
 		putdcc 1 "### [mc {ENTERING DCC CHAT SIMULATION}] ###"
 		::tcldrop::dcc::telnet::Write 1
-	}
+	#}
 }
 
 # This is used when we're running in wish:

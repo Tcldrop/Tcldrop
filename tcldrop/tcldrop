@@ -107,6 +107,7 @@ exec $lastfullpath "$0" ${1+"$@"}
 namespace eval ::tcldrop {
 	variable tcldrop
 	# On at least one FreeBSD box running tclsh8.4, argv gets reset after we source another script. So we store it here in the tcldrop array for later use:
-	set tcldrop(argv) $::argv
+	if {[info exists ::argv]} { set tcldrop(argv) $::argv } else { set tcldrop(argv) {} }
+	if {[info exists ::argv0]} { set tcldrop(argv0) $::argv0 } else { set tcldrop(argv0) {} }
 	::source [file join [file dirname [info script]] tcldrop.tcl]
 }
