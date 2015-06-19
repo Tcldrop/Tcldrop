@@ -143,7 +143,7 @@ proc ::proxy::splitchain {chain} {
 		set info([incr count]) [list type $type pass [join [lrange [split [string range $user 0 end-1] :] 1 end]] user [lindex [split $user :] 0] address $address port [string trimleft $port +] ssl $ssl]
 	}
 	# This processes the leftovers that might be in $proxychain:
-	if {[regexp -nocase {^(.*):(.*):(.*)$} [string trim $proxychain /] {} address port extra]} {
+	if {[regexp -nocase {^(.*)%(.*)%(.*)$} [string trim $proxychain /] {} address port extra]} {
 		if {[string match {+*} $port]} { set ssl 1 } else { set ssl 0 }
 		set info([incr count]) [list type {} pass {} user {} address $address port [string trimleft $port +] extra $extra ssl $ssl]
 	} else {

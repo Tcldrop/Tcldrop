@@ -943,7 +943,8 @@ proc ::tcldrop::irc::352 {from key arg} {
 		lappend pf $b
 	}
 	foreach f [split $flags {}] {
-		if {[set p [dict get $pf $f]]} {
+		if {-1==[lsearch $pfc $f]} {continue}
+		if {[set p [dict get $pf $f]] != ""} {
 			lappend ops m_$p
 			lappend ops 1
 		}
@@ -1675,7 +1676,7 @@ proc ::tcldrop::irc::CHANNEL_set {command channel type option value} {
 
 # This gets called once a minute and joins the channels we need in, and parts the ones we're not supposed to be in.
 # It also does a [callneed $channel op] if the bot is in a channel but doesn't have ops.
-bind time - {* * * * *} ::tcldrop::irc::JoinOrPart -priority 10000
+bind utime - {* * * * * *} ::tcldrop::irc::JoinOrPart -priority 10000
 proc ::tcldrop::irc::JoinOrPart {args} {
 	if {${::server-online}} {
 		set prefixes [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]

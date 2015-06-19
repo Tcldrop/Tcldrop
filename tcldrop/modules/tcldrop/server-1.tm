@@ -85,6 +85,9 @@ proc ::tcldrop::server::Read {idx line} { callserver $idx $line }
 
 # Sends the NICK and USER info to the IRC server as soon as the socket is open:
 proc ::tcldrop::server::Write {idx} {
+	utimer 4 [list ::tcldrop::server::RealWrite $idx]
+}
+proc ::tcldrop::server::RealWrite {idx} {
 	if {[valididx $idx]} {
 		global nick username realname my-hostname my-host serveraddress server-idx check-stoned
 		set server-idx $idx
