@@ -302,7 +302,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 	foreach {type flags mask proc} [bindlist rejn] {
 		if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 			array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
-			array set channickinfo [list split 0 nick $nick op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0]
+			array set channickinfo [list split 0 nick $nick m_o 0 m_v 0 m_h 0 was_o 0 was_h 0 was_v 0]
 			if {[info exists channickinfo(split-timer)]} {
 				after cancel $channickinfo(split-timer)
 				unset channickinfo(split-timer)
@@ -318,7 +318,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 }
 
 proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
-	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0
+	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel m_o 0 m_v 0 m_h 0 was_o 0 was_h 0 was_v 0 split 0
 	#set ::channelnicks([irctoupper $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join "$channel $nick!$uhost"] {
@@ -694,11 +694,7 @@ proc ::tcldrop::irc::MODE {from key arg} {
 
 # Call this before we call any other mode binds.
 bind mode - "* ??" ::tcldrop::irc::mode -priority -1000
-bind mode - "* ??" ::tcldrop::irc::mode -priority -1000
-bind mode - "* ??" ::tcldrop::irc::mode -priority -1000
 # And again after other mode binds so that isop and wasop will be the same.
-bind mode - "* ??" ::tcldrop::irc::mode -priority 1000
-bind mode - "* ??" ::tcldrop::irc::mode -priority 1000
 bind mode - "* ??" ::tcldrop::irc::mode -priority 1000
 proc ::tcldrop::irc::mode {nick uhost handle channel mode {victim {}}} {
 	set prefixes [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
@@ -943,7 +939,7 @@ proc ::tcldrop::irc::352 {from key arg} {
 		lappend pf $b
 	}
 	foreach f [split $flags {}] {
-		if {-1==[lsearch $pfc $f]} {continue}
+		if {-1==[lsearch -exact $pfc $f]} {continue}
 		if {[set p [dict get $pf $f]] != ""} {
 			lappend ops m_$p
 			lappend ops 1
