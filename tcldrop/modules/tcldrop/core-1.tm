@@ -187,7 +187,7 @@ namespace eval ::tcldrop::core {
 	# The 'sanitize' ensemble:
 	namespace ensemble create -command sanitize -subcommands [list glob regex] -map [dict create glob SanitizeGlob regex SanitizeRegex]
 	# Export all the commands that should be available to 3rd-party scripters:
-	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql ircstrcmp irchasspecial matchaddr matchcidr matchstr getenv dict'sort clockres bindmatch sanitize
+	namespace export addlang addlangsection bgerror addbindtype callbinds bind bindlist binds bindflags calldie callshutdown callevent callutime calltime calltimer callutimer checkflags checkmodule countbind ctime decimal2ip dellang dellangsection detectflood dict die duration timeago encpass exit fuzz getbinds gettimerinfo help ip2decimal isbotnetnick killtimer killutimer lassign loadhelp loadmodule logfile lrepeat maskhost splithost mergeflags moduleloaded modules moduledeps getmodinfo setmodinfo modinfo putcmdlog putdebuglog puterrlog putlog putloglev putxferlog rand randhex randstring rehash relang reloadhelp reloadmodule restart setdefault settimerinfo slindex sllength slrange strftime string2list stripcodes textsubst timer timerinfo timers timerslist unames unbind unixtime unloadhelp unloadmodule unloadmodules utimer utimers utimerslist validtimer validutimer protected counter unsetdefault isrestart shutdown getlang langsection langloaded defaultlang lang language mc_handle adddebug uptime know afteridle lprepend ginsu wrapit irctoupper irctolower ircstreql ircstrcmp irchasspecial matchaddr matchcidr matchstr getenv dict'sort clockres bindmatch sanitize
 	variable commands [namespace export]
 	namespace unknown unknown
 	namespace import -force {::tcldrop::*}
@@ -203,6 +203,8 @@ namespace eval ::tcldrop::core {
 	variable Flood
 	array set Flood {}
 	variable Minutely_AfterID
+	variable 5Secly_AfterID
+	if {![info exists 5Secly_AfterID]} { variable 5Secly_AfterID {} }
 	if {![info exists Minutely_AfterID]} { variable Minutely_AfterID {} }
 	set ::modules(core) [list name $name version $version depends $depends author $author description $description rcsid $rcsid commands $commands script $script]
 }
@@ -845,12 +847,21 @@ proc ::tcldrop::core::addbindtype {type args} {
 	variable BindTypes
 	# FixMe: This should simply store the info for the new bind type, and make sure any required info is provided.
 	# I'm still working out what should be stored.
+	# From janicez at 2015-06-17 02:37 UTC and onwards:
+	# Well I think we know what we're gonna do.
+	# All binds will have a parameter, which is free-form text.
 }
 
 # This will call the binds of $type with $args being whatever's necessary for that type.
 # This command can replace the individual call<type> commands, but doesn't have to.  The individual call<type> commands can even use callbinds themselves if they want.
-proc ::tcldrop::core::callbinds {type args} {
+proc ::tcldrop::core::callbinds {type bindinfo} {
 	variable BindTypes
+	dict for {id info} [getbinds $type $bindinfo] {
+		if {[catch { [dict get $info proc] $type $bindinfo } err]} {
+			return -code error $err
+		}
+		countbind $id
+	}
 	# FixMe: This should use the stored info for the bind type to call the binds.
 	# It needs to know what binds of $type should be triggered, based on flags and masks and whatever else.
 	# It also needs to know when to abort processing the binds.
@@ -1386,10 +1397,40 @@ proc ::tcldrop::core::Minutely {last} {
 	if {$drift > 1} { putlog "[mc {(!) timer drift -- spun %d minutes} $drift]" }
 }
 
+proc ::tcldrop::core::5Secly {last} {
+	# Start another after timer to run this proc again at the start of the next minute + 1 second + 17ms to 126ms:
+	variable 5Secly_AfterID [after [expr { 5000 - ([clock milliseconds] % 5000)}] [namespace code [list 5Secly [set now [clock seconds]]]]]
+	# FixMe: Add the ability to log the following:
+	# timer: drift (lastmin=22, now=26)
+	# timer: drift (lastmin=23, now=26)
+	# timer: drift (lastmin=24, now=26)
+	# timer: drift (lastmin=25, now=26)
+	# (!) timer drift -- spun 4 minutes
+	putdebuglog "5 second spinning:  [clock format $now]"
+	# For every minute that's passed since we last ran, do the TIME and CRON binds:
+	set drift 0
+	while {[incr last 5] <= $now} {
+		callutime $last
+		incr drift
+	}
+	if {$drift > 1} { putlog "[mc {(!) timer drift -- spun %d minutes} $drift]" }
+}
+
 proc ::tcldrop::core::calltime {seconds} {
 	lassign [set current [clock format $seconds -format {%M %H %d %m %Y}]] minute hour day month year
 	foreach {type flags mask proc} [bindlist time $current] {
 		if {[catch { $proc $minute $hour $day $month $year } err]} {
+			putlog "[mc {Error in script}]: $proc: $err"
+			puterrlog "$::errorInfo"
+		}
+		countbind $type $mask $proc
+	}
+}
+
+proc ::tcldrop::core::callutime {seconds} {
+	lassign [set current [clock format $seconds -format {%S %M %H %d %m %Y}]] second minute hour day month year
+	foreach {type flags mask proc} [bindlist utime $current] {
+		if {[catch { $proc $second $minute $hour $day $month $year } err]} {
 			putlog "[mc {Error in script}]: $proc: $err"
 			puterrlog "$::errorInfo"
 		}
@@ -2359,6 +2400,9 @@ proc ::tcldrop::core::restart {{type {restart}}} {
 		variable Minutely_AfterID
 		after cancel $Minutely_AfterID
 		Minutely [clock seconds]
+		variable 5Secly_AfterID
+		after cancel $5Secly_AfterID
+		5Secly [clock seconds]
 	}
 	# Don't allow the core module to be unloaded:
 	proc ::tcldrop::core::UNLD {module} { return 1 }

@@ -20,6 +20,7 @@
 #
 # Allowed options to ::proxy::connect:
 # -command <callback>
+
 #	Specifies the command to handle the connection once it's connected to $address:$port.
 #	It will be called with the socket used for the connection, plus any other arguments you supplied.
 #
@@ -60,12 +61,12 @@ namespace eval ::proxy {
 proc ::proxy::connect {chain args} {
 	array set info [list -command {} -readable {} -writable {} -errors {} socket {} -buffering line -encoding [encoding system] -blocking 0 -myaddr {} -async 1 -ssl 0 -timeout 99999 -socket-command [list socket]]
 	array set info $args
-	if {$info(-async)} { set async [list {-async}] } else { set async [list] }
+	if {$info(-async)} { set async -async } else { set async {} }
 	if {$info(-myaddr) ne {}} { set myaddr [list {-myaddr} $info(-myaddr)] } else { set myaddr [list] }
 	array set info [splitchain $chain]
 	array set firstinfo $info(1)
-	variable [set info(socket) [eval $info(-socket-command) $async $myaddr [list $firstinfo(address) $firstinfo(port)]]]
-	array set $info(socket) [array get info]
+	set info(socket) [socket $async {*}$myaddr $firstinfo(address) $firstinfo(port)]
+	array set ::proxy::$info(socket) [array get info]
 	Chain ::proxy::$info(socket) 1 $info(socket)
 	return $info(socket)
 }
@@ -94,18 +95,22 @@ proc ::proxy::Chain {id {count {0}} {socket {}} {pid {}} {status {ok}} {message 
 			# If SSL/TLS was requested, set it up now:
 			if {$info(-ssl)} {
 				if {[catch {
-					::package require tls
-					::tls::import $info(socket) -request 0
+					if {[info commands ::tls::socket] == {}} {package require tls}
 					fconfigure $info(socket) -buffering none -encoding binary -blocking 1
+					::tls::import $info(socket) -ssl2 0 -tls1 1
 					::tls::handshake $info(socket)
-					#puts "[tls::status $info(socket)]"
+					fconfigure $info(socket) -buffering line -encoding binary -blocking 0
 				} error]} {
+					putloglev d - "[tls::status $info(socket)]"
+					putloglev d - "last context! ::proxy::Chain SSL error case $error"
 					Finish $id {ssl-error} "TLS/SSL Related Error: $error"
 				} else {
-					Finish $id $status {Connected with SSL}
+					putloglev d - "[tls::status $info(socket)]"
+					putloglev d - "last context! ::proxy::Chain success with SSL case"
+					Finish $id {ok} {Connected with SSL}
 				}
-			} else {
-				Finish $id $status {Connected}
+			} {
+				Finish $id {ok} {Connected}
 			}
 		}
 	}

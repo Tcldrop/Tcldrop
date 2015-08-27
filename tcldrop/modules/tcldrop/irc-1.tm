@@ -302,7 +302,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 	foreach {type flags mask proc} [bindlist rejn] {
 		if {[bindmatch $mask "$channel $nick!$uhost"] && [matchattr $handle $flags $channel]} {
 			array set channickinfo $channelnicks([set element [irctoupper $channel,$nick]])
-			array set channickinfo [list split 0 nick $nick op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0]
+			array set channickinfo [list split 0 nick $nick m_o 0 m_v 0 m_h 0 was_o 0 was_h 0 was_v 0]
 			if {[info exists channickinfo(split-timer)]} {
 				after cancel $channickinfo(split-timer)
 				unset channickinfo(split-timer)
@@ -318,7 +318,7 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 }
 
 proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
-	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0
+	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel m_o 0 m_v 0 m_h 0 was_o 0 was_h 0 was_v 0 split 0
 	#set ::channelnicks([irctoupper $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join "$channel $nick!$uhost"] {
@@ -658,24 +658,22 @@ proc ::tcldrop::irc::MODE {from key arg} {
 	# (Note the missing +o FireEgl ..since it doesn't actually do anything in the real world it got removed.)
 	set v -1
 	lappend splitmodes
+	set prefixes [string range [isupport get PREFIX] 1 end]
+	set cmodes [isupport get CHANMODES]
+	set prefixes [lindex [split $prefixes ")"] 0]
+	set lists [lindex [split $cmodes ","] 0]
+	set keys [lindex [split $cmodes ","] 1]
+	set limits [lindex [split $cmodes ","] 2]
+	set hasparm [split [format "%s%s%s%s" $prefixes $lists $keys $limits] {}]
 	foreach m [split $modes {}] {
 		switch -- $m {
 			{+} - {-} { set plusminus $m }
-			{} {}
-			{n} - {t} - {i} - {s} - {p} - {m} - {c} - {F} - {f} - {L} - {P} {
-				# FixMe: Need isupport (raw 005) so we can detect what modes these are.  (see server module)
-				# These are modes that don't have a "victim".
-				# Note: +ntispm should be standard on any IRCD.
-				#       +FfLPq are some that I noticed on the FreeNode.Net network.
-				#       If other networks conflict with these we'll have to redo some stuff here.
-				lappend splitmodes $plusminus$m
-			}
 			{default} {
 				# This searches $splitmodes to see if there's already a similar mode already saved:
-				if {[set pos [lsearch $splitmodes ?[set mode "$m [lindex $victims [incr v]]"]]] != -1} {
+				if {[lsearch $hasparm $m] && [set pos [lsearch $splitmodes ?[set mode "$m [lindex $victims [incr v]]"]]] != -1} {
 					# A similar mode was found, replace it:
 					set splitmodes [lreplace $splitmodes $pos $pos $plusminus$mode]
-				} else {
+				} elseif {![lsearch $hasparm $m] && [set pos [lsearch $splitmodes ?[set mode "$m"]]] != -1} {
 					# No similar mode was found, append to the list:
 					lappend splitmodes $plusminus$mode
 				}
@@ -686,18 +684,8 @@ proc ::tcldrop::irc::MODE {from key arg} {
 		set mode [string range $m 0 1]
 		set victim [string range $m 3 end]
 		# This switch discards all the modes that don't make any changes on $channel:
-		# (Such as a +o on somebody that already had ops)
-		switch -- $mode {
-			{+o} { if {[isop $victim $channel]} { continue } }
-			{-o} { if {![isop $victim $channel]} { continue } }
-			{+v} { if {[isvoice $victim $channel]} { continue } }
-			{-v} { if {![isvoice $victim $channel]} { continue } }
-			{+h} { if {[ishalfop $victim $channel]} { continue } }
-			{-h} { if {![ishalfop $victim $channel]} { continue } }
-			{default} {
-				# FixMe: Check the other modes too.
-			}
-		}
+		# (Such as a +o on somebody that already had ops, or a +q in Unreal on someone who is already qop)
+		if {[lsearch [split $prefixes {}] [string index $mode 1]] && [is m_[string index $mode 1] $victim $channel]} {return}
 		# If a "continue" wasn't triggered above,
 		# we call all of the mode binds with that mode:
 		callmode $nick $uhost $handle $channel $mode $victim
@@ -705,41 +693,15 @@ proc ::tcldrop::irc::MODE {from key arg} {
 }
 
 # Call this before we call any other mode binds.
-bind mode - "* ?o" ::tcldrop::irc::mode -priority -1000
-bind mode - "* ?v" ::tcldrop::irc::mode -priority -1000
-bind mode - "* ?h" ::tcldrop::irc::mode -priority -1000
+bind mode - "* ??" ::tcldrop::irc::mode -priority -1000
 # And again after other mode binds so that isop and wasop will be the same.
-bind mode - "* ?o" ::tcldrop::irc::mode -priority 1000
-bind mode - "* ?v" ::tcldrop::irc::mode -priority 1000
-bind mode - "* ?h" ::tcldrop::irc::mode -priority 1000
+bind mode - "* ??" ::tcldrop::irc::mode -priority 1000
 proc ::tcldrop::irc::mode {nick uhost handle channel mode {victim {}}} {
+	set prefixes [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
 	if {[info exists ::channelnicks([set element [irctoupper "$channel,$victim"]])]} {
-		switch -- $mode {
-			{+o} {
-				dict set ::channelnicks($element) wasop [dict get $::channelnicks($element) op]
-				dict set ::channelnicks($element) op 1
-			}
-			{-o} {
-				dict set ::channelnicks($element) wasop [dict get $::channelnicks($element) op]
-				dict set ::channelnicks($element) op 0
-			}
-			{+v} {
-				dict set ::channelnicks($element) wasvoice [dict get $::channelnicks($element) voice]
-				dict set ::channelnicks($element) voice 1
-			}
-			{-v} {
-				dict set ::channelnicks($element) wasvoice [dict get $::channelnicks($element) voice]
-				dict set ::channelnicks($element) voice 0
-
-			}
-			{+h} {
-				dict set ::channelnicks($element) washalfop [dict get $::channelnicks($element) halfop]
-				dict set ::channelnicks($element) halfop 1
-			}
-			{-h} {
-				dict set ::channelnicks($element) washalfop [dict get $::channelnicks($element) halfop]
-				dict set ::channelnicks($element) halfop 0
-			}
+		if {[lsearch $prefixes [set m [string index $mode 1]]] != -1} {
+			dict set ::channelnicks($element) was_$m [dict get $::channelnicks($element) m_$m]
+			dict set ::channelnicks($element) m_$m [expr {[string index $mode 0] == "+" ? 1 : 0}]
 		}
 	}
 }
@@ -962,21 +924,28 @@ proc ::tcldrop::irc::352 {from key arg} {
 	set address [lindex $larg 3]
 	#set server [lindex $larg 4]
 	set nick [lindex $larg 5]
-	set flags [string trimleft [lindex $larg 6] {HG*xXd!}]
+	set flags [string trimleft [lindex $larg 6] {HGxXd}]
 	#set hops [string trimleft [lindex $larg 7] :]
 	set realname [join [lrange $larg 8 end]]
 	set uppernick [irctoupper $nick]
 	set handle [finduser "$nick!$ident@$address"]
 	nickinfo $uppernick handle $handle nick $nick uppernick $uppernick uhost "$ident@$address" ident $ident address $address realname $realname
-	set op [set voice [set halfop 0]]
+	set pfx [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
+	set pfc [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 1] {}]
+	set pf [list]
+	set ops [list]
+	foreach a $pfc b $pfx {
+		lappend pf $a
+		lappend pf $b
+	}
 	foreach f [split $flags {}] {
-		switch -- $f {
-			{+} { set voice 1 }
-			{%} { set halfop 1 }
-			{default} { if {[string first $f $::opchars] != -1} { set op 1 } }
+		if {-1==[lsearch -exact $pfc $f]} {continue}
+		if {[set p [dict get $pf $f]] != ""} {
+			lappend ops m_$p
+			lappend ops 1
 		}
 	}
-	channickinfo $upperchannel $uppernick handle $handle channel $channel upperchannel $upperchannel idletime [clock seconds] jointime 0 nick $nick op $op voice $voice halfop $halfop wasop $op washalfop $halfop wasvoice $voice split 0
+	channickinfo $upperchannel $uppernick handle $handle channel $channel upperchannel $upperchannel idletime [clock seconds] jointime 0 nick $nick split 0 {*}$ops
 	return 0
 }
 
@@ -1523,44 +1492,44 @@ proc ::tcldrop::irc::onchansplit {nick {channel {*}}} { is split $nick $channel 
 #  botisop [channel]
 #    Returns: 1 if the bot has ops on the specified channel (or any channel
 #      if no channel is specified); 0 otherwise
-proc ::tcldrop::irc::botisop {{channel {*}}} { is op $::botnick $channel }
+proc ::tcldrop::irc::botisop {{channel {*}}} { is m_o $::botnick $channel }
 
 #| botishalfop [channel]
 #|   Returns: 1 if the bot has halfops on the specified channel (or any channel
 #|     if no channel is specified); 0 otherwise
-proc ::tcldrop::irc::botishalfop {{channel {*}}} { is halfop $::botnick $channel }
+proc ::tcldrop::irc::botishalfop {{channel {*}}} { is m_h $::botnick $channel }
 
 #  botisvoice [channel]
 #    Returns: 1 if the bot has a voice on the specified channel (or any
 #      channel if no channel is specified); 0 otherwise
-proc ::tcldrop::irc::botisvoice {{channel {*}}} { is voice $::botnick $channel }
+proc ::tcldrop::irc::botisvoice {{channel {*}}} { is m_v $::botnick $channel }
 
 #  isop <nickname> [channel]
 #    Returns: 1 if someone by the specified nickname is on the channel (or
 #      any channel if no channel name is specified) and has ops; 0 otherwise
-proc ::tcldrop::irc::isop {nick {channel {*}}} { is op $nick $channel }
+proc ::tcldrop::irc::isop {nick {channel {*}}} { is m_o $nick $channel }
 
 #| ishalfop <nickname> [channel]
 #|   Returns: 1 if someone by the specified nickname is on the channel (or
 #|     any channel if no channel name is specified) and has halfops; 0 otherwise
-proc ::tcldrop::irc::ishalfop {nick {channel {*}}} { is halfop $nick $channel }
+proc ::tcldrop::irc::ishalfop {nick {channel {*}}} { is m_h $nick $channel }
 
 #  isvoice <nickname> [channel]
 #    Returns: 1 if someone by that nickname is on the channel (or any
 #      channel if no channel is specified) and has voice (+v); 0 otherwise
-proc ::tcldrop::irc::isvoice {nick {channel {*}}} { is voice $nick $channel }
+proc ::tcldrop::irc::isvoice {nick {channel {*}}} { is m_v $nick $channel }
 
 #  wasop <nickname> <channel>
 #    Returns: 1 if someone that just got opped/deopped in the chan had op
 #      before the modechange; 0 otherwise
-proc ::tcldrop::irc::wasop {nick channel} { is wasop $nick $channel }
+proc ::tcldrop::irc::wasop {nick channel} { is was_o $nick $channel }
 
 #| washalfop <nickname> <channel>
 #|   Returns: 1 if someone that just got halfopped/dehalfopped in the chan
 #|     had halfop before the modechange; 0 otherwise
-proc ::tcldrop::irc::washalfop {nick channel} { is washalfop $nick $channel }
+proc ::tcldrop::irc::washalfop {nick channel} { is was_h $nick $channel }
 
-proc ::tcldrop::irc::wasvoice {nick channel} { is wasvoice $nick $channel }
+proc ::tcldrop::irc::wasvoice {nick channel} { is was_v $nick $channel }
 
 proc ::tcldrop::irc::is {type nick {channel {*}}} { global channelnicks
 	foreach n [array names channelnicks [irctoupper "$channel,$nick"]] {
@@ -1703,9 +1672,10 @@ proc ::tcldrop::irc::CHANNEL_set {command channel type option value} {
 
 # This gets called once a minute and joins the channels we need in, and parts the ones we're not supposed to be in.
 # It also does a [callneed $channel op] if the bot is in a channel but doesn't have ops.
-bind time - {* * * * *} ::tcldrop::irc::JoinOrPart -priority 10000
+bind utime - {* * * * * *} ::tcldrop::irc::JoinOrPart -priority 10000
 proc ::tcldrop::irc::JoinOrPart {args} {
 	if {${::server-online}} {
+		set prefixes [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
 		foreach channel [channels] {
 			set botonchan [botonchan $channel]
 			if {[set inactive [channel get $channel inactive]] && $botonchan} {
@@ -1716,7 +1686,7 @@ proc ::tcldrop::irc::JoinOrPart {args} {
 				lappend joinchannels $channel
 			} elseif {![botisop $channel]} {
 				callneed $channel op
-				if {![botishalfop $channel]} {
+				if {![botishalfop $channel] && [lsearch $prefixes h] != -1} {
 					# FixMe: This should only ask for halfop's on networks that support halfops.
 					callneed $channel halfop
 					if {![botisvoice $channel]} { callneed $channel voice }
