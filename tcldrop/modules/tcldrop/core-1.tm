@@ -1384,8 +1384,8 @@ proc ::tcldrop::core::Minutely {last} {
 	# timer: drift (lastmin=24, now=26)
 	# timer: drift (lastmin=25, now=26)
 	# (!) timer drift -- spun 4 minutes
-	putlog "LAST: [clock format $last]"
-	putlog "NOW:  [clock format $now]"
+	#putlog "LAST: [clock format $last]"
+	#putlog "NOW:  [clock format $now]"
 	# For every minute that's passed since we last ran, do the TIME and CRON binds:
 	set drift 0
 	while {[incr last 60] <= $now} {
@@ -1393,8 +1393,9 @@ proc ::tcldrop::core::Minutely {last} {
 		callcron $last
 		incr drift
 	}
-	putlog "NEXT: [clock format $last]"
+	#putlog "NEXT: [clock format $last]"
 	if {$drift > 1} { putlog "[mc {(!) timer drift -- spun %d minutes} $drift]" }
+	callevent save
 }
 
 proc ::tcldrop::core::5Secly {last} {

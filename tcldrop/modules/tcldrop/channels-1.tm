@@ -40,7 +40,7 @@ namespace eval ::tcldrop::channels {
 	variable predepends {core}
 	variable depends {core::database core}
 	variable rcsid {$Id$}
-	namespace export channel channels loadchannels savechannels validchan udefs setudef renudef deludef validudef getudefs udeftype chansettype callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores isdynamic validchanname
+	namespace export channel channels loadchannels savechannels validchan udefs setudef renudef deludef validudef getudefs udeftype chansettype callchannel countchannels newchanbei newbei stickbei unstickbei killchanbei killbei isbei ischanbei ispermbei isbeisticky matchbei beilist listbeis loadbeis savebeis newchanban newban stick unstick killchanban killban isban ischanban ispermban isbansticky matchban banlist listbans newchanexempt newexempt stickexempt unstickexempt killchanexempt killexempt isexempt ischanexempt ispermexempt isexemptsticky matchexempt exemptlist listexempts newchaninvite newinvite stickinvite unstickinvite killchaninvite killinvite isinvite ischaninvite isperminvite isinvitesticky matchinvite invitelist listinvites newchanignore newignore stickignore unstickignore killchanignore killignore isignore ischanignore ispermignore isignoresticky matchignore ignorelist listignores isdynamic validchanname chandname2name channame2dname
 	variable commands [namespace export]
 	namespace path [list ::tcldrop]
 	namespace unknown unknown
@@ -353,6 +353,10 @@ proc ::tcldrop::channels::isdynamic {channel} { return 1 }
 # FixMe: Add these:
 # channame2dname <channel-name>
 # chandname2name <channel-dname>
+
+proc ::tcldrop::channels::channame2dname {channel} {return $channel}
+
+proc ::tcldrop::channels::chandname2name {channel} {return $channel}
 
 proc ::tcldrop::channels::SetUdefDefaults {{name {*}}} {
 	variable UdefDefaults

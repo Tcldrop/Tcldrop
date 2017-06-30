@@ -318,7 +318,17 @@ proc ::tcldrop::irc::callrejn {nick uhost handle channel} {
 }
 
 proc ::tcldrop::irc::calljoin {nick uhost handle channel} {
-	channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel m_o 0 m_v 0 m_h 0 was_o 0 was_h 0 was_v 0 split 0
+	set pfc [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
+	set cninfo [list channickinfo $channel $nick idletime [clock seconds] jointime [clock seconds] nick $nick uhost $uhost handle $handle channel $channel split 0]
+	foreach a $pfc {
+		putloglev k $channel [format "doing %s prefix %s clearing" $channel $a]
+		lappend cninfo m_$a
+		lappend cninfo 0
+		lappend cninfo was_$a
+		lappend cninfo 0
+	}
+	eval $cninfo
+
 	#set ::channelnicks([irctoupper $channel,$nick]) [list nick $nick uhost $uhost handle $handle channel $channel op 0 voice 0 halfop 0 wasop 0 washalfop 0 wasvoice 0 split 0]
 	# Call all of the join binds:
 	foreach {type flags mask proc} [bindlist join "$channel $nick!$uhost"] {
@@ -645,8 +655,9 @@ bind raw - MODE ::tcldrop::irc::MODE -priority 100
 proc ::tcldrop::irc::MODE {from key arg} {
 	set nick [lindex [split $from !] 0]
 	set uhost [lindex [split $from !] end]
+	if {$nick == $uhost} {set nick ""} ;# it ded
 	set handle [finduser $from]
-	set channel [lindex [set arg [split $arg]] 0]
+	set channel [lindex [set arg [split $arg " "]] 0]
 	set modes [string trimleft [lindex $arg 1] :]
 	set victims [lrange $arg 2 end]
 	putloglev k $channel "${channel}: mode change '$modes ${victims}' by $nick!$uhost"
@@ -659,6 +670,8 @@ proc ::tcldrop::irc::MODE {from key arg} {
 	set v -1
 	lappend splitmodes
 	set prefixes [string range [isupport get PREFIX] 1 end]
+	set cnprefixes [split [isupport get CHANTYPES] {}]
+	if {-1==[lsearch $cnprefixes [string index $channel 0]]} {return} ;# break break break.
 	set cmodes [isupport get CHANMODES]
 	set prefixes [lindex [split $prefixes ")"] 0]
 	set lists [lindex [split $cmodes ","] 0]
@@ -669,13 +682,18 @@ proc ::tcldrop::irc::MODE {from key arg} {
 		switch -- $m {
 			{+} - {-} { set plusminus $m }
 			{default} {
+				if {[lsearch $hasparm $m]!=-1} {
+					set mode [format "%s %s" $m [lindex $victims [incr v]]]
+				} else {
+					set mode $m
+				}
 				# This searches $splitmodes to see if there's already a similar mode already saved:
-				if {[lsearch $hasparm $m] && [set pos [lsearch $splitmodes ?[set mode "$m [lindex $victims [incr v]]"]]] != -1} {
+				if {[set pos [lsearch $splitmodes [format "?%s" $mode]]] != -1} {
 					# A similar mode was found, replace it:
-					set splitmodes [lreplace $splitmodes $pos $pos $plusminus$mode]
-				} elseif {![lsearch $hasparm $m] && [set pos [lsearch $splitmodes ?[set mode "$m"]]] != -1} {
+					set splitmodes [lreplace $splitmodes $pos $pos [format "%s%s" $plusminus $mode]]
+				} else {
 					# No similar mode was found, append to the list:
-					lappend splitmodes $plusminus$mode
+					lappend splitmodes [format "%s%s" $plusminus $mode]
 				}
 			}
 		}
@@ -685,9 +703,11 @@ proc ::tcldrop::irc::MODE {from key arg} {
 		set victim [string range $m 3 end]
 		# This switch discards all the modes that don't make any changes on $channel:
 		# (Such as a +o on somebody that already had ops, or a +q in Unreal on someone who is already qop)
-		if {[lsearch [split $prefixes {}] [string index $mode 1]] && [is m_[string index $mode 1] $victim $channel]} {return}
+		putloglev k $channel [format "Recognised: %s!%s\[%s\] MODE %s %s %s" $nick $uhost $handle $channel $mode $victim]
+		if {[lsearch [split $prefixes {}] [string index $mode 1]] && [is m_[string index $mode 1] $victim $channel]} {continue}
 		# If a "continue" wasn't triggered above,
 		# we call all of the mode binds with that mode:
+		putloglev k $channel [format "Calling: %s!%s\[%s\] MODE %s %s %s" $nick $uhost $handle $channel $mode $victim]
 		callmode $nick $uhost $handle $channel $mode $victim
 	}
 }
@@ -753,7 +773,8 @@ proc ::tcldrop::irc::Init-Server {type} {
 bind raw - JOIN ::tcldrop::irc::JOIN -priority 1000
 proc ::tcldrop::irc::JOIN {from key arg} {
 	set arg [string trim $arg]
-	if {[validchan [set channel [string range $arg 1 end]]]} {
+	if {[string index $arg 0] == ":"} {set arg [string range $arg 1 end]}
+	if {[validchan [set channel $arg]]} {
 		# If the bot itself just joined the channel, do a resetchan:
 		if {[string equal $from $::botname]} { resetchan $channel }
 		set uhost [lindex [split $from !] end]
@@ -937,12 +958,15 @@ proc ::tcldrop::irc::352 {from key arg} {
 	foreach a $pfc b $pfx {
 		lappend pf $a
 		lappend pf $b
+		lappend ops m_$b
+		lappend ops 0
+		lappend ops was_$b
+		lappend ops 0
 	}
 	foreach f [split $flags {}] {
 		if {-1==[lsearch -exact $pfc $f]} {continue}
 		if {[set p [dict get $pf $f]] != ""} {
-			lappend ops m_$p
-			lappend ops 1
+			dict set ops m_$p 1
 		}
 	}
 	channickinfo $upperchannel $uppernick handle $handle channel $channel upperchannel $upperchannel idletime [clock seconds] jointime 0 nick $nick split 0 {*}$ops
