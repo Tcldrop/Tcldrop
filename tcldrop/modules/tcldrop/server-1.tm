@@ -112,7 +112,7 @@ proc ::tcldrop::server::RealWrite {idx} {
 			# Note: Eggdrop sends a PING every 5 minutes.
 			# This should be higher than the frequency the server PINGs us.
 			# FixMe: Perhaps find out the frequency the server is sending us PINGs and make sure we already have a timer higher than that..
-			timer 16 [list {::tcldrop::server::CheckStoned}] -timerid {timer_::tcldrop::server::CheckStoned} -repeat -1
+			timer 6 [list {::tcldrop::server::CheckStoned}] -timerid {timer_::tcldrop::server::CheckStoned} -repeat -1
 		}
 	} else {
 		Error SOCKET {Unknown error}
@@ -122,15 +122,16 @@ proc ::tcldrop::server::RealWrite {idx} {
 proc ::tcldrop::server::CheckStoned {} {
 	variable LastPONG
 	if {$LastPONG} {
-		if {[clock seconds] - $LastPONG > 2400} {
+		if {[clock seconds] - $LastPONG > 400} {
 			# It's been too long since we heard anything from the server, assume it's dead:
-			quit "[mc {Stoned server}]..  \xAF\\(o_\xBA)/\xAF  "
+			quit "[mc {Stoned server}]..  \xAF\\(o_\xBA)/\xAF If you see this, it means your server doesn't reply to PINGs"
 			# Jump to another server, subtracting the time we last heard from the server from the server-cycle-wait time (Let utimer deal with negative numbers):
 			variable ServerCycleTimerID [utimer [expr { ${::server-cycle-wait} - ([clock seconds] - $LastPONG) }] [list ::tcldrop::server::jump]]
-		} elseif {${::server-online} && [clock seconds] - $LastPONG > 900} {
+		} elseif {${::server-online} && [clock seconds] - $LastPONG > 300} {
 			# Only send PINGs when we haven't heard from the server in a while.
 			putqueue idle "PING [clock seconds]"
 		}
+		putloglev d * [format "Last PONG was %s" $LastPONG]
 	}
 }
 

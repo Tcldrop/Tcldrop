@@ -59,10 +59,7 @@ proc ::tcldrop::dcc::irc::Write {idx} {
 	array set idxinfo [idxinfo $idx]
 	if {$idxinfo(state) eq {CONNECT}} {
 		idxinfo $idx state {REGISTER} other {reg} traffictype {partyline} timestamp [clock seconds]
-		Putidx $idx "NOTICE AUTH :*** Looking up your hostname..."
-		Putidx $idx "NOTICE AUTH :*** Checking Ident"
-		Putidx $idx "NOTICE AUTH :*** Got Ident response"
-		Putidx $idx "NOTICE AUTH :*** Found your hostname"
+		PutRAW $idx "NOTICE * :*** Please supply your handle and password."
 		return 0
 	} else {
 		return 1
@@ -121,11 +118,32 @@ proc ::tcldrop::dcc::irc::Welcome {idx} {
 	array set userinfo [getircparty user $idx]
 	PutRAW $idx "001 $userinfo(nickname) :Welcome to the Tcldrop Internet Relay Chat Network $userinfo(nickname)"
 	variable version
-	PutRAW $idx "002 $userinfo(nickname) :Your host is ${::botnet-nick}, running ircparty version $version"
-	PutRAW $idx "003 $userinfo(nickname) :This server was created Wed Feb 16 2005 at 09:34:49 PST"
+	PutRAW $idx "002 $userinfo(nickname) :Your host is ${::botnet-nick}.pline, running ircparty version $version"
+	PutRAW $idx "003 $userinfo(nickname) :This server was first written Wed Feb 16 2005 at 09:34:49 PST"
 	PutRAW $idx "004 $userinfo(nickname) Tcldrop ircparty oiwszcerkfydnxbauglZC biklmnopstveI bkloveI"
-	PutRAW $idx "005 $userinfo(nickname) CHANTYPES=&#% EXCEPTS INVEX CHANMODES=eIb,k,l,imnpst CHANLIMIT=&#:40 PREFIX=(ov)@+ MAXLIST=beI:100 NETWORK=ircparty MODES=4 STATUSMSG=@+ KNOCK CALLERID=g NICKLEN=9 :are supported by this server"
-	PutRAW $idx "005 $userinfo(nickname)  SAFELIST ELIST=U CASEMAPPING=rfc1459 CHARSET=ascii CHANNELLEN=50 TOPICLEN=160 KICKLEN=120 ETRACE :are supported by this server"
+	set isuptoks [list CHANTYPES EXCEPTS INVEX CHANMODES CHANLIMIT PREFIX MAXLIST NETWORK MODES CASEMAPPING CHARSET TOPICLEN KICKLEN CHANNELLEN]
+	set notempty [list CHANTYPES CHANLIMIT NETWORK MODES CHANMODES MAXLIST CASEMAPPING CHARSET PREFIX]
+	set tokdef [list CHANTYPES "&#+%" CHANLIMIT "&#+:40" NETWORK [lindex [split $::network " "] 0] CHANMODES "eIb,k,l,imnpst" MAXLIST "bqeI:100" CASEMAPPING "rfc1459" CHARSET "ascii" PREFIX "(ov)@+"]
+	set isupl [list "SAFELIST" "ELIST=U" "ETRACE"]
+	foreach tok $isuptoks {
+		if {[string length [format ":%s.pline 005 %s %s :are supported by this server." ${::botnet-nick} $userinfo(nickname) [join $isupl " "]]] > 510} {
+			Putidx $idx [format ":%s.pline 005 %s %s :are supported by this server." ${::botnet-nick} $userinfo(nickname) [join $isupl " "]]
+			set isupl [list]
+		}
+		if {[set roe [isupport get $tok]] == "true"} {
+			lappend isupl $tok
+		} elseif {[lsearch -exact $notempty $tok]!=-1 && $roe == ""} {
+			lappend isupl [format "%s=%s" $tok [dict get $tokdef $tok]]
+		} elseif {$roe != ""} {
+			if {$tok == "CHANTYPES"} {append roe "%"}
+			if {$tok == "CHANLIMIT"} {set roe [format "%s%s" "%" $roe]}
+			lappend isupl [format "%s=%s" $tok $roe]
+		}
+	}
+	if {[llength $isupl] != 0} {
+		Putidx $idx [format ":%s.pline 005 %s %s :are supported by this server." ${::botnet-nick} $userinfo(nickname) [join $isupl " "]]
+		set isupl [list]
+	}
 	PutRAW $idx "251 $userinfo(nickname) :There are 1 users and 1 invisible on 1 servers"
 	PutRAW $idx "252 $userinfo(nickname) 0 :IRC Operators online"
 	PutRAW $idx "253 $userinfo(nickname) 0 :unknown connection(s)"
@@ -146,12 +164,13 @@ proc ::tcldrop::dcc::irc::Welcome {idx} {
 
 	# Auto-join the command channel for this bot:
 	Putidx $idx ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :%${::botnet-nick}" [list -flush 1]
-	# /names list for the command channel:
-	PutRAW $idx "353 $userinfo(nickname) = %${::botnet-nick} :@${::botnet-nick} $userinfo(nickname)"
-	PutRAW $idx "366 $userinfo(nickname) %${::botnet-nick} :End of /NAMES list."
 	# topic for the command channel:
 	PutRAW $idx "332 $userinfo(nickname) %${::botnet-nick} :Welcome to the Command Channel for ${::botnet-nick}!"
 	PutRAW $idx "333 $userinfo(nickname) %${::botnet-nick} ${::botnet-nick}![string tolower ${::botnet-nick}]@ircparty. $::uptime"
+	# /names list for the command channel:
+	PutRAW $idx "353 $userinfo(nickname) = %${::botnet-nick} :@${::botnet-nick} $userinfo(nickname)"
+	PutRAW $idx "366 $userinfo(nickname) %${::botnet-nick} :End of /NAMES list."
+	PutRAW $idx [format "221 %s +%s" $userinfo(nickname) [chattr $userinfo(handle)]]
 	idxinfo $idx filter ::tcldrop::dcc::irc::PutidxFilter
 	initconsole $idx
 }
@@ -256,6 +275,11 @@ proc ::tcldrop::dcc::irc::ircparty {command args} {
 			foreach cu [array names IRCParty_chanusers [set chan [string tolower [lindex $args 0]]],*] {
 				array set userinfo $IRCParty_chanusers($cu)
 				array set userinfo $IRCParty_users($userinfo(idx))
+				if {![valididx $userinfo(idx)]} {
+					array unset IRCParty_chanusers($cu)
+					array unset IRCParty_users($userinfo(idx))
+					continue
+				}
 				foreach i [lrange $args 1 end] { if {[info exists userinfo($i)]} { lappend list $userinfo($i) } else { lappend list {} } }
 				if {![info exists i]} { lappend list $userinfo(idx) }
 			}
@@ -355,7 +379,7 @@ proc ::tcldrop::dcc::irc::PutidxFilter {idx text opts} {
 }
 
 proc ::tcldrop::dcc::irc::PutRAW {idx msg} {
-	Putidx $idx ":${::botnet-nick} $msg"
+	Putidx $idx ":${::botnet-nick}.pline $msg"
 }
 
 proc ::tcldrop::dcc::irc::PutRAWClient {idx code msg} {
@@ -376,7 +400,7 @@ proc ::tcldrop::dcc::irc::ircparty_NICK {idx command arg} {
 	putdebuglog "IN ::tcldrop::dcc::irc::NICK $idx $command $arg"
 	set nick [string trimleft $arg {: }]
 	if {[set handle [idx2hand $idx]] == {*}} { set handle "${nick}" }
-	setircparty user $idx nick $nick nickname [set nickname "${handle}@${::botnet-nick}:$idx"]
+	setircparty user $idx nick $nick nickname [set nickname ${handle}]
 	PutRAW $idx ":$nick!${idx}@${::botnet-nick} NICK $nickname"
 	return 1
 }
@@ -408,7 +432,7 @@ proc ::tcldrop::dcc::irc::ircparty_OPER {idx command arg} {
 	if {([validuser $handle] && ![passwdok $handle -] && [passwdok $handle $password]) && (!${::require-p} || [matchattr $handle p])} {
 		#setparty $idx handle $handle
 		idxinfo $idx handle [getuser $handle handle]
-		setircparty user $idx nickname "${handle}@${::botnet-nick}:$idx"
+		setircparty user $idx nickname "${handle}" username [format "idx%s" $idx] vhost [format "%s/%s" ${::botnet-nick} [getidxinfo $idx remote-hostname]]
 	}
 	return 1
 }
@@ -432,12 +456,74 @@ proc ::tcldrop::dcc::irc::ircparty_QUIT {idx command arg} {
 # :irc.choopa.net 324 Tcldrop #Test +tnl 2147483647
 # :irc.choopa.net 329 Tcldrop #Test 985416044
 proc ::tcldrop::dcc::irc::ircparty_MODE {idx command arg} {
+	array set userinfo [getircparty user $idx]
 	putdebuglog "in ::tcldrop::dcc::irc::ircparty_MODE $idx $command $arg"
 	if {[llength [set sarg [split $arg]]] == 1 && [validchan $arg]} {
 		puthelp "$command $arg"
 		RAWCapture {324 329} $idx
-	} else {
-
+	} elseif {[string tolower [lindex $sarg 0]] == [string tolower $userinfo(nickname)] || [string tolower [lindex $sarg 0]] == [string tolower $userinfo(nick)] || [validuser [lindex $sarg 0]]} {
+		# stuff
+		set nickattr [chattr $userinfo(handle)]
+		if {[llength $sarg] == 1} {
+			PutRAW $idx [format "221 %s %s" $userinfo(nickname) $nickattr]
+		} {
+			set hasparm [list]
+			set splitmodes [list]
+			foreach m [split [lindex $sarg 1] {}] {
+				switch -- $m {
+					{+} - {-} { set plusminus $m }
+					{default} {
+						if {[lsearch $hasparm $m]!=-1} {
+							set mode [format "%s %s" $m [lindex $victims [incr v]]]
+						} else {
+							set mode $m
+						}
+						# This searches $splitmodes to see if there's already a similar mode already saved:
+						if {[set pos [lsearch $splitmodes [format "?%s" $mode]]] != -1} {
+							# A similar mode was found, replace it:
+							set splitmodes [lreplace $splitmodes $pos $pos [format "%s%s" $plusminus $mode]]
+						} else {
+							# No similar mode was found, append to the list:
+							lappend splitmodes [format "%s%s" $plusminus $mode]
+						}
+					}
+				}
+			}
+			# permlevel is 5 for halfop, 10 for op, 15 for master, 15 for botnet master, 20 for owner
+			# you need one over those levels or owner to manipulate them.
+			set permlevel 0
+			set reqpermlevel 3
+			set nat [split $nickattr {}]
+			set tpermlevel 0
+			foreach a $nat {
+				switch -exact -- $a {
+					"n" {set tpermlevel 21}
+					"t" - "m" {set tpermlevel 15}
+					"o" {set tpermlevel 10}
+					"l" {set tpermlevel 5}
+					"j" {set tpermlevel 16}
+					"q" - "d" - "k" {set permlevel 0; break}
+				}
+				if {$tpermlevel > $permlevel} {set permlevel $tpermlevel}
+			}
+			foreach mi $splitmodes {
+				set ac [string index $mi 1]
+				set adir [string index $mi 0]
+				switch -exact -- $ac {
+					"n" {set tpermlevel 20}
+					"t" - "m" {set tpermlevel 15}
+					"q" {set tpermlevel 4}
+					"d" {set tpermlevel 9}
+					"o" {set tpermlevel 10}
+					"l" {set tpermlevel 5}
+					"j" {set tpermlevel 16}
+					"k" {set tpermlevel 4}
+				}
+				if {$adir == "+"} {set up 1} {set up 0}
+				if {$tpermlevel > $reqpermlevel} {set reqpermlevel $tpermlevel}
+				if {$permlevel > $reqpermlever } {}
+			}
+		}
 	}
 	return 1
 }
@@ -481,6 +567,7 @@ proc ::tcldrop::dcc::irc::ircparty_JOIN {idx command arg} {
 		foreach {chan key} [split $chankey] {break}
 		if {![validchan $chan] && [matchattr $idxinfo(handle) n]} { channel add $chan }
 		if {([validchan $chan]) && ([botonchan $chan]) && ([haschanrec $idxinfo(handle) $chan] || [matchattr $idxinfo(handle) ofmn])} {
+			if {[ircparty idxonchan $idx $chan]} {continue}
 			setircparty chanuser $chan $idx chan $chan idx $idx
 			setircparty chan $chan chan $chan
 			putircparty -chan $chan ":$userinfo(nickname)!$userinfo(username)@$userinfo(vhost) JOIN :$chan"
@@ -504,17 +591,30 @@ proc ::tcldrop::dcc::irc::ircparty_NAMES {idx command arg} {
 			{default} { set chanflag {=} }
 		}
 		set nicklist [list]
-		foreach n [chanlist $chan] {
-			if {[isop $n $chan]} {
-				lappend nicklist "@$n"
-			} elseif {[isvoice $n $chan]} {
-				lappend nicklist "+$n"
-			} else {
-				lappend nicklist "$n"
+		set prefixes [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
+		set prefixchrs [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 1] {}]
+		foreach ni [chanlist $chan] {
+			if {[string length [format "353 %s %s %s :%s" $userinfo(nickname) $chanflag $chan [join $nicklist " "]]] > 510} {
+				PutRAW $idx [format "353 %s %s %s :%s" $userinfo(nickname) $chanflag $chan [join $nicklist " "]]
+				set nicklist [list]
 			}
+
+			set nk ""
+
+			foreach prefix $prefixes char $prefixchrs {
+				if {[::tcldrop::irc::is m_$prefix $ni $chan]} {
+					append nk $char
+				}
+			}
+
+			append nk $ni
+			lappend nicklist $nk
 		}
-		# FixMe: Split this into multiple 353's if when the line gets too long:
-		PutRAW $idx "353 $userinfo(nickname) $chanflag $chan :[join $nicklist]"
+		if {[llength $nicklist] != 0} {
+			PutRAW $idx [format "353 %s %s %s :%s" $userinfo(nickname) $chanflag $chan [join $nicklist " "]]
+			set nicklist [list]
+		}
+		# Former FixMe: Split this into multiple 353's if when the line gets too long:
 	}
 	putdebuglog "ircparty names: [join [ircparty chanlist $chan nickname]]"
 	PutRAW $idx "353 $userinfo(nickname) = $chan :[join [ircparty chanlist $chan nickname]]"
@@ -615,7 +715,8 @@ proc ::tcldrop::dcc::irc::ircparty_PRIVMSG {idx command arg} {
 	# check if we're dealing with PRIVMSG's to a command channel
 	if {[string index $arg 0] ne {%}} {
 		if {([validchan [set chan [lindex [set sarg [split $arg]] 0]]] && [ircparty idxonchan $idx $chan]) || ([matchattr $idxinfo(handle) nm])} {
-			if {[matchattr $idxinfo(handle) z]} {
+			if {[matchattr $idxinfo(handle) s]} {
+				# +s means you have access to 
 				puthelp "$command $arg"
 			} else {
 				puthelp "$command $chan :<$idxinfo(handle)> [string range [string trim [join [lrange $sarg 1 end]]] 1 end]"
@@ -646,7 +747,7 @@ namespace eval ::tcldrop::dcc::irc {
 proc ::tcldrop::dcc::irc::SIGN {nick host hand chan reason} {
 	# Send to ircparty users who are on $chan:
 	# FixMe: Change this to a RAW bind, because QUIT's are NOT channel specific.. (We don't want to send a QUIT for every channel $nick was in.)
-	putircparty -chan $chan ":$nick!$host QUIT :$reason"
+	putircparty -chan $chan ":$nick!$host PART $chan :User left IRC server: $reason"
 }
 
 ::tcldrop::bind splt - * ::tcldrop::dcc::irc::SPLT
@@ -669,7 +770,7 @@ proc ::tcldrop::dcc::irc::JOIN {nick host hand chan} {
 ::tcldrop::bind part - * ::tcldrop::dcc::irc::PART
 proc ::tcldrop::dcc::irc::PART {nick host hand chan msg} {
 	# Send to ircparty users who are on $chan:
-	putircparty -chan $chan ":$nick!$host PART $chan"
+	putircparty -chan $chan ":$nick!$host PART $chan :\"$msg\""
 }
 
 ::tcldrop::bind topc - * ::tcldrop::dcc::irc::TOPC
