@@ -857,7 +857,7 @@ proc ::tcldrop::core::addbindtype {type args} {
 proc ::tcldrop::core::callbinds {type bindinfo} {
 	variable BindTypes
 	dict for {id info} [getbinds $type $bindinfo] {
-		if {[catch { [dict get $info proc] $type $bindinfo } err]} {
+		if {[catch { {*}[dict get $info proc] $type $bindinfo } err]} {
 			return -code error $err
 		}
 		countbind $id
@@ -1247,7 +1247,7 @@ proc ::tcldrop::core::DoTimer {timerid} {
 proc ::tcldrop::core::calltimer {timerinfo} {
 	foreach {type flags mask proc} [bindlist timer] {
 		countbind $type $mask $proc
-		if {[catch { $proc $timerinfo } err]} {
+		if {[catch { {*}$proc $timerinfo } err]} {
 			putlog "[mc {Error in script}]: $proc: $err"
 			puterrlog "$::errorInfo"
 		}
