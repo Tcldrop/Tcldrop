@@ -773,6 +773,7 @@ proc ::tcldrop::irc::Init-Server {type} {
 bind raw - JOIN ::tcldrop::irc::JOIN -priority 1000
 proc ::tcldrop::irc::JOIN {from key arg} {
 	set arg [string trim $arg]
+	if {[string first " " $arg]} {set arg [lindex [split $arg " "] 0]}
 	if {[string index $arg 0] == ":"} {set arg [string range $arg 1 end]}
 	if {[validchan [set channel $arg]]} {
 		# If the bot itself just joined the channel, do a resetchan:
@@ -786,7 +787,7 @@ proc ::tcldrop::irc::JOIN {from key arg} {
 		}
 		putloglev j $channel "$nick (${uhost}) joined ${channel}."
 	} else {
-		#puthelp "PART $channel :Why did I join here?"
+		puthelp "PART $channel :Why did I join here?"
 	}
 }
 
@@ -1521,7 +1522,11 @@ proc ::tcldrop::irc::botisop {{channel {*}}} { is m_o $::botnick $channel }
 #| botishalfop [channel]
 #|   Returns: 1 if the bot has halfops on the specified channel (or any channel
 #|     if no channel is specified); 0 otherwise
-proc ::tcldrop::irc::botishalfop {{channel {*}}} { is m_h $::botnick $channel }
+proc ::tcldrop::irc::botishalfop {{channel {*}}} {
+	set pfc [split [lindex [split [string range [isupport get PREFIX] 1 end] ")"] 0] {}]
+	if {[lsearch -exact $pfc 'h']} {return 0}
+	is m_h $::botnick $channel
+}
 
 #  botisvoice [channel]
 #    Returns: 1 if the bot has a voice on the specified channel (or any

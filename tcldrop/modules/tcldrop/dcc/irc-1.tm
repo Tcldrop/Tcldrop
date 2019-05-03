@@ -521,7 +521,7 @@ proc ::tcldrop::dcc::irc::ircparty_MODE {idx command arg} {
 				}
 				if {$adir == "+"} {set up 1} {set up 0}
 				if {$tpermlevel > $reqpermlevel} {set reqpermlevel $tpermlevel}
-				if {$permlevel > $reqpermlever } {}
+				if {$permlevel > $reqpermlevel } {chattr }
 			}
 		}
 	}
