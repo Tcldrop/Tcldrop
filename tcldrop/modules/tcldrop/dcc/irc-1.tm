@@ -382,6 +382,10 @@ proc ::tcldrop::dcc::irc::PutRAW {idx msg} {
 	Putidx $idx ":${::botnet-nick}.pline $msg"
 }
 
+proc ::tcldrop::dcc::irc::PutRealRAW {idx msg} {
+	Putidx $idx "$msg"
+}
+
 proc ::tcldrop::dcc::irc::PutRAWClient {idx code msg} {
 	PutRAW $idx "$code [getidxinfo $idx nickname] $msg"
 }
@@ -401,7 +405,7 @@ proc ::tcldrop::dcc::irc::ircparty_NICK {idx command arg} {
 	set nick [string trimleft $arg {: }]
 	if {[set handle [idx2hand $idx]] == {*}} { set handle "${nick}" }
 	setircparty user $idx nick $nick nickname [set nickname ${handle}]
-	PutRAW $idx ":$nick!${idx}@${::botnet-nick} NICK $nickname"
+	PutRealRAW $idx ":$nick!${idx}@${::botnet-nick} NICK $nickname"
 	return 1
 }
 

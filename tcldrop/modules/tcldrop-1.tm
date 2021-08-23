@@ -79,7 +79,7 @@ namespace eval ::tcldrop {
 	if {{eggdrop} ni [package names]} { package provide eggdrop 1.6.20 }
 	# tcldrop stores info's that each tcldrop needs while starting up:
 	variable tcldrop
-	array set tcldrop [list name $name config {} config-eval {} background-mode 1 channel-stats 0 simulate-dcc 0 userfile-create 0 console {oe} host_env {unknown} dirname [file dirname $script] version $version numversion $numversion depends $depends author $author description $description rcsid $rcsid script $script]
+	array set tcldrop [list name $name config {} config-eval {} supervision-mode 0 background-mode 1 channel-stats 0 simulate-dcc 0 userfile-create 0 console {oe} host_env {unknown} dirname [file dirname $script] version $version numversion $numversion depends $depends author $author description $description rcsid $rcsid script $script]
 	# Tcldrop stores info about each Tcldrop that's running:
 	variable Tcldrop
 	array set Tcldrop {}
@@ -129,6 +129,7 @@ namespace eval ::tcldrop {
 						switch -- $a {
 							{-} { }
 							{n} { set tcldrop(background-mode) 0 }
+							{N} { set tcldrop(supervision-mode) 1 }
 							{c} { set tcldrop(channel-stats) 1 }
 							{t} { set tcldrop(simulate-dcc) 1 }
 							{m} { set tcldrop(userfile-create) 1 }
@@ -145,6 +146,7 @@ namespace eval ::tcldrop {
 			  -h   help
 			  -v   print version and exit
 			  -n   don't go into the background
+			  -N   supervision mode - stay in the foreground, and do not use readline.
 			  -c   (with -n) display channel stats every 10 seconds
 			  -t   (with -n) use terminal to simulate dcc-chat
 			  -m   userfile creation mode

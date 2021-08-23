@@ -61,36 +61,40 @@ namespace eval ::tcldrop {
 		# FixMe: In the future I'd like to see a screen-like interface, where each bot has its own "screen" that it runs on.
 		# FixMe: This code is untested...
 		# I suggest to try to use Tclx command-loop first (if we have Tclx)
-		fconfigure stdin -blocking 0 -buffering line
-		fconfigure stdout -blocking 0 -buffering line
-		fconfigure stderr -blocking 0 -buffering line
-		if {[fileevent stdin readable] eq {}} {
-			# Next 2 lines of code are a workaround for an Expect bug:
-			# Basically, if Expect is loaded in the slave interp, fileevents on stdin in slave interp won't work unless their master has/had a fileevent.
-			fileevent stdin readable NOOP
-			fileevent stdin readable {}
-		}
-		if {!$tcldrop(background-mode) && !$tcldrop(simulate-dcc)} {
-			if {![catch { package require tclreadline }] && [info commands ::tclreadline::Loop] ne {}} {
-				# This is the real tclreadline.
-				puts "Starting tclreadline::Loop ..."
-				# FixMe: Make it exit when ::tcldrop::Exit is set. Or something. Would rather not have to do a trace on ::tcldrop::Exit to accomplish this.
-				::tclreadline::Loop
-			} elseif {![catch { package require TclReadLine }] && [info commands ::TclReadLine::interact] ne {}} {
-				# This is a Tcl script based Tcl readline.
-				puts "Starting TclReadLine::interact ..."
-				# FixMe: Make it exit when ::tcldrop::Exit is set.  (Need to modify the modules/TclReadLine-1.1.tm)
-				::TclReadLine::interact
+		if {$tcldrop(supervision-mode)} {
+			vwait ::tcldrop::Exit
+		} else {
+			fconfigure stdin -blocking 0 -buffering line
+			fconfigure stdout -blocking 0 -buffering line
+			fconfigure stderr -blocking 0 -buffering line
+			if {[fileevent stdin readable] eq {}} {
+				# Next 2 lines of code are a workaround for an Expect bug:
+				# Basically, if Expect is loaded in the slave interp, fileevents on stdin in slave interp won't work unless their master has/had a fileevent.
+				fileevent stdin readable NOOP
+				fileevent stdin readable {}
+			}
+			if {!$tcldrop(background-mode) && !$tcldrop(simulate-dcc)} {
+				if {![catch { package require tclreadline }] && [info commands ::tclreadline::Loop] ne {}} {
+					# This is the real tclreadline.
+					puts "Starting tclreadline::Loop ..."
+					# FixMe: Make it exit when ::tcldrop::Exit is set. Or something. Would rather not have to do a trace on ::tcldrop::Exit to accomplish this.
+					::tclreadline::Loop
+				} elseif {![catch { package require TclReadLine }] && [info commands ::TclReadLine::interact] ne {}} {
+					# This is a Tcl script based Tcl readline.
+					puts "Starting TclReadLine::interact ..."
+					# FixMe: Make it exit when ::tcldrop::Exit is set.  (Need to modify the modules/TclReadLine-1.1.tm)
+					::TclReadLine::interact
+				} elseif {![catch { vwait ::tcldrop::Exit } error]} {
+					catch { puts "Exiting with error level $Exit ... $error" }
+				} else {
+					catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
+				}
+				exit $::tcldrop::Exit
 			} elseif {![catch { vwait ::tcldrop::Exit } error]} {
 				catch { puts "Exiting with error level $Exit ... $error" }
 			} else {
 				catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 			}
-			exit $::tcldrop::Exit
-		} elseif {![catch { vwait ::tcldrop::Exit } error]} {
-			catch { puts "Exiting with error level $Exit ... $error" }
-		} else {
-			catch { puts "Exiting with error level $Exit ... $error \n$::errorInfo" }
 		}
 	}
 }
